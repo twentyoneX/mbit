@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mBIT</title>
+    <title>mBIT Protocol</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
@@ -45,25 +45,23 @@
         button.extension { background: #9b59b6; color: white; border: 1px solid #8e44ad; width: 100%; margin-bottom: 10px; }
         
         .hidden { display: none !important; }
-        .warning { color: yellow; font-size: 0.8rem; margin-bottom: 10px; }
+        .warning-text { color: #ff4141; font-size: 0.8rem; margin-top: 5px; font-weight: bold; }
+        
+        /* KEY DISPLAY BOXES */
+        .key-container { margin-bottom: 15px; border: 1px solid #333; padding: 10px; }
+        .key-label { font-size: 0.7rem; opacity: 0.7; display: block; margin-bottom: 5px; }
+        .key-row { display: flex; gap: 5px; }
+        .key-input { flex-grow: 1; background: #000; color: #fff; font-size: 0.8rem; border: 1px solid #333; }
         
         /* FEED STYLES */
         .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
         .status-open { color: #00FF41; } .status-closed { color: red; }
         #feed-container { max-width: 600px; margin: 0 auto; position: relative; }
         
-        /* NEW POSTS BUTTON */
         #new-btn {
-            width: 100%;
-            padding: 15px;
-            background: #00FF41;
-            color: black;
-            font-weight: bold;
-            text-align: center;
-            cursor: pointer;
-            margin-bottom: 20px;
-            border: 2px solid #fff;
-            animation: pulse 2s infinite;
+            width: 100%; padding: 15px; background: #00FF41; color: black;
+            font-weight: bold; text-align: center; cursor: pointer;
+            margin-bottom: 20px; border: 2px solid #fff; animation: pulse 2s infinite;
         }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
@@ -164,12 +162,30 @@
         </div>
         
         <div id="user-info" class="hidden">
-            <div class="warning">LOGGED IN AS:</div>
-            <div id="pubkey-display" style="word-break: break-all; margin-bottom:10px; opacity:0.8;"></div>
-            <div style="margin-bottom: 15px;">
+            <!-- KEY DISPLAY -->
+            <div class="key-container">
+                <span class="key-label">PUBLIC ID (NPUB) - SAFE TO SHARE</span>
+                <div class="key-row">
+                    <input type="text" id="display-npub" class="key-input" readonly>
+                    <button class="small" onclick="copyKey('display-npub')">COPY</button>
+                </div>
+            </div>
+
+            <div class="key-container" id="nsec-container">
+                <span class="key-label" style="color:#ff4141">SECRET KEY (NSEC) - DO NOT SHARE!</span>
+                <div class="key-row">
+                    <input type="password" id="display-nsec" class="key-input" readonly value="">
+                    <button class="small secondary" onclick="toggleSecret()">SHOW</button>
+                    <button class="small danger" onclick="copyKey('display-nsec')">COPY</button>
+                </div>
+                <div class="warning-text">⚠️ WARNING: This key controls your account. If you lose it, your account is gone. If you share it, you will be hacked.</div>
+            </div>
+
+            <div style="margin-bottom: 15px; border-top:1px dashed #333; padding-top:15px;">
                 <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
                 <button onclick="logout()" class="danger">LOGOUT</button>
             </div>
+
             <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px;">
                 <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
                 <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
@@ -190,7 +206,6 @@
 
     <!-- FEED -->
     <div id="feed-container">
-        <!-- New Button is hidden by default -->
         <div id="new-btn" class="hidden" onclick="mergeQueue()">>> LOAD NEW SIGNALS <<</div>
         <div id="feed">
             <div style="text-align:center; margin-top:50px;">_scanning frequencies_</div>
@@ -251,9 +266,36 @@
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('user-info').classList.remove('hidden');
             document.getElementById('composer').classList.remove('hidden');
-            try { document.getElementById('pubkey-display').innerText = window.NostrTools.nip19.npubEncode(pubkey); } catch(e){}
+            
+            // Populate Keys
+            try { 
+                document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(pubkey); 
+                
+                // Only show NSEC if we actually have the private key locally
+                if(myPrivKey && authMode === 'local') {
+                    document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey);
+                } else {
+                    document.getElementById('nsec-container').style.display = 'none'; // Hide if extension
+                }
+            } catch(e){}
+            
             fetchProfile(pubkey);
         }
+
+        // --- KEY UI FUNCTIONS ---
+        function toggleSecret() {
+            const el = document.getElementById('display-nsec');
+            if(el.type === "password") el.type = "text";
+            else el.type = "password";
+        }
+        function copyKey(id) {
+            const el = document.getElementById(id);
+            el.select();
+            el.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(el.value);
+            alert("Copied to clipboard");
+        }
+
         async function loginExtension() {
             if (!window.nostr) return alert("No Extension");
             try {
@@ -270,9 +312,10 @@
         }
         function generateNewUser() {
             const sk = window.NostrTools.generatePrivateKey();
-            prompt("COPY PRIVATE KEY:", window.NostrTools.nip19.nsecEncode(sk));
+            // Don't prompt anymore, we show it in UI
             localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_mode', 'local');
             authMode = 'local'; myPrivKey = sk; checkAuth();
+            alert("NEW IDENTITY GENERATED. \n\nIMPORTANT: Scroll down to 'SECRET KEY' and save it immediately!");
         }
         function logout() { localStorage.clear(); location.reload(); }
 
@@ -295,7 +338,6 @@
             try { 
                 const s = await signAndBroadcast(event); 
                 document.getElementById('msg-input').value = ""; 
-                // Immediate show own post
                 events.unshift(s); renderFeed(); 
             } catch(e) { alert("Error sending"); }
         }
@@ -408,7 +450,7 @@
         const profiles = {};
         const requestedProfiles = new Set();
         let events = [];
-        let pendingEvents = []; // Queue for new posts
+        let pendingEvents = [];
 
         function handleEvent(event) {
             if (event.kind === 0) {
@@ -416,13 +458,10 @@
             } else if (event.kind === 1 || event.kind === 6) {
                 if (processedIds.has(event.id)) return;
                 processedIds.add(event.id);
-
-                // LOGIC: If we already have 20 posts shown, QUEUE the new ones.
                 if (events.length >= 20) {
                     pendingEvents.unshift(event);
                     updateNewButton();
                 } else {
-                    // Initial load or filling up first screen -> Show immediately
                     events.unshift(event);
                     events.sort((a, b) => b.created_at - a.created_at);
                     if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) fetchProfile(event.pubkey);
@@ -436,27 +475,19 @@
             if (pendingEvents.length > 0) {
                 btn.classList.remove('hidden');
                 btn.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`;
-            } else {
-                btn.classList.add('hidden');
-            }
+            } else { btn.classList.add('hidden'); }
         }
 
         function mergeQueue() {
-            // Move pending to main events
             pendingEvents.forEach(e => {
                 events.unshift(e);
                 if (!profiles[e.pubkey] && !requestedProfiles.has(e.pubkey)) fetchProfile(e.pubkey);
             });
             pendingEvents = [];
-            
-            // Re-sort and render
             events.sort((a, b) => b.created_at - a.created_at);
-            // Optional: Limit total DOM nodes if it gets too heavy (e.g. keep 100 max)
             if(events.length > 100) events = events.slice(0, 100);
-            
             renderFeed();
             updateNewButton();
-            // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
