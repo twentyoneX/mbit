@@ -133,6 +133,9 @@
     <header>
         <h1>mBIT</h1>
         <div class="nav-bar">
+            <!-- NEW HOME BUTTON -->
+            <span class="nav-item" onclick="goHome()">[ HOME ]</span>
+            <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-relays')">[ NETWORK NODES ]</span>
             <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-identity')">[ IDENTITY ]</span>
@@ -271,8 +274,20 @@
                 if(p !== id) document.getElementById(p).classList.add('hidden'); 
             });
             const panel = document.getElementById(id); 
-            if(panel.classList.contains('hidden')) panel.classList.remove('hidden'); else panel.classList.add('hidden');
-            if(id === 'panel-my-profile' && !panel.classList.contains('hidden')) loadMyHistory();
+            if(panel && panel.classList.contains('hidden')) panel.classList.remove('hidden'); 
+            else if(panel) panel.classList.add('hidden');
+            
+            if(id === 'panel-my-profile' && panel && !panel.classList.contains('hidden')) loadMyHistory();
+        }
+
+        // NEW GO HOME FUNCTION
+        function goHome() {
+            // Close all open panels
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile'].forEach(p => { 
+                document.getElementById(p).classList.add('hidden'); 
+            });
+            // Scroll to the top of the feed
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // --- 2. RELAYS ---
@@ -400,7 +415,6 @@
             let zapBtn = "";
             if(p.lud16) zapBtn = `<button class="act-btn zap-btn" style="font-size:1rem; border:1px solid #f1c40f; padding:5px 15px; margin-top:5px;" onclick="doZap('${pubkey}')">ZAP ⚡</button>`;
             
-            // Enhanced Bio View
             const bio = p.about ? p.about.replace(/</g,"") : "No bio available";
             
             const html = `
