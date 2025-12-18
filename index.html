@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mBIT Protocol</title>
+    <title>mBIT</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
@@ -50,8 +50,23 @@
         /* FEED STYLES */
         .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
         .status-open { color: #00FF41; } .status-closed { color: red; }
-        #feed { max-width: 600px; margin: 0 auto; }
+        #feed-container { max-width: 600px; margin: 0 auto; position: relative; }
         
+        /* NEW POSTS BUTTON */
+        #new-btn {
+            width: 100%;
+            padding: 15px;
+            background: #00FF41;
+            color: black;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+            border: 2px solid #fff;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
         .post {
             border-left: 2px solid #333; padding-left: 15px; margin-bottom: 30px;
             animation: fadeIn 0.5s;
@@ -68,10 +83,9 @@
         .username-link:hover { color: #00FF41; text-shadow: 0 0 5px #00FF41; }
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
         
-        /* ACTION BAR */
         .actions { 
             margin-top: 15px; font-size: 0.8rem; 
-            display: flex; gap: 10px; border-top: 1px dotted #333; padding-top: 5px;
+            display: flex; gap: 10px; border-top: 1px dotted #333; padding-top: 5px; flex-wrap: wrap;
         }
         .act-btn { 
             background: transparent; color: #00FF41; border: none; padding: 2px 5px; cursor: pointer; 
@@ -160,7 +174,7 @@
                 <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
                 <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
                 <label>Picture URL:</label> <input type="text" id="p-picture" placeholder="https://...">
-                <label style="color:#f1c40f">Zap Wallet (Lightning Address):</label> 
+                <label style="color:#f1c40f">Zap Wallet (Lightning):</label> 
                 <input type="text" id="p-lud16" placeholder="name@getalby.com" style="border-color:#f1c40f">
                 <button onclick="saveProfile()">PUBLISH UPDATE</button>
                 <button onclick="toggleProfileEditor()" class="small secondary">CANCEL</button>
@@ -174,8 +188,13 @@
         <button onclick="sendNote()">SEND SIGNAL</button>
     </div>
 
-    <div id="feed">
-        <div style="text-align:center; margin-top:50px;">_scanning frequencies_</div>
+    <!-- FEED -->
+    <div id="feed-container">
+        <!-- New Button is hidden by default -->
+        <div id="new-btn" class="hidden" onclick="mergeQueue()">>> LOAD NEW SIGNALS <<</div>
+        <div id="feed">
+            <div style="text-align:center; margin-top:50px;">_scanning frequencies_</div>
+        </div>
     </div>
 
     <script>
@@ -273,7 +292,12 @@
             const content = document.getElementById('msg-input').value;
             if (!content || !myPubKey) return;
             const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
-            try { const s = await signAndBroadcast(event); document.getElementById('msg-input').value = ""; handleEvent(s); } catch(e) { alert("Error sending"); }
+            try { 
+                const s = await signAndBroadcast(event); 
+                document.getElementById('msg-input').value = ""; 
+                // Immediate show own post
+                events.unshift(s); renderFeed(); 
+            } catch(e) { alert("Error sending"); }
         }
 
         async function saveProfile() {
@@ -281,7 +305,7 @@
                 name: document.getElementById('p-name').value, 
                 about: document.getElementById('p-about').value, 
                 picture: document.getElementById('p-picture').value,
-                lud16: document.getElementById('p-lud16').value // Zap Address
+                lud16: document.getElementById('p-lud16').value 
             });
             const event = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
             try { await signAndBroadcast(event); alert("Updated"); toggleProfileEditor(); profiles[myPubKey] = JSON.parse(content); renderFeed(); } catch(e) { alert("Error"); }
@@ -325,7 +349,7 @@
                     event.tags = [['e', targetNote.id, '', 'mention'], ['p', targetNote.pubkey]];
                 } catch(e) {}
             }
-            try { const s = await signAndBroadcast(event); document.getElementById('reply-input').value = ""; closeModals(null); handleEvent(s); } catch(e) { alert("Failed"); }
+            try { const s = await signAndBroadcast(event); document.getElementById('reply-input').value = ""; closeModals(null); events.unshift(s); renderFeed(); } catch(e) { alert("Failed"); }
         }
 
         async function doZap(pubkey) {
@@ -359,7 +383,7 @@
                 document.getElementById('p-name').value = p.name||'';
                 document.getElementById('p-about').value = p.about||'';
                 document.getElementById('p-picture').value = p.picture||'';
-                document.getElementById('p-lud16').value = p.lud16||''; // Load Zap Wallet
+                document.getElementById('p-lud16').value = p.lud16||'';
             }
         }
         function closeModals(e) {
@@ -371,20 +395,20 @@
             const p = profiles[pubkey] || {};
             let img = '<div style="font-size:3rem;">?</div>';
             if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`;
-            
             let walletHtml = "";
             if(p.lud16) walletHtml = `<div style="color:#f1c40f; font-size:0.8rem; margin:10px 0;">⚡ ${p.lud16}</div>`;
-            
             const html = `${img}<h2>${(p.name||'Unknown').replace(/</g,"")}</h2>${walletHtml}<p>${(p.about||'').replace(/</g,"")}</p>`;
             document.getElementById('modal-content').innerHTML = html;
             document.getElementById('generic-modal').classList.remove('hidden');
         }
 
+        // --- 5. QUEUE LOGIC ---
         const feed = document.getElementById('feed');
         const processedIds = new Set();
         const profiles = {};
         const requestedProfiles = new Set();
         let events = [];
+        let pendingEvents = []; // Queue for new posts
 
         function handleEvent(event) {
             if (event.kind === 0) {
@@ -392,13 +416,50 @@
             } else if (event.kind === 1 || event.kind === 6) {
                 if (processedIds.has(event.id)) return;
                 processedIds.add(event.id);
-                events.unshift(event);
-                events.sort((a, b) => b.created_at - a.created_at);
-                if (events.length > 50) events.pop();
-                if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) fetchProfile(event.pubkey);
-                renderFeed();
+
+                // LOGIC: If we already have 20 posts shown, QUEUE the new ones.
+                if (events.length >= 20) {
+                    pendingEvents.unshift(event);
+                    updateNewButton();
+                } else {
+                    // Initial load or filling up first screen -> Show immediately
+                    events.unshift(event);
+                    events.sort((a, b) => b.created_at - a.created_at);
+                    if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) fetchProfile(event.pubkey);
+                    renderFeed();
+                }
             }
         }
+
+        function updateNewButton() {
+            const btn = document.getElementById('new-btn');
+            if (pendingEvents.length > 0) {
+                btn.classList.remove('hidden');
+                btn.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`;
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        function mergeQueue() {
+            // Move pending to main events
+            pendingEvents.forEach(e => {
+                events.unshift(e);
+                if (!profiles[e.pubkey] && !requestedProfiles.has(e.pubkey)) fetchProfile(e.pubkey);
+            });
+            pendingEvents = [];
+            
+            // Re-sort and render
+            events.sort((a, b) => b.created_at - a.created_at);
+            // Optional: Limit total DOM nodes if it gets too heavy (e.g. keep 100 max)
+            if(events.length > 100) events = events.slice(0, 100);
+            
+            renderFeed();
+            updateNewButton();
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         function fetchProfile(pubkey) {
             requestedProfiles.add(pubkey);
             const msg = JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]);
