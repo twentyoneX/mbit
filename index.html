@@ -25,14 +25,12 @@
         h1 { font-size: 2.5rem; margin: 0; text-shadow: 0 0 5px #00FF41; text-transform: lowercase; }
         .subtitle { opacity: 0.7; font-size: 0.9rem; margin-top: 5px; }
         
-        /* SECTIONS */
         .box {
             max-width: 600px; margin: 0 auto 30px auto;
             border: 1px dashed #00FF41; padding: 15px;
         }
         h3 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
         
-        /* FORMS */
         input, textarea {
             background: #001100; border: 1px solid #00FF41; color: #00FF41;
             font-family: inherit; padding: 10px; width: 95%; margin-bottom: 10px;
@@ -47,20 +45,19 @@
         
         .hidden { display: none; }
         .warning { color: yellow; font-size: 0.8rem; margin-bottom: 10px; }
-
-        /* RELAY LIST */
         .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
-        .relay-status { margin-right: 10px; }
         .status-open { color: #00FF41; }
         .status-closed { color: red; }
 
-        /* FEED */
+        /* FEED STYLES */
         #feed { max-width: 600px; margin: 0 auto; }
         .post {
             border-left: 2px solid #333; padding-left: 15px; margin-bottom: 30px;
             animation: fadeIn 0.5s;
         }
-        .meta { font-size: 0.7rem; opacity: 0.6; margin-bottom: 5px; }
+        .meta { font-size: 0.75rem; opacity: 0.8; margin-bottom: 5px; color: #ccffcc; }
+        .username { font-weight: bold; color: #fff; }
+        .npub { opacity: 0.5; font-size: 0.7rem; }
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -73,7 +70,7 @@
 
     <!-- RELAY MANAGER -->
     <div class="box">
-        <h3>>> NETWORK NODES (RELAYS)</h3>
+        <h3>>> NETWORK NODES</h3>
         <div id="relay-list"></div>
         <div style="margin-top: 10px; display:flex;">
             <input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0;">
@@ -91,7 +88,7 @@
             <button onclick="generateNewUser()">Generate New Identity</button>
         </div>
         <div id="user-info" class="hidden">
-            <div class="warning">LOGGED IN. YOUR PUBLIC KEY:</div>
+            <div class="warning">LOGGED IN AS:</div>
             <div id="pubkey-display" style="word-break: break-all; margin-bottom:10px; opacity:0.8;"></div>
             <button onclick="logout()">Logout</button>
         </div>
@@ -114,20 +111,15 @@
         // --- 2. RELAY MANAGEMENT ---
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
-        const sockets = {}; // Store active connections
+        const sockets = {};
         
         function renderRelays() {
             const list = document.getElementById('relay-list');
             list.innerHTML = savedRelays.map(url => {
                 const isOpen = sockets[url] && sockets[url].readyState === WebSocket.OPEN;
                 const statusClass = isOpen ? 'status-open' : 'status-closed';
-                const statusText = isOpen ? '[CONNECTED]' : '[OFFLINE]';
-                
-                return `
-                <div class="relay-item">
-                    <span><span class="relay-status ${statusClass}">${statusText}</span> ${url}</span>
-                    <button class="small danger" onclick="removeRelay('${url}')">X</button>
-                </div>`;
+                const statusText = isOpen ? '[ON]' : '[OFF]';
+                return `<div class="relay-item"><span><span class="relay-status ${statusClass}">${statusText}</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
             }).join('');
         }
 
@@ -136,7 +128,6 @@
             let url = input.value.trim();
             if(!url) return;
             if(!url.startsWith('wss://')) url = 'wss://' + url;
-            
             if(!savedRelays.includes(url)) {
                 savedRelays.push(url);
                 localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
@@ -149,43 +140,33 @@
         function removeRelay(url) {
             savedRelays = savedRelays.filter(r => r !== url);
             localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
-            if(sockets[url]) {
-                sockets[url].close();
-                delete sockets[url];
-            }
+            if(sockets[url]) { sockets[url].close(); delete sockets[url]; }
             renderRelays();
         }
 
         function connectToRelay(url) {
-            if(sockets[url]) return; // Already exists
-            
+            if(sockets[url]) return;
             try {
                 const ws = new WebSocket(url);
                 sockets[url] = ws;
-
                 ws.onopen = () => {
                     renderRelays();
-                    // Subscribe to Global Feed (Kind 1)
+                    // Subscribe to Global Feed
                     const req = ["REQ", "sub_global_" + Date.now(), { kinds: [1], limit: 20 }];
                     ws.send(JSON.stringify(req));
                 };
-
                 ws.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
-                    if (data[0] === 'EVENT') addEventToFeed(data[2]);
+                    if (data[0] === 'EVENT') handleEvent(data[2]);
                 };
-
-                ws.onclose = () => { renderRelays(); };
-                ws.onerror = () => { renderRelays(); };
-
-            } catch(e) { console.error("Invalid Relay", e); }
+                ws.onclose = () => renderRelays();
+                ws.onerror = () => renderRelays();
+            } catch(e) { console.error(e); }
         }
 
-        // Connect to all saved relays on boot
         savedRelays.forEach(connectToRelay);
 
-
-        // --- 3. IDENTITY & AUTH ---
+        // --- 3. IDENTITY ---
         let myPrivKey = localStorage.getItem('nostr_privkey');
         let myPubKey = null;
 
@@ -197,11 +178,12 @@
                         myPrivKey = data;
                     }
                     myPubKey = window.NostrTools.getPublicKey(myPrivKey);
+                    const myNpub = window.NostrTools.nip19.npubEncode(myPubKey);
                     
                     document.getElementById('login-form').classList.add('hidden');
                     document.getElementById('user-info').classList.remove('hidden');
                     document.getElementById('composer').classList.remove('hidden');
-                    document.getElementById('pubkey-display').innerText = myPubKey;
+                    document.getElementById('pubkey-display').innerText = myNpub;
                 } catch (e) { logout(); }
             }
         }
@@ -209,7 +191,7 @@
         function generateNewUser() {
             const sk = window.NostrTools.generatePrivateKey();
             const nsec = window.NostrTools.nip19.nsecEncode(sk);
-            prompt("IMPORTANT: COPY YOUR NEW PRIVATE KEY NOW.", nsec);
+            prompt("COPY YOUR NEW PRIVATE KEY:", nsec);
             localStorage.setItem('nostr_privkey', sk);
             myPrivKey = sk;
             checkAuth();
@@ -227,14 +209,12 @@
             localStorage.removeItem('nostr_privkey');
             location.reload();
         }
-
         checkAuth();
 
-        // --- 4. SENDING & FEED ---
+        // --- 4. DATA HANDLING (PROFILES & FEED) ---
         async function sendNote() {
             const content = document.getElementById('msg-input').value;
             if (!content || !myPrivKey) return;
-
             const event = {
                 kind: 1,
                 created_at: Math.floor(Date.now() / 1000),
@@ -242,46 +222,90 @@
                 content: content,
                 pubkey: myPubKey
             };
-
             event.id = window.NostrTools.getEventHash(event);
             event.sig = window.NostrTools.signEvent(event, myPrivKey);
-
-            // Broadcast to ALL connected sockets
             const msg = JSON.stringify(["EVENT", event]);
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === WebSocket.OPEN) ws.send(msg);
-            });
-
+            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
             document.getElementById('msg-input').value = "";
-            addEventToFeed(event);
+            handleEvent(event);
         }
 
         const feed = document.getElementById('feed');
         const processedIds = new Set();
+        const profiles = {}; // Cache for usernames { hexKey: {name: '...', picture: '...'} }
+        const requestedProfiles = new Set(); // To prevent spamming requests
         let events = [];
 
-        function addEventToFeed(event) {
-            if (processedIds.has(event.id)) return;
-            processedIds.add(event.id);
-            events.unshift(event);
+        function handleEvent(event) {
+            // IF KIND 0 (METADATA) -> STORE PROFILE
+            if (event.kind === 0) {
+                try {
+                    const content = JSON.parse(event.content);
+                    profiles[event.pubkey] = content;
+                    renderFeed(); // Re-render to update names
+                } catch(e) {}
+                return;
+            }
+
+            // IF KIND 1 (TEXT) -> ADD TO FEED
+            if (event.kind === 1) {
+                if (processedIds.has(event.id)) return;
+                processedIds.add(event.id);
+                events.unshift(event);
+                events.sort((a, b) => b.created_at - a.created_at);
+                if (events.length > 50) events.pop();
+                
+                // Fetch Author Metadata if missing
+                if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) {
+                    fetchProfile(event.pubkey);
+                }
+                
+                renderFeed();
+            }
+        }
+
+        function fetchProfile(pubkey) {
+            requestedProfiles.add(pubkey);
+            // Ask relays for Kind 0 (Metadata) for this user
+            const req = ["REQ", "meta_" + pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }];
+            const msg = JSON.stringify(req);
             
-            // Sort by time (newest first) to handle multiple relays sending out of order
-            events.sort((a, b) => b.created_at - a.created_at);
-            
-            if (events.length > 50) events.pop();
-            renderFeed();
+            // Send to all open sockets
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === WebSocket.OPEN) ws.send(msg);
+            });
         }
 
         function renderFeed() {
             feed.innerHTML = events.map(ev => {
                 const time = new Date(ev.created_at * 1000).toLocaleTimeString();
-                const id = ev.id.substring(0, 8);
+                
+                // USER DISPLAY LOGIC
+                let displayName = "Unknown";
+                let npub = "";
+                
+                try {
+                    npub = window.NostrTools.nip19.npubEncode(ev.pubkey);
+                    const shortNpub = npub.substring(0, 10) + "..." + npub.substring(npub.length - 4);
+                    
+                    // Check if we found the name in profiles
+                    if (profiles[ev.pubkey] && profiles[ev.pubkey].name) {
+                        displayName = `<span class="username">${profiles[ev.pubkey].name}</span>`;
+                    } else {
+                        displayName = `<span class="username">${shortNpub}</span>`;
+                    }
+                    
+                    // Add hover info
+                    displayName += ` <span class="npub">(${shortNpub})</span>`;
+                    
+                } catch(e) { displayName = "Error decoding key"; }
+
                 const content = ev.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
                 
                 return `
                     <div class="post" ${isMe}>
-                        <div class="meta">ID: ${id}... • TIME: ${time}</div>
+                        <div class="meta">USER: ${displayName} • ${time}</div>
                         <div class="content">${content}</div>
                     </div>
                 `;
