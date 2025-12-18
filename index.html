@@ -100,6 +100,10 @@
             background: transparent; color: #00FF41; border: none; padding: 2px 5px; cursor: pointer; font-family: inherit; font-size: 0.75rem;
         }
         .act-btn:hover { background: #00FF41; color: black; }
+        
+        /* ACTIVE STATE FOR LIKED POSTS */
+        .act-btn.active { background: #00FF41; color: black; }
+
         .zap-btn { color: #f1c40f; } .zap-btn:hover { background: #f1c40f; color: black; }
 
         /* MODALS */
@@ -145,7 +149,7 @@
         <button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
     </div>
 
-    <!-- 2. IDENTITY DROPDOWN (KEYS & LOGOUT ONLY) -->
+    <!-- 2. IDENTITY DROPDOWN -->
     <div id="panel-identity" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> IDENTITY</h3>
         <div id="login-form">
@@ -205,11 +209,9 @@
         <button class="small secondary" onclick="togglePanel('panel-my-profile')">CLOSE</button>
     </div>
 
-    <!-- 4. PUBLIC PROFILE VIEW PANEL -->
+    <!-- 4. PUBLIC PROFILE PANEL -->
     <div id="panel-user-profile" class="dropdown-panel hidden">
-        <div id="user-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;">
-            <!-- Content Injected via JS -->
-        </div>
+        <div id="user-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;"></div>
         <h3 style="margin-top:0">>> SIGNAL HISTORY</h3>
         <div id="user-feed">
             <div style="text-align:center; opacity:0.5;">_scanning user signals_</div>
@@ -246,16 +248,24 @@
     </div>
 
     <script>
-        // --- 1. SETUP & UI ---
+        // --- 1. SETUP ---
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
+        
+        // Data Stores
         let events = []; let pendingEvents = []; let myEvents = []; let userEvents = [];
         
+        // LOCAL STORAGE FOR LIKES
+        let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
+
         function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile'].forEach(p => { if(p !== id) document.getElementById(p).classList.add('hidden'); });
-            const panel = document.getElementById(id); panel.classList.toggle('hidden');
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile'].forEach(p => { 
+                if(p !== id) document.getElementById(p).classList.add('hidden'); 
+            });
+            const panel = document.getElementById(id); 
+            if(panel.classList.contains('hidden')) panel.classList.remove('hidden'); else panel.classList.add('hidden');
             if(id === 'panel-my-profile' && !panel.classList.contains('hidden')) loadMyHistory();
         }
 
@@ -343,14 +353,13 @@
         }
         function logout() { localStorage.clear(); location.reload(); }
 
-        // --- 4. MY PROFILE & EDITOR ---
+        // --- 4. MY PROFILE ---
         function loadMyHistory() {
             if(!myPubKey) { document.getElementById('my-feed').innerHTML = "PLEASE LOGIN FIRST"; return; }
             const p = profiles[myPubKey] || {};
             document.getElementById('my-p-name').innerText = p.name || 'Unknown';
             document.getElementById('my-p-about').innerText = p.about || '';
             if(p.picture) document.getElementById('my-p-img').innerHTML = `<img src="${p.picture}" class="p-img-large">`;
-            
             myEvents = [];
             document.getElementById('my-feed').innerHTML = '<div style="text-align:center;">_fetching history_</div>';
             const msg = JSON.stringify(["REQ", "sub_me", { kinds: [1, 6], authors: [myPubKey], limit: 20 }]);
@@ -375,20 +384,17 @@
             try { await signAndBroadcast(event); alert("Updated"); toggleProfileEditor(); profiles[myPubKey] = JSON.parse(content); loadMyHistory(); } catch(e) { alert("Error"); }
         }
 
-        // --- 5. USER PROFILE VIEW ---
+        // --- 5. USER PROFILE ---
         function viewProfile(pubkey) {
             ['panel-relays', 'panel-identity', 'panel-my-profile'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('panel-user-profile').classList.remove('hidden');
-            
             const p = profiles[pubkey] || {};
             let img = '<div style="font-size:3rem;">?</div>'; 
             if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`;
             let zapBtn = "";
             if(p.lud16) zapBtn = `<button class="act-btn zap-btn" style="font-size:1rem; border:1px solid #f1c40f; padding:5px 15px; margin-top:5px;" onclick="doZap('${pubkey}')">ZAP ⚡</button>`;
-            
             const html = `${img}<h2>${(p.name||'Unknown').replace(/</g,"")}</h2><div style="opacity:0.7">${(p.about||'').replace(/</g,"")}</div>${zapBtn}`;
             document.getElementById('user-profile-header').innerHTML = html;
-            
             userEvents = [];
             document.getElementById('user-feed').innerHTML = '<div style="text-align:center;">_fetching history_</div>';
             if(!profiles[pubkey]) fetchProfile(pubkey);
@@ -422,26 +428,22 @@
         // --- 7. SHARED RENDER ---
         function generatePostHTML(ev) {
             let content = ev.content; let header = "";
-            
-            // Check for Repost
             if (ev.kind === 6) { 
                 header = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`;
-                try { 
-                    const original = JSON.parse(ev.content); 
-                    if(original.content) content = original.content; else content = "[Reposted Signal]";
-                } catch(e) { content = "[Reposted Signal]"; } 
-            } 
-            // Check for Reply (Kind 1 with 'e' tags)
-            else if (ev.kind === 1 && ev.tags.some(t => t[0] === 'e')) {
+                try { const original = JSON.parse(ev.content); if(original.content) content = original.content; else content = "[Reposted Signal]"; } catch(e) { content = "[Reposted Signal]"; } 
+            } else if (ev.kind === 1 && ev.tags.some(t => t[0] === 'e')) {
                 header = `<div style="font-size:0.7rem; color:#888; margin-bottom:5px;">↳ REPLYING</div>`;
             }
-
             const p = profiles[ev.pubkey] || {};
             let name = p.name ? p.name.replace(/</g,"") : ev.pubkey.substring(0,6)+'...';
             let avatar = ''; if(p.picture) avatar = `<img src="${p.picture}" class="avatar">`;
             content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
             const evJson = JSON.stringify(ev).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            
+            // Check LIKE state
+            const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
+
             return `
                 <div class="post" ${isMe}>
                     ${header}
@@ -451,7 +453,7 @@
                         <button class="act-btn" onclick="openReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
                         <button class="act-btn" onclick="openQuote('${ev.id}', '${ev.pubkey}')">[QUOTE]</button>
                         <button class="act-btn" onclick="doRepost('${ev.id}', '${ev.pubkey}', '${evJson}')">[REPOST]</button>
-                        <button class="act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
+                        <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
                         <button class="act-btn zap-btn" onclick="doZap('${ev.pubkey}')">[ZAP ⚡]</button>
                     </div>
                 </div>
@@ -465,14 +467,33 @@
             const msg = JSON.stringify(["EVENT", event]); Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); }); return event;
         }
         async function sendNote() { const content = document.getElementById('msg-input').value; if (!content || !myPubKey) return; const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey }; try { const s = await signAndBroadcast(event); document.getElementById('msg-input').value = ""; events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Error sending"); } }
-        async function doLike(id, pubkey) { if(!myPubKey) return alert("Login to Like"); const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; try { await signAndBroadcast(event); alert("Liked!"); } catch(e) { alert("Failed"); } }
+        
+        async function doLike(id, pubkey) { 
+            if(!myPubKey) return alert("Login to Like"); 
+            const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; 
+            try { 
+                await signAndBroadcast(event); 
+                // SAVE LOCAL STATE
+                likedPosts.add(id);
+                localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
+                // RE-RENDER TO UPDATE UI
+                renderGlobalFeed();
+                if(!document.getElementById('panel-my-profile').classList.contains('hidden')) renderMyFeed();
+                if(!document.getElementById('panel-user-profile').classList.contains('hidden')) renderUserFeed();
+            } catch(e) { alert("Failed"); } 
+        }
+        
+        // Helpers for re-rendering specific feeds
+        function renderMyFeed() { document.getElementById('my-feed').innerHTML = myEvents.map(ev => generatePostHTML(ev)).join(''); }
+        function renderUserFeed() { document.getElementById('user-feed').innerHTML = userEvents.map(ev => generatePostHTML(ev)).join(''); }
+
         async function doRepost(id, pubkey, originalJSON) { if(!myPubKey) return alert("Login to Repost"); let contentToPost = originalJSON || ""; const event = { kind: 6, created_at: Math.floor(Date.now()/1000), tags: [['e', id, 'wss://relay.damus.io'], ['p', pubkey]], content: contentToPost, pubkey: myPubKey }; try { await signAndBroadcast(event); alert("Reposted!"); } catch(e) { alert("Failed"); } }
         let activeAction = null; let targetNote = null;
         function openReply(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'reply'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> REPLYING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
         function openQuote(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'quote'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> QUOTING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
         async function sendReplyOrQuote() { const content = document.getElementById('reply-input').value; if(!content) return; let event = { kind: 1, created_at: Math.floor(Date.now()/1000), content: content, pubkey: myPubKey, tags: [] }; if (activeAction === 'reply') event.tags = [['e', targetNote.id, '', 'root'], ['p', targetNote.pubkey]]; else if (activeAction === 'quote') { try { const nevent = window.NostrTools.nip19.neventEncode({id: targetNote.id}); event.content = content + "\n\nnostr:" + nevent; event.tags = [['e', targetNote.id, '', 'mention'], ['p', targetNote.pubkey]]; } catch(e) {} } try { const s = await signAndBroadcast(event); document.getElementById('reply-input').value = ""; closeModals(null); events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Failed"); } }
         async function doZap(pubkey) { if(!myPubKey) return alert("Login first"); const p = profiles[pubkey]; if(!p || !p.lud16) return alert("No Zap Address."); if (window.webln) { try { await window.webln.enable(); const amount = prompt("Sats?"); if(!amount) return; const parts = p.lud16.split('@'); const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`; const res = await fetch(url); const data = await res.json(); const invRes = await fetch(`${data.callback}?amount=${amount*1000}`); const invData = await invRes.json(); await window.webln.sendPayment(invData.pr); alert("Zapped"); } catch(e) { alert("Zap failed"); } } else { alert("Install Alby"); } }
-        function closeModals(e) { if(e && !e.target.classList.contains('modal-overlay') && e.target.tagName !== 'BUTTON') return; document.getElementById('reply-modal').classList.add('hidden'); }
+        function closeModals(e) { if(e && !e.target.classList.contains('modal-overlay') && e.target.tagName !== 'BUTTON') return; document.getElementById('generic-modal').classList.add('hidden'); document.getElementById('reply-modal').classList.add('hidden'); }
         
         checkAuth();
     </script>
