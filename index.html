@@ -43,16 +43,13 @@
         button.danger { background: #ff4141; }
         button.secondary { background: #333; color: #00FF41; border: 1px solid #00FF41; }
         button.extension { background: #9b59b6; color: white; border: 1px solid #8e44ad; width: 100%; margin-bottom: 10px; }
-        button.extension:hover { background: #8e44ad; }
-
+        
         .hidden { display: none !important; }
         .warning { color: yellow; font-size: 0.8rem; margin-bottom: 10px; }
         
-        /* FEED & RELAY STYLES */
+        /* FEED STYLES */
         .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
-        .status-open { color: #00FF41; }
-        .status-closed { color: red; }
-        
+        .status-open { color: #00FF41; } .status-closed { color: red; }
         #feed { max-width: 600px; margin: 0 auto; }
         
         .post {
@@ -60,40 +57,30 @@
             animation: fadeIn 0.5s;
         }
         .meta { 
-            font-size: 0.75rem; 
-            opacity: 0.9; 
-            margin-bottom: 5px; 
-            color: #ccffcc; 
-            display: flex;
-            align-items: center;
+            font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: #ccffcc; 
+            display: flex; align-items: center;
         }
-        
-        /* NEW AVATAR STYLE */
         .avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: 1px solid #00FF41;
-            margin-right: 10px;
-            object-fit: cover;
-            background: #111;
+            width: 30px; height: 30px; border-radius: 50%; border: 1px solid #00FF41;
+            margin-right: 10px; object-fit: cover; background: #111;
         }
-        
-        .username-link { 
-            font-weight: bold; color: #fff; cursor: pointer; text-decoration: underline;
-        }
+        .username-link { font-weight: bold; color: #fff; cursor: pointer; text-decoration: underline; }
         .username-link:hover { color: #00FF41; text-shadow: 0 0 5px #00FF41; }
-        
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
+        
+        .actions { margin-top: 10px; font-size: 0.8rem; }
+        .reply-btn { background: transparent; color: #00FF41; border: 1px solid #00FF41; padding: 2px 8px; cursor: pointer; }
+        .reply-btn:hover { background: #00FF41; color: black; }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* MODAL */
-        #modal-overlay {
+        /* MODALS */
+        .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 100;
             display: flex; align-items: center; justify-content: center;
         }
-        #profile-card {
+        .modal-card {
             background: black; border: 2px solid #00FF41; padding: 20px;
             max-width: 90%; width: 400px; text-align: center;
             box-shadow: 0 0 20px #00FF41; animation: popIn 0.3s;
@@ -109,15 +96,25 @@
 <body>
     <header>
         <h1>mBIT</h1>
-        <div class="subtitle">protocol: nostr | decentralized mesh</div>
     </header>
 
-    <!-- MODAL POPUP -->
-    <div id="modal-overlay" class="hidden" onclick="closeModal(event)">
-        <div id="profile-card">
+    <!-- PROFILE MODAL -->
+    <div id="profile-modal" class="modal-overlay hidden" onclick="closeModals(event)">
+        <div class="modal-card">
             <div id="modal-content"></div>
             <br>
-            <button onclick="closeModal(null)">CLOSE LINK</button>
+            <button onclick="closeModals(null)">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- REPLY MODAL -->
+    <div id="reply-modal" class="modal-overlay hidden" onclick="closeModals(event)">
+        <div class="modal-card" style="text-align: left;">
+            <h3>>> REPLYING TO SIGNAL</h3>
+            <div id="reply-context" style="opacity: 0.5; font-size: 0.8rem; margin-bottom: 10px;"></div>
+            <textarea id="reply-input" rows="4" placeholder="enter response..."></textarea>
+            <button onclick="sendReply()">TRANSMIT REPLY</button>
+            <button class="secondary" onclick="closeModals(null)">CANCEL</button>
         </div>
     </div>
 
@@ -135,40 +132,32 @@
     <div class="box" id="auth-ui">
         <h3>>> IDENTITY</h3>
         <div id="login-form">
-            <!-- EXTENSION LOGIN -->
-            <button onclick="loginExtension()" class="extension">
-                ⚡ LOGIN WITH EXTENSION (Alby / Nos2x)
-            </button>
-            <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR USE LEGACY KEY ---</div>
-            <input type="text" id="privkey-input" placeholder="paste private key (hex or nsec)">
-            <button onclick="login()">Login with Key</button>
+            <button onclick="loginExtension()" class="extension">⚡ LOGIN WITH EXTENSION</button>
+            <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR LEGACY KEY ---</div>
+            <input type="text" id="privkey-input" placeholder="paste private key">
+            <button onclick="login()">Login</button>
             <span style="margin: 0 10px">|</span>
-            <button onclick="generateNewUser()">Generate New</button>
+            <button onclick="generateNewUser()">New Key</button>
         </div>
         
         <div id="user-info" class="hidden">
             <div class="warning">LOGGED IN AS:</div>
             <div id="pubkey-display" style="word-break: break-all; margin-bottom:10px; opacity:0.8;"></div>
-            
             <div style="margin-bottom: 15px;">
                 <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
                 <button onclick="logout()" class="danger">LOGOUT</button>
             </div>
-
             <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px;">
-                <label>Name / Alias:</label>
-                <input type="text" id="p-name" placeholder="Neo">
-                <label>About / Bio:</label>
-                <input type="text" id="p-about" placeholder="Follow the white rabbit.">
-                <label>Picture URL:</label>
-                <input type="text" id="p-picture" placeholder="https://...">
+                <label>Name:</label> <input type="text" id="p-name">
+                <label>Bio:</label> <input type="text" id="p-about">
+                <label>Picture URL:</label> <input type="text" id="p-picture">
                 <button onclick="saveProfile()">PUBLISH UPDATE</button>
                 <button onclick="toggleProfileEditor()" class="small secondary">CANCEL</button>
             </div>
         </div>
     </div>
 
-    <!-- POST COMPOSER -->
+    <!-- MAIN COMPOSER -->
     <div class="box hidden" id="composer">
         <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
         <button onclick="sendNote()">SEND SIGNAL</button>
@@ -181,8 +170,6 @@
     <script>
         // --- 1. SETUP ---
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-        
-        // --- 2. RELAY LOGIC ---
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
@@ -191,32 +178,28 @@
             const list = document.getElementById('relay-list');
             list.innerHTML = savedRelays.map(url => {
                 const isOpen = sockets[url] && sockets[url].readyState === WebSocket.OPEN;
-                const statusClass = isOpen ? 'status-open' : 'status-closed';
-                return `<div class="relay-item"><span><span class="relay-status ${statusClass}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
+                return `<div class="relay-item"><span><span class="relay-status ${isOpen?'status-open':'status-closed'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
             }).join('');
         }
 
         function addRelay() {
-            const input = document.getElementById('new-relay');
-            let url = input.value.trim();
+            let url = document.getElementById('new-relay').value.trim();
             if(!url) return;
             if(!url.startsWith('wss://')) url = 'wss://' + url;
             if(!savedRelays.includes(url)) {
                 savedRelays.push(url);
                 localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
                 connectToRelay(url);
-                input.value = '';
+                document.getElementById('new-relay').value = '';
                 renderRelays();
             }
         }
-
         function removeRelay(url) {
             savedRelays = savedRelays.filter(r => r !== url);
             localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
             if(sockets[url]) { sockets[url].close(); delete sockets[url]; }
             renderRelays();
         }
-
         function connectToRelay(url) {
             if(sockets[url]) return;
             try {
@@ -232,45 +215,34 @@
                     if (data[0] === 'EVENT') handleEvent(data[2]);
                 };
                 ws.onclose = () => renderRelays();
-                ws.onerror = () => renderRelays();
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }
         savedRelays.forEach(connectToRelay);
 
-        // --- 3. IDENTITY (HYBRID) ---
+        // --- 2. AUTH ---
         let myPrivKey = localStorage.getItem('nostr_privkey');
         let myPubKey = localStorage.getItem('nostr_pubkey');
         let authMode = localStorage.getItem('nostr_mode') || 'none';
 
         async function checkAuth() {
-            if (authMode === 'extension') {
-                if (myPubKey) initUserUI(myPubKey);
-            } else if (myPrivKey) {
+            if (authMode === 'extension' && myPubKey) initUserUI(myPubKey);
+            else if (myPrivKey) {
                 try {
-                    if(myPrivKey.startsWith('nsec')) {
-                        const {data} = window.NostrTools.nip19.decode(myPrivKey);
-                        myPrivKey = data;
-                    }
+                    if(myPrivKey.startsWith('nsec')) myPrivKey = window.NostrTools.nip19.decode(myPrivKey).data;
                     myPubKey = window.NostrTools.getPublicKey(myPrivKey);
                     initUserUI(myPubKey);
                 } catch (e) { logout(); }
             }
         }
-
         function initUserUI(pubkey) {
-            const myNpub = window.NostrTools.nip19.npubEncode(pubkey);
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('user-info').classList.remove('hidden');
             document.getElementById('composer').classList.remove('hidden');
-            document.getElementById('pubkey-display').innerText = myNpub;
+            try { document.getElementById('pubkey-display').innerText = window.NostrTools.nip19.npubEncode(pubkey); } catch(e){}
             fetchProfile(pubkey);
         }
-
         async function loginExtension() {
-            if (!window.nostr) {
-                alert("Nostr extension not found! Please install Alby, Nos2x, or Flamingo.");
-                return;
-            }
+            if (!window.nostr) return alert("No Extension Found");
             try {
                 const pubkey = await window.nostr.getPublicKey();
                 localStorage.setItem('nostr_pubkey', pubkey);
@@ -278,9 +250,8 @@
                 authMode = 'extension';
                 myPubKey = pubkey;
                 checkAuth();
-            } catch(err) { alert("Extension login denied."); }
+            } catch(err) { alert("Denied"); }
         }
-
         function login() {
             const input = document.getElementById('privkey-input').value.trim();
             if(!input) return;
@@ -290,108 +261,131 @@
             myPrivKey = input;
             checkAuth();
         }
-
         function generateNewUser() {
             const sk = window.NostrTools.generatePrivateKey();
-            const nsec = window.NostrTools.nip19.nsecEncode(sk);
-            prompt("COPY YOUR NEW PRIVATE KEY:", nsec);
+            prompt("COPY PRIVATE KEY:", window.NostrTools.nip19.nsecEncode(sk));
             localStorage.setItem('nostr_privkey', sk);
             localStorage.setItem('nostr_mode', 'local');
             authMode = 'local';
             myPrivKey = sk;
             checkAuth();
         }
-
         function logout() {
-            localStorage.removeItem('nostr_privkey');
-            localStorage.removeItem('nostr_pubkey');
-            localStorage.removeItem('nostr_mode');
+            localStorage.clear();
             location.reload();
         }
 
+        // --- 3. ACTIONS (SIGN/SEND/REPLY) ---
         async function signEventWrapper(event) {
             if (authMode === 'extension') return await window.nostr.signEvent(event);
-            else {
-                event.id = window.NostrTools.getEventHash(event);
-                event.sig = window.NostrTools.signEvent(event, myPrivKey);
+            event.id = window.NostrTools.getEventHash(event);
+            event.sig = window.NostrTools.signEvent(event, myPrivKey);
+            return event;
+        }
+
+        async function broadcastEvent(event) {
+            try {
+                event = await signEventWrapper(event);
+                const msg = JSON.stringify(["EVENT", event]);
+                Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
                 return event;
+            } catch(e) { 
+                alert("Signing Failed"); 
+                throw e;
             }
         }
 
         async function sendNote() {
             const content = document.getElementById('msg-input').value;
             if (!content || !myPubKey) return;
-            let event = { kind: 1, created_at: Math.floor(Date.now() / 1000), tags: [], content: content, pubkey: myPubKey };
-            try {
-                event = await signEventWrapper(event);
-                const msg = JSON.stringify(["EVENT", event]);
-                Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
-                document.getElementById('msg-input').value = "";
-                handleEvent(event);
-            } catch (err) { alert("Signing failed."); }
+            const event = { kind: 1, created_at: Math.floor(Date.now() / 1000), tags: [], content: content, pubkey: myPubKey };
+            const signed = await broadcastEvent(event);
+            document.getElementById('msg-input').value = "";
+            handleEvent(signed);
         }
 
         async function saveProfile() {
-            const name = document.getElementById('p-name').value;
-            const about = document.getElementById('p-about').value;
-            const picture = document.getElementById('p-picture').value;
-            const content = JSON.stringify({ name, about, picture });
-            let event = { kind: 0, created_at: Math.floor(Date.now() / 1000), tags: [], content: content, pubkey: myPubKey };
-            try {
-                event = await signEventWrapper(event);
-                const msg = JSON.stringify(["EVENT", event]);
-                Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
-                profiles[myPubKey] = { name, about, picture };
-                alert("Profile Broadcasted.");
-                toggleProfileEditor();
-                renderFeed();
-            } catch(e) { alert("Failed to sign profile."); }
+            const content = JSON.stringify({
+                name: document.getElementById('p-name').value,
+                about: document.getElementById('p-about').value,
+                picture: document.getElementById('p-picture').value
+            });
+            const event = { kind: 0, created_at: Math.floor(Date.now() / 1000), tags: [], content: content, pubkey: myPubKey };
+            await broadcastEvent(event);
+            alert("Profile Updated");
+            toggleProfileEditor();
+            profiles[myPubKey] = JSON.parse(content);
+            renderFeed();
         }
 
+        // --- REPLY LOGIC ---
+        let replyingTo = null; // {id, pubkey}
+
+        function openReplyModal(id, pubkey) {
+            if(!myPubKey) return alert("Please Login to Reply");
+            replyingTo = {id, pubkey};
+            document.getElementById('reply-context').innerText = "Target: " + id.substring(0,8) + "...";
+            document.getElementById('reply-modal').classList.remove('hidden');
+        }
+
+        async function sendReply() {
+            const content = document.getElementById('reply-input').value;
+            if(!content || !replyingTo) return;
+            
+            const event = {
+                kind: 1,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [
+                    ['e', replyingTo.id, '', 'root'], // Reference parent note
+                    ['p', replyingTo.pubkey]          // Tag parent author
+                ],
+                content: content,
+                pubkey: myPubKey
+            };
+            
+            const signed = await broadcastEvent(event);
+            document.getElementById('reply-input').value = "";
+            closeModals(null);
+            handleEvent(signed);
+        }
+
+        // --- 4. UI HELPERS ---
         function toggleProfileEditor() {
             const editor = document.getElementById('profile-editor');
             editor.classList.toggle('hidden');
             if(profiles[myPubKey]) {
-                document.getElementById('p-name').value = profiles[myPubKey].name || '';
-                document.getElementById('p-about').value = profiles[myPubKey].about || '';
-                document.getElementById('p-picture').value = profiles[myPubKey].picture || '';
+                const p = profiles[myPubKey];
+                document.getElementById('p-name').value = p.name||'';
+                document.getElementById('p-about').value = p.about||'';
+                document.getElementById('p-picture').value = p.picture||'';
             }
+        }
+        function closeModals(e) {
+            if(e && !e.target.classList.contains('modal-overlay') && e.target.tagName !== 'BUTTON') return;
+            document.getElementById('profile-modal').classList.add('hidden');
+            document.getElementById('reply-modal').classList.add('hidden');
         }
 
         function viewProfile(pubkey) {
             const p = profiles[pubkey] || {};
-            let npub = "";
-            try { npub = window.NostrTools.nip19.npubEncode(pubkey); } catch(e){}
-            let imgHtml = '<div style="font-size:3rem; margin-bottom:10px;">?</div>';
-            if (p.picture && p.picture.startsWith('http')) {
-                imgHtml = `<img src="${p.picture}" class="p-img-large" onerror="this.style.display='none'">`;
-            }
-            const nameHtml = p.name ? `<h2>${p.name.replace(/</g,"")}</h2>` : `<h2>Unknown Agent</h2>`;
-            const aboutHtml = p.about ? `<p style="opacity:0.8">${p.about.replace(/</g,"")}</p>` : `<p style="opacity:0.5">_no bio available_</p>`;
-            const html = `${imgHtml}${nameHtml}<div style="font-size:0.7rem; opacity:0.6; margin-bottom:15px; word-break:break-all; border:1px solid #333; padding:5px;">${npub}</div>${aboutHtml}`;
+            let img = '<div style="font-size:3rem;">?</div>';
+            if (p.picture && p.picture.startsWith('http')) img = `<img src="${p.picture}" class="p-img-large">`;
+            const html = `${img}<h2>${(p.name||'Unknown').replace(/</g,"")}</h2><p>${(p.about||'').replace(/</g,"")}</p>`;
             document.getElementById('modal-content').innerHTML = html;
-            document.getElementById('modal-overlay').classList.remove('hidden');
-        }
-        function closeModal(e) {
-             if(e && e.target.id !== 'modal-overlay' && e.target.tagName !== 'BUTTON') return;
-             document.getElementById('modal-overlay').classList.add('hidden');
+            document.getElementById('profile-modal').classList.remove('hidden');
         }
 
+        // --- 5. DATA ---
         const feed = document.getElementById('feed');
         const processedIds = new Set();
-        const profiles = {}; 
-        const requestedProfiles = new Set(); 
+        const profiles = {};
+        const requestedProfiles = new Set();
         let events = [];
 
         function handleEvent(event) {
             if (event.kind === 0) {
-                try {
-                    profiles[event.pubkey] = JSON.parse(event.content);
-                    renderFeed();
-                } catch(e) {}
-                return;
-            }
-            if (event.kind === 1) {
+                try { profiles[event.pubkey] = JSON.parse(event.content); renderFeed(); } catch(e){}
+            } else if (event.kind === 1) {
                 if (processedIds.has(event.id)) return;
                 processedIds.add(event.id);
                 events.unshift(event);
@@ -401,52 +395,37 @@
                 renderFeed();
             }
         }
-
         function fetchProfile(pubkey) {
             requestedProfiles.add(pubkey);
-            const msg = JSON.stringify(["REQ", "meta_" + pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]);
+            const msg = JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]);
             Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
         }
 
         function renderFeed() {
             feed.innerHTML = events.map(ev => {
-                const time = new Date(ev.created_at * 1000).toLocaleTimeString();
-                let displayName = "Unknown";
-                let avatarHtml = '';
+                const p = profiles[ev.pubkey] || {};
+                let name = p.name ? p.name.replace(/</g,"") : ev.pubkey.substring(0,8)+'...';
+                let avatar = '';
+                if(p.picture && p.picture.startsWith('http')) avatar = `<img src="${p.picture}" class="avatar">`;
                 
-                try {
-                    const npub = window.NostrTools.nip19.npubEncode(ev.pubkey);
-                    const short = npub.substring(0, 8) + "...";
-                    
-                    if (profiles[ev.pubkey]) {
-                        const p = profiles[ev.pubkey];
-                        if(p.name) displayName = p.name.replace(/</g,"");
-                        else displayName = short;
-                        
-                        // Render Avatar if exists
-                        if(p.picture && p.picture.startsWith('http')) {
-                            avatarHtml = `<img src="${p.picture}" class="avatar" onerror="this.style.display='none'">`;
-                        }
-                    } else {
-                        displayName = short;
-                    }
-                } catch(e) { displayName = "Error"; }
-
                 const content = ev.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
+                
                 return `
                     <div class="post" ${isMe}>
                         <div class="meta">
-                            ${avatarHtml}
-                            <span class="username-link" onclick="viewProfile('${ev.pubkey}')">${displayName}</span> 
-                            <span style="margin-left:5px; opacity:0.5; font-size:0.6rem;">• ${time}</span>
+                            ${avatar}
+                            <span class="username-link" onclick="viewProfile('${ev.pubkey}')">${name}</span> 
+                            <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span>
                         </div>
                         <div class="content">${content}</div>
+                        <div class="actions">
+                            <button class="reply-btn" onclick="openReplyModal('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
+                        </div>
                     </div>
                 `;
             }).join('');
         }
-        
         checkAuth();
     </script>
 </body>
