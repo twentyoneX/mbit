@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mBIT</title>
+    <title>mBIT Protocol</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
@@ -157,9 +157,11 @@
                 <button onclick="logout()" class="danger">LOGOUT</button>
             </div>
             <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px;">
-                <label>Name:</label> <input type="text" id="p-name">
-                <label>Bio:</label> <input type="text" id="p-about">
-                <label>Picture URL:</label> <input type="text" id="p-picture">
+                <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
+                <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
+                <label>Picture URL:</label> <input type="text" id="p-picture" placeholder="https://...">
+                <label style="color:#f1c40f">Zap Wallet (Lightning Address):</label> 
+                <input type="text" id="p-lud16" placeholder="name@getalby.com" style="border-color:#f1c40f">
                 <button onclick="saveProfile()">PUBLISH UPDATE</button>
                 <button onclick="toggleProfileEditor()" class="small secondary">CANCEL</button>
             </div>
@@ -255,7 +257,7 @@
         }
         function logout() { localStorage.clear(); location.reload(); }
 
-        // --- 3. CORE ACTIONS ---
+        // --- 3. ACTIONS ---
         async function signAndBroadcast(event) {
             if (authMode === 'extension') event = await window.nostr.signEvent(event);
             else {
@@ -275,133 +277,89 @@
         }
 
         async function saveProfile() {
-            const content = JSON.stringify({ name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value });
+            const content = JSON.stringify({ 
+                name: document.getElementById('p-name').value, 
+                about: document.getElementById('p-about').value, 
+                picture: document.getElementById('p-picture').value,
+                lud16: document.getElementById('p-lud16').value // Zap Address
+            });
             const event = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
             try { await signAndBroadcast(event); alert("Updated"); toggleProfileEditor(); profiles[myPubKey] = JSON.parse(content); renderFeed(); } catch(e) { alert("Error"); }
         }
 
-        // --- 4. INTERACTIONS (LIKE, REPOST, QUOTE, ZAP) ---
-        
         async function doLike(id, pubkey) {
             if(!myPubKey) return alert("Login to Like");
-            const event = {
-                kind: 7,
-                created_at: Math.floor(Date.now()/1000),
-                tags: [['e', id], ['p', pubkey]],
-                content: "+",
-                pubkey: myPubKey
-            };
+            const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
             try { await signAndBroadcast(event); alert("Liked!"); } catch(e) { alert("Failed"); }
         }
-
         async function doRepost(id, pubkey, originalJSON) {
             if(!myPubKey) return alert("Login to Repost");
-            const event = {
-                kind: 6,
-                created_at: Math.floor(Date.now()/1000),
-                tags: [['e', id, 'wss://relay.damus.io'], ['p', pubkey]],
-                content: originalJSON,
-                pubkey: myPubKey
-            };
+            const event = { kind: 6, created_at: Math.floor(Date.now()/1000), tags: [['e', id, 'wss://relay.damus.io'], ['p', pubkey]], content: originalJSON, pubkey: myPubKey };
             try { await signAndBroadcast(event); alert("Reposted!"); } catch(e) { alert("Failed"); }
         }
 
-        // Reply & Quote Variables
-        let activeAction = null; // 'reply' or 'quote'
-        let targetNote = null;   // {id, pubkey}
-
+        let activeAction = null; let targetNote = null;
         function openReply(id, pubkey) {
             if(!myPubKey) return alert("Login first");
-            activeAction = 'reply';
-            targetNote = {id, pubkey};
+            activeAction = 'reply'; targetNote = {id, pubkey};
             document.getElementById('reply-title').innerText = ">> REPLYING";
             document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8);
             document.getElementById('reply-modal').classList.remove('hidden');
         }
-
         function openQuote(id, pubkey) {
             if(!myPubKey) return alert("Login first");
-            activeAction = 'quote';
-            targetNote = {id, pubkey};
+            activeAction = 'quote'; targetNote = {id, pubkey};
             document.getElementById('reply-title').innerText = ">> QUOTING";
             document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8);
             document.getElementById('reply-modal').classList.remove('hidden');
         }
-
         async function sendReplyOrQuote() {
             const content = document.getElementById('reply-input').value;
             if(!content) return;
-            
-            let event = {
-                kind: 1,
-                created_at: Math.floor(Date.now()/1000),
-                content: content,
-                pubkey: myPubKey,
-                tags: []
-            };
-
-            if (activeAction === 'reply') {
-                event.tags = [['e', targetNote.id, '', 'root'], ['p', targetNote.pubkey]];
-            } else if (activeAction === 'quote') {
-                // For quote, we append the Nostr URI to content and tag it
+            let event = { kind: 1, created_at: Math.floor(Date.now()/1000), content: content, pubkey: myPubKey, tags: [] };
+            if (activeAction === 'reply') event.tags = [['e', targetNote.id, '', 'root'], ['p', targetNote.pubkey]];
+            else if (activeAction === 'quote') {
                 try {
                     const nevent = window.NostrTools.nip19.neventEncode({id: targetNote.id});
                     event.content = content + "\n\nnostr:" + nevent;
                     event.tags = [['e', targetNote.id, '', 'mention'], ['p', targetNote.pubkey]];
-                } catch(e) { console.log(e); }
+                } catch(e) {}
             }
-
-            try { 
-                const s = await signAndBroadcast(event); 
-                document.getElementById('reply-input').value = ""; 
-                closeModals(null); 
-                handleEvent(s); 
-            } catch(e) { alert("Failed"); }
+            try { const s = await signAndBroadcast(event); document.getElementById('reply-input').value = ""; closeModals(null); handleEvent(s); } catch(e) { alert("Failed"); }
         }
 
         async function doZap(pubkey) {
             if(!myPubKey) return alert("Login first");
             const p = profiles[pubkey];
-            if(!p || !p.lud16) return alert("User has no Lightning Address (lud16). Cannot Zap.");
-            
+            if(!p || !p.lud16) return alert("User has no Lightning Address. Cannot Zap.");
             if (window.webln) {
                 try {
                     await window.webln.enable();
-                    // Simple flow: Open WebLN send dialog
-                    // Note: Real zaps require creating a specific Kind 9734 event and fetching invoice. 
-                    // This is a simplified "Tip" via WebLN for this single-file app.
                     const amount = prompt("Sats to Zap " + p.lud16 + "?");
                     if(!amount) return;
-                    
-                    // Resolve LNURL (simplified)
                     const parts = p.lud16.split('@');
                     const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
                     const res = await fetch(url);
                     const data = await res.json();
-                    
                     const callback = data.callback;
                     const amountMillisats = amount * 1000;
-                    
                     const invRes = await fetch(`${callback}?amount=${amountMillisats}`);
                     const invData = await invRes.json();
-                    
                     await window.webln.sendPayment(invData.pr);
                     alert("Zapped ⚡");
-                } catch(e) { 
-                    alert("Zap failed. " + e.message); 
-                }
-            } else {
-                alert("Please install Alby extension to Zap.");
-            }
+                } catch(e) { alert("Zap failed."); }
+            } else { alert("Please install Alby extension to Zap."); }
         }
 
-        // --- 5. UI & DATA ---
+        // --- 4. UI & DATA ---
         function toggleProfileEditor() {
             document.getElementById('profile-editor').classList.toggle('hidden');
             if(profiles[myPubKey]) {
-                document.getElementById('p-name').value = profiles[myPubKey].name||'';
-                document.getElementById('p-about').value = profiles[myPubKey].about||'';
-                document.getElementById('p-picture').value = profiles[myPubKey].picture||'';
+                const p = profiles[myPubKey];
+                document.getElementById('p-name').value = p.name||'';
+                document.getElementById('p-about').value = p.about||'';
+                document.getElementById('p-picture').value = p.picture||'';
+                document.getElementById('p-lud16').value = p.lud16||''; // Load Zap Wallet
             }
         }
         function closeModals(e) {
@@ -413,7 +371,11 @@
             const p = profiles[pubkey] || {};
             let img = '<div style="font-size:3rem;">?</div>';
             if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`;
-            const html = `${img}<h2>${(p.name||'Unknown').replace(/</g,"")}</h2><p>${(p.about||'').replace(/</g,"")}</p>`;
+            
+            let walletHtml = "";
+            if(p.lud16) walletHtml = `<div style="color:#f1c40f; font-size:0.8rem; margin:10px 0;">⚡ ${p.lud16}</div>`;
+            
+            const html = `${img}<h2>${(p.name||'Unknown').replace(/</g,"")}</h2>${walletHtml}<p>${(p.about||'').replace(/</g,"")}</p>`;
             document.getElementById('modal-content').innerHTML = html;
             document.getElementById('generic-modal').classList.remove('hidden');
         }
@@ -445,38 +407,22 @@
 
         function renderFeed() {
             feed.innerHTML = events.map(ev => {
-                // Handle Reposts (Kind 6)
                 let content = ev.content;
                 let repostHeader = "";
-                
                 if (ev.kind === 6) {
-                    try {
-                        const original = JSON.parse(ev.content);
-                        content = original.content; // Show original content
-                        repostHeader = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`;
-                    } catch(e) { content = "[Repost Data Error]"; }
+                    try { const original = JSON.parse(ev.content); content = original.content; repostHeader = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`; } catch(e) { content = "[Repost Data Error]"; }
                 }
-
                 const p = profiles[ev.pubkey] || {};
                 let name = p.name ? p.name.replace(/</g,"") : ev.pubkey.substring(0,6)+'...';
                 let avatar = '';
                 if(p.picture) avatar = `<img src="${p.picture}" class="avatar">`;
-                
-                // Safe content render
                 content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
-                
-                // Pass originalJSON properly escaped for repost button
                 const evJson = JSON.stringify(ev).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-
                 return `
                     <div class="post" ${isMe}>
                         ${repostHeader}
-                        <div class="meta">
-                            ${avatar}
-                            <span class="username-link" onclick="viewProfile('${ev.pubkey}')">${name}</span> 
-                            <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span>
-                        </div>
+                        <div class="meta">${avatar}<span class="username-link" onclick="viewProfile('${ev.pubkey}')">${name}</span><span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span></div>
                         <div class="content">${content}</div>
                         <div class="actions">
                             <button class="act-btn" onclick="openReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
