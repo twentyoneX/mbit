@@ -43,7 +43,7 @@
         button.danger { background: #ff4141; }
         button.secondary { background: #333; color: #00FF41; border: 1px solid #00FF41; }
         
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         .warning { color: yellow; font-size: 0.8rem; margin-bottom: 10px; }
         
         /* FEED & RELAY STYLES */
@@ -56,10 +56,33 @@
             animation: fadeIn 0.5s;
         }
         .meta { font-size: 0.75rem; opacity: 0.8; margin-bottom: 5px; color: #ccffcc; }
-        .username { font-weight: bold; color: #fff; }
-        .npub { opacity: 0.5; font-size: 0.7rem; }
+        
+        /* CLICKABLE USERNAME */
+        .username-link { 
+            font-weight: bold; color: #fff; cursor: pointer; text-decoration: underline;
+        }
+        .username-link:hover { color: #00FF41; text-shadow: 0 0 5px #00FF41; }
+        
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* PROFILE MODAL */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #profile-card {
+            background: black; border: 2px solid #00FF41; padding: 20px;
+            max-width: 90%; width: 400px; text-align: center;
+            box-shadow: 0 0 20px #00FF41; animation: popIn 0.3s;
+        }
+        .p-img {
+            width: 100px; height: 100px; border-radius: 50%;
+            border: 2px solid #00FF41; margin-bottom: 15px; object-fit: cover;
+        }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
     </style>
 </head>
 <body>
@@ -67,6 +90,15 @@
         <h1>mBIT</h1>
         <div class="subtitle">protocol: nostr | decentralized mesh</div>
     </header>
+
+    <!-- MODAL POPUP -->
+    <div id="modal-overlay" class="hidden" onclick="closeModal(event)">
+        <div id="profile-card">
+            <div id="modal-content"></div>
+            <br>
+            <button onclick="closeModal(null)">CLOSE LINK</button>
+        </div>
+    </div>
 
     <!-- RELAY MANAGER -->
     <div class="box">
@@ -125,7 +157,42 @@
         // --- 1. SETUP ---
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         
-        // --- 2. RELAY LOGIC ---
+        // --- 2. MODAL LOGIC (VIEW PROFILE) ---
+        function viewProfile(pubkey) {
+            const p = profiles[pubkey] || {};
+            let npub = "";
+            try { npub = window.NostrTools.nip19.npubEncode(pubkey); } catch(e){}
+
+            // Image handling
+            let imgHtml = '<div style="font-size:3rem; margin-bottom:10px;">?</div>';
+            if (p.picture) {
+                // Basic Sanitization check to ensure it's a URL
+                if(p.picture.startsWith('http')) {
+                    imgHtml = `<img src="${p.picture}" class="p-img" onerror="this.style.display='none'">`;
+                }
+            }
+
+            const nameHtml = p.name ? `<h2>${p.name.replace(/</g,"")}</h2>` : `<h2>Unknown Agent</h2>`;
+            const aboutHtml = p.about ? `<p style="opacity:0.8">${p.about.replace(/</g,"")}</p>` : `<p style="opacity:0.5">_no bio available_</p>`;
+
+            const html = `
+                ${imgHtml}
+                ${nameHtml}
+                <div style="font-size:0.7rem; opacity:0.6; margin-bottom:15px; word-break:break-all; border:1px solid #333; padding:5px;">${npub}</div>
+                ${aboutHtml}
+            `;
+            
+            document.getElementById('modal-content').innerHTML = html;
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+
+        function closeModal(e) {
+             // Close if clicked overlay or button, but not inside card
+             if(e && e.target.id !== 'modal-overlay' && e.target.tagName !== 'BUTTON') return;
+             document.getElementById('modal-overlay').classList.add('hidden');
+        }
+
+        // --- 3. RELAY LOGIC ---
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
@@ -170,8 +237,6 @@
                     renderRelays();
                     const req = ["REQ", "sub_global_" + Date.now(), { kinds: [1], limit: 20 }];
                     ws.send(JSON.stringify(req));
-                    
-                    // If logged in, fetch MY profile too
                     if(myPubKey) fetchProfile(myPubKey);
                 };
                 ws.onmessage = (msg) => {
@@ -185,7 +250,7 @@
 
         savedRelays.forEach(connectToRelay);
 
-        // --- 3. IDENTITY & PROFILE ---
+        // --- 4. IDENTITY & PROFILE ---
         let myPrivKey = localStorage.getItem('nostr_privkey');
         let myPubKey = null;
 
@@ -203,10 +268,7 @@
                     document.getElementById('user-info').classList.remove('hidden');
                     document.getElementById('composer').classList.remove('hidden');
                     document.getElementById('pubkey-display').innerText = myNpub;
-                    
-                    // Try to fetch my own profile to pre-fill form
                     fetchProfile(myPubKey);
-
                 } catch (e) { logout(); }
             }
         }
@@ -236,8 +298,6 @@
         function toggleProfileEditor() {
             const editor = document.getElementById('profile-editor');
             editor.classList.toggle('hidden');
-            
-            // Pre-fill if we have data
             if(profiles[myPubKey]) {
                 document.getElementById('p-name').value = profiles[myPubKey].name || '';
                 document.getElementById('p-about').value = profiles[myPubKey].about || '';
@@ -253,7 +313,7 @@
             const content = JSON.stringify({ name, about, picture });
             
             const event = {
-                kind: 0, // Metadata Event
+                kind: 0,
                 created_at: Math.floor(Date.now() / 1000),
                 tags: [],
                 content: content,
@@ -267,17 +327,15 @@
             Object.values(sockets).forEach(ws => { 
                 if(ws.readyState === WebSocket.OPEN) ws.send(msg); 
             });
-            
-            // Update local cache immediately
             profiles[myPubKey] = { name, about, picture };
-            alert("Profile Broadcasted to Network.");
+            alert("Profile Broadcasted.");
             toggleProfileEditor();
-            renderFeed(); // Update my name on past posts if visible
+            renderFeed();
         }
 
         checkAuth();
 
-        // --- 4. DATA HANDLING ---
+        // --- 5. DATA HANDLING ---
         async function sendNote() {
             const content = document.getElementById('msg-input').value;
             if (!content || !myPrivKey) return;
@@ -303,19 +361,15 @@
         let events = [];
 
         function handleEvent(event) {
-            // KIND 0 (METADATA)
             if (event.kind === 0) {
                 try {
                     const content = JSON.parse(event.content);
                     profiles[event.pubkey] = content;
-                    // If this is ME, and editor is open, don't overwrite inputs while typing
-                    // But if editor closed, it updates cache
                     renderFeed();
                 } catch(e) {}
                 return;
             }
 
-            // KIND 1 (TEXT)
             if (event.kind === 1) {
                 if (processedIds.has(event.id)) return;
                 processedIds.add(event.id);
@@ -344,7 +398,6 @@
                 const time = new Date(ev.created_at * 1000).toLocaleTimeString();
                 let displayName = "Unknown";
                 let npub = "";
-                let picHtml = "";
                 
                 try {
                     npub = window.NostrTools.nip19.npubEncode(ev.pubkey);
@@ -352,26 +405,23 @@
                     
                     if (profiles[ev.pubkey]) {
                         const p = profiles[ev.pubkey];
-                        if(p.name) displayName = `<span class="username">${p.name}</span>`;
-                        else displayName = `<span class="username">${shortNpub}</span>`;
-                        
-                        // If they have a picture, we could show it, but for Matrix style we keep text mainly
-                        // Uncomment to show tiny avatar:
-                        // if(p.picture) picHtml = `<img src="${p.picture}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:5px;">`;
+                        const name = p.name ? p.name.replace(/</g,"") : shortNpub;
+                        displayName = name;
                     } else {
-                        displayName = `<span class="username">${shortNpub}</span>`;
+                        displayName = shortNpub;
                     }
-                    
-                    displayName += ` <span class="npub">(${shortNpub})</span>`;
-                    
-                } catch(e) { displayName = "Error decoding key"; }
+                } catch(e) { displayName = "Error"; }
 
                 const content = ev.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
                 
                 return `
                     <div class="post" ${isMe}>
-                        <div class="meta">${picHtml} USER: ${displayName} • ${time}</div>
+                        <div class="meta">
+                            USER: 
+                            <span class="username-link" onclick="viewProfile('${ev.pubkey}')">${displayName}</span> 
+                            • ${time}
+                        </div>
                         <div class="content">${content}</div>
                     </div>
                 `;
