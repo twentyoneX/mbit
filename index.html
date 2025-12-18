@@ -181,17 +181,15 @@
         <button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
     </div>
 
-    <!-- 3. MY PROFILE DROPDOWN (EDIT PROFILE IS HERE NOW) -->
+    <!-- 3. MY PROFILE DROPDOWN -->
     <div id="panel-my-profile" class="dropdown-panel hidden">
         <div id="my-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;">
             <div id="my-p-img"></div>
             <h2 id="my-p-name">Unknown</h2>
             <p id="my-p-about" style="opacity:0.7"></p>
             
-            <!-- EDIT BUTTON MOVED HERE -->
             <button onclick="toggleProfileEditor()" class="secondary" style="margin-top:10px;">EDIT PROFILE</button>
             
-            <!-- EDITOR FORM -->
             <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px; margin-top:15px; text-align:left;">
                 <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
                 <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
@@ -350,7 +348,8 @@
             
             myEvents = [];
             document.getElementById('my-feed').innerHTML = '<div style="text-align:center;">_fetching history_</div>';
-            const msg = JSON.stringify(["REQ", "sub_me", { kinds: [1], authors: [myPubKey], limit: 20 }]);
+            // UPDATE: Request Kind 1 (Text) AND Kind 6 (Reposts) for current user
+            const msg = JSON.stringify(["REQ", "sub_me", { kinds: [1, 6], authors: [myPubKey], limit: 20 }]);
             Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
         }
         function handleMyEvent(event) {
