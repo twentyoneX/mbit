@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BitChat Nostr</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            background-color: #000000;
+            color: #00FF41; /* Matrix Green */
+            font-family: "Courier New", Courier, monospace;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        header {
+            text-align: center;
+            border-bottom: 1px solid #00FF41;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 0 0 5px #00FF41;
+            text-transform: lowercase;
+        }
+        .subtitle { opacity: 0.7; font-size: 0.9rem; margin-top: 5px; }
+        #feed { max-width: 600px; margin: 0 auto; }
+        .post {
+            border-left: 2px solid #333;
+            padding-left: 15px;
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s;
+        }
+        .meta { font-size: 0.7rem; opacity: 0.6; margin-bottom: 5px; }
+        .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>bitchat</h1>
+        <div class="subtitle">protocol: nostr | relay: damus.io</div>
+        <div class="subtitle" id="status">connecting...</div>
+    </header>
+
+    <div id="feed">
+        <div style="text-align:center; margin-top:50px;">_waiting for signals_</div>
+    </div>
+
+    <script>
+        // 1. Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        // 2. Nostr Logic
+        const feed = document.getElementById('feed');
+        const statusDiv = document.getElementById('status');
+        const relayUrl = 'wss://relay.damus.io';
+        const processedIds = new Set();
+        let events = [];
+
+        const ws = new WebSocket(relayUrl);
+
+        ws.onopen = () => {
+            statusDiv.textContent = "connected. listening...";
+            // Request Kind 1 (Text Notes), Limit 20
+            const req = ["REQ", "sub_1", { kinds: [1], limit: 20 }];
+            ws.send(JSON.stringify(req));
+        };
+
+        ws.onmessage = (msg) => {
+            const data = JSON.parse(msg.data);
+            if (data[0] === 'EVENT') {
+                const event = data[2];
+                if (processedIds.has(event.id)) return;
+                
+                processedIds.add(event.id);
+                events.unshift(event);
+                
+                // Keep only top 50
+                if (events.length > 50) events.pop();
+                
+                renderFeed();
+            }
+        };
+
+        ws.onerror = () => { statusDiv.textContent = "connection error."; };
+
+        function renderFeed() {
+            feed.innerHTML = events.map(ev => {
+                const time = new Date(ev.created_at * 1000).toLocaleTimeString();
+                const id = ev.id.substring(0, 8);
+                // Basic HTML escape for security
+                const content = ev.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                
+                return `
+                    <div class="post">
+                        <div class="meta">ID: ${id}... • TIME: ${time}</div>
+                        <div class="content">${content}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
