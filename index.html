@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mBIT Nostr</title>
+    <title>mBIt Nostr</title>
     <link rel="manifest" href="manifest.json">
+    <!-- Load Nostr Crypto Library -->
+    <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
         body {
             background-color: #000000;
@@ -18,20 +20,32 @@
             text-align: center;
             border-bottom: 1px solid #00FF41;
             padding-bottom: 20px;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
         }
-        h1 {
-            font-size: 2.5rem;
-            margin: 0;
-            text-shadow: 0 0 5px #00FF41;
-            text-transform: lowercase;
-        }
+        h1 { font-size: 2.5rem; margin: 0; text-shadow: 0 0 5px #00FF41; text-transform: lowercase; }
         .subtitle { opacity: 0.7; font-size: 0.9rem; margin-top: 5px; }
+        
+        /* AUTH SECTIONS */
+        #auth-ui, #composer {
+            max-width: 600px; margin: 0 auto 30px auto;
+            border: 1px dashed #00FF41; padding: 15px;
+        }
+        input, textarea {
+            background: #001100; border: 1px solid #00FF41; color: #00FF41;
+            font-family: inherit; padding: 10px; width: 95%; margin-bottom: 10px;
+        }
+        button {
+            background: #00FF41; color: black; border: none; padding: 10px 20px;
+            font-family: inherit; font-weight: bold; cursor: pointer; text-transform: uppercase;
+        }
+        button:hover { background: #fff; }
+        .hidden { display: none; }
+        .warning { color: yellow; font-size: 0.8rem; margin-bottom: 10px; }
+
+        /* FEED */
         #feed { max-width: 600px; margin: 0 auto; }
         .post {
-            border-left: 2px solid #333;
-            padding-left: 15px;
-            margin-bottom: 30px;
+            border-left: 2px solid #333; padding-left: 15px; margin-bottom: 30px;
             animation: fadeIn 0.5s;
         }
         .meta { font-size: 0.7rem; opacity: 0.6; margin-bottom: 5px; }
@@ -46,28 +60,123 @@
         <div class="subtitle" id="status">connecting...</div>
     </header>
 
+    <!-- LOGIN / REGISTER -->
+    <div id="auth-ui">
+        <h3>>> IDENTITY</h3>
+        <div id="login-form">
+            <input type="text" id="privkey-input" placeholder="paste private key (hex or nsec)">
+            <button onclick="login()">Login</button>
+            <span style="margin: 0 10px">OR</span>
+            <button onclick="generateNewUser()">Generate New Identity</button>
+        </div>
+        <div id="user-info" class="hidden">
+            <div class="warning">LOGGED IN. YOUR PUBLIC KEY:</div>
+            <div id="pubkey-display" style="word-break: break-all; margin-bottom:10px; opacity:0.8;"></div>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- POST COMPOSER (Hidden until logged in) -->
+    <div id="composer" class="hidden">
+        <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
+        <button onclick="sendNote()">SEND SIGNAL</button>
+    </div>
+
     <div id="feed">
         <div style="text-align:center; margin-top:50px;">_waiting for signals_</div>
     </div>
 
     <script>
-        // 1. Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+        // --- 1. SETUP & SERVICE WORKER ---
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+        
+        const relayUrl = 'wss://relay.damus.io';
+        let ws = new WebSocket(relayUrl);
+        let myPrivKey = localStorage.getItem('nostr_privkey');
+        let myPubKey = null;
+
+        // --- 2. AUTH LOGIC ---
+        function checkAuth() {
+            if (myPrivKey) {
+                try {
+                    // Handle nsec decoding if necessary, simplified here to assume Hex or simple nsec
+                    if(myPrivKey.startsWith('nsec')) {
+                        const {data} = window.NostrTools.nip19.decode(myPrivKey);
+                        myPrivKey = data;
+                    }
+                    myPubKey = window.NostrTools.getPublicKey(myPrivKey);
+                    
+                    document.getElementById('login-form').classList.add('hidden');
+                    document.getElementById('user-info').classList.remove('hidden');
+                    document.getElementById('composer').classList.remove('hidden');
+                    document.getElementById('pubkey-display').innerText = myPubKey;
+                } catch (e) {
+                    console.error(e);
+                    logout(); // Invalid key
+                }
+            }
         }
 
-        // 2. Nostr Logic
+        function generateNewUser() {
+            const sk = window.NostrTools.generatePrivateKey();
+            // Convert to nsec for user friendliness
+            const nsec = window.NostrTools.nip19.nsecEncode(sk);
+            
+            prompt("IMPORTANT: COPY YOUR NEW PRIVATE KEY NOW. WE DO NOT STORE IT SECURELY.", nsec);
+            
+            localStorage.setItem('nostr_privkey', sk);
+            myPrivKey = sk;
+            checkAuth();
+        }
+
+        function login() {
+            const input = document.getElementById('privkey-input').value.trim();
+            if(!input) return;
+            localStorage.setItem('nostr_privkey', input);
+            myPrivKey = input;
+            checkAuth();
+        }
+
+        function logout() {
+            localStorage.removeItem('nostr_privkey');
+            location.reload();
+        }
+
+        // Initialize Auth
+        checkAuth();
+
+        // --- 3. SENDING MESSAGES ---
+        async function sendNote() {
+            const content = document.getElementById('msg-input').value;
+            if (!content) return;
+            if (!myPrivKey) return alert("Not logged in");
+
+            const event = {
+                kind: 1,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [],
+                content: content,
+                pubkey: myPubKey
+            };
+
+            event.id = window.NostrTools.getEventHash(event);
+            event.sig = window.NostrTools.signEvent(event, myPrivKey);
+
+            ws.send(JSON.stringify(["EVENT", event]));
+            document.getElementById('msg-input').value = ""; // Clear input
+            
+            // Optimistically add to feed
+            addEventToFeed(event);
+        }
+
+        // --- 4. FEED LOGIC ---
         const feed = document.getElementById('feed');
         const statusDiv = document.getElementById('status');
-        const relayUrl = 'wss://relay.damus.io';
         const processedIds = new Set();
         let events = [];
 
-        const ws = new WebSocket(relayUrl);
-
         ws.onopen = () => {
-            statusDiv.textContent = "connected. listening...";
-            // Request Kind 1 (Text Notes), Limit 20
+            statusDiv.textContent = "connected. encrypted channel open.";
             const req = ["REQ", "sub_1", { kinds: [1], limit: 20 }];
             ws.send(JSON.stringify(req));
         };
@@ -75,30 +184,29 @@
         ws.onmessage = (msg) => {
             const data = JSON.parse(msg.data);
             if (data[0] === 'EVENT') {
-                const event = data[2];
-                if (processedIds.has(event.id)) return;
-                
-                processedIds.add(event.id);
-                events.unshift(event);
-                
-                // Keep only top 50
-                if (events.length > 50) events.pop();
-                
-                renderFeed();
+                addEventToFeed(data[2]);
             }
         };
 
-        ws.onerror = () => { statusDiv.textContent = "connection error."; };
+        ws.onerror = () => { statusDiv.textContent = "connection severed."; };
+
+        function addEventToFeed(event) {
+            if (processedIds.has(event.id)) return;
+            processedIds.add(event.id);
+            events.unshift(event);
+            if (events.length > 50) events.pop();
+            renderFeed();
+        }
 
         function renderFeed() {
             feed.innerHTML = events.map(ev => {
                 const time = new Date(ev.created_at * 1000).toLocaleTimeString();
                 const id = ev.id.substring(0, 8);
-                // Basic HTML escape for security
                 const content = ev.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
                 
                 return `
-                    <div class="post">
+                    <div class="post" ${isMe}>
                         <div class="meta">ID: ${id}... • TIME: ${time}</div>
                         <div class="content">${content}</div>
                     </div>
