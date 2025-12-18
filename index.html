@@ -52,12 +52,32 @@
         .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
         .status-open { color: #00FF41; }
         .status-closed { color: red; }
+        
         #feed { max-width: 600px; margin: 0 auto; }
+        
         .post {
             border-left: 2px solid #333; padding-left: 15px; margin-bottom: 30px;
             animation: fadeIn 0.5s;
         }
-        .meta { font-size: 0.75rem; opacity: 0.8; margin-bottom: 5px; color: #ccffcc; }
+        .meta { 
+            font-size: 0.75rem; 
+            opacity: 0.9; 
+            margin-bottom: 5px; 
+            color: #ccffcc; 
+            display: flex;
+            align-items: center;
+        }
+        
+        /* NEW AVATAR STYLE */
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid #00FF41;
+            margin-right: 10px;
+            object-fit: cover;
+            background: #111;
+        }
         
         .username-link { 
             font-weight: bold; color: #fff; cursor: pointer; text-decoration: underline;
@@ -78,7 +98,7 @@
             max-width: 90%; width: 400px; text-align: center;
             box-shadow: 0 0 20px #00FF41; animation: popIn 0.3s;
         }
-        .p-img {
+        .p-img-large {
             width: 100px; height: 100px; border-radius: 50%;
             border: 2px solid #00FF41; margin-bottom: 15px; object-fit: cover;
         }
@@ -119,9 +139,7 @@
             <button onclick="loginExtension()" class="extension">
                 ⚡ LOGIN WITH EXTENSION (Alby / Nos2x)
             </button>
-            
             <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR USE LEGACY KEY ---</div>
-
             <input type="text" id="privkey-input" placeholder="paste private key (hex or nsec)">
             <button onclick="login()">Login with Key</button>
             <span style="margin: 0 10px">|</span>
@@ -219,21 +237,15 @@
         }
         savedRelays.forEach(connectToRelay);
 
-        // --- 3. IDENTITY (HYBRID MODE: EXTENSION OR LOCAL KEY) ---
+        // --- 3. IDENTITY (HYBRID) ---
         let myPrivKey = localStorage.getItem('nostr_privkey');
         let myPubKey = localStorage.getItem('nostr_pubkey');
-        let authMode = localStorage.getItem('nostr_mode') || 'none'; // 'local' or 'extension'
+        let authMode = localStorage.getItem('nostr_mode') || 'none';
 
         async function checkAuth() {
-            // MODE: EXTENSION
             if (authMode === 'extension') {
-                // We rely on the stored pubkey, we don't have private key
-                if (myPubKey) {
-                    initUserUI(myPubKey);
-                }
-            } 
-            // MODE: LOCAL KEY
-            else if (myPrivKey) {
+                if (myPubKey) initUserUI(myPubKey);
+            } else if (myPrivKey) {
                 try {
                     if(myPrivKey.startsWith('nsec')) {
                         const {data} = window.NostrTools.nip19.decode(myPrivKey);
@@ -254,7 +266,6 @@
             fetchProfile(pubkey);
         }
 
-        // --- LOGIN: EXTENSION (NIP-07) ---
         async function loginExtension() {
             if (!window.nostr) {
                 alert("Nostr extension not found! Please install Alby, Nos2x, or Flamingo.");
@@ -267,13 +278,9 @@
                 authMode = 'extension';
                 myPubKey = pubkey;
                 checkAuth();
-            } catch(err) {
-                console.error(err);
-                alert("Extension login denied.");
-            }
+            } catch(err) { alert("Extension login denied."); }
         }
 
-        // --- LOGIN: LOCAL KEY ---
         function login() {
             const input = document.getElementById('privkey-input').value.trim();
             if(!input) return;
@@ -302,13 +309,8 @@
             location.reload();
         }
 
-        // --- 4. SIGNING & SENDING (HYBRID) ---
         async function signEventWrapper(event) {
-            // If Extension Mode
-            if (authMode === 'extension') {
-                return await window.nostr.signEvent(event);
-            } 
-            // If Local Mode
+            if (authMode === 'extension') return await window.nostr.signEvent(event);
             else {
                 event.id = window.NostrTools.getEventHash(event);
                 event.sig = window.NostrTools.signEvent(event, myPrivKey);
@@ -319,30 +321,14 @@
         async function sendNote() {
             const content = document.getElementById('msg-input').value;
             if (!content || !myPubKey) return;
-
-            let event = {
-                kind: 1,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [],
-                content: content,
-                pubkey: myPubKey
-            };
-
+            let event = { kind: 1, created_at: Math.floor(Date.now() / 1000), tags: [], content: content, pubkey: myPubKey };
             try {
-                // Sign using either Extension or Local Key
                 event = await signEventWrapper(event);
-                
-                // Broadcast
                 const msg = JSON.stringify(["EVENT", event]);
-                Object.values(sockets).forEach(ws => { 
-                    if(ws.readyState === WebSocket.OPEN) ws.send(msg); 
-                });
-
+                Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
                 document.getElementById('msg-input').value = "";
                 handleEvent(event);
-            } catch (err) {
-                alert("Signing failed or rejected by extension.");
-            }
+            } catch (err) { alert("Signing failed."); }
         }
 
         async function saveProfile() {
@@ -350,29 +336,18 @@
             const about = document.getElementById('p-about').value;
             const picture = document.getElementById('p-picture').value;
             const content = JSON.stringify({ name, about, picture });
-            
-            let event = {
-                kind: 0,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [],
-                content: content,
-                pubkey: myPubKey
-            };
-            
+            let event = { kind: 0, created_at: Math.floor(Date.now() / 1000), tags: [], content: content, pubkey: myPubKey };
             try {
                 event = await signEventWrapper(event);
                 const msg = JSON.stringify(["EVENT", event]);
-                Object.values(sockets).forEach(ws => { 
-                    if(ws.readyState === WebSocket.OPEN) ws.send(msg); 
-                });
+                Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
                 profiles[myPubKey] = { name, about, picture };
                 alert("Profile Broadcasted.");
                 toggleProfileEditor();
                 renderFeed();
-            } catch(e) { alert("Failed to sign profile update."); }
+            } catch(e) { alert("Failed to sign profile."); }
         }
 
-        // --- 5. UI & DATA ---
         function toggleProfileEditor() {
             const editor = document.getElementById('profile-editor');
             editor.classList.toggle('hidden');
@@ -383,14 +358,13 @@
             }
         }
 
-        // --- MODAL ---
         function viewProfile(pubkey) {
             const p = profiles[pubkey] || {};
             let npub = "";
             try { npub = window.NostrTools.nip19.npubEncode(pubkey); } catch(e){}
             let imgHtml = '<div style="font-size:3rem; margin-bottom:10px;">?</div>';
             if (p.picture && p.picture.startsWith('http')) {
-                imgHtml = `<img src="${p.picture}" class="p-img" onerror="this.style.display='none'">`;
+                imgHtml = `<img src="${p.picture}" class="p-img-large" onerror="this.style.display='none'">`;
             }
             const nameHtml = p.name ? `<h2>${p.name.replace(/</g,"")}</h2>` : `<h2>Unknown Agent</h2>`;
             const aboutHtml = p.about ? `<p style="opacity:0.8">${p.about.replace(/</g,"")}</p>` : `<p style="opacity:0.5">_no bio available_</p>`;
@@ -403,7 +377,6 @@
              document.getElementById('modal-overlay').classList.add('hidden');
         }
 
-        // --- FEED HANDLING ---
         const feed = document.getElementById('feed');
         const processedIds = new Set();
         const profiles = {}; 
@@ -439,20 +412,41 @@
             feed.innerHTML = events.map(ev => {
                 const time = new Date(ev.created_at * 1000).toLocaleTimeString();
                 let displayName = "Unknown";
+                let avatarHtml = '';
+                
                 try {
                     const npub = window.NostrTools.nip19.npubEncode(ev.pubkey);
                     const short = npub.substring(0, 8) + "...";
-                    if (profiles[ev.pubkey] && profiles[ev.pubkey].name) displayName = profiles[ev.pubkey].name.replace(/</g,"");
-                    else displayName = short;
+                    
+                    if (profiles[ev.pubkey]) {
+                        const p = profiles[ev.pubkey];
+                        if(p.name) displayName = p.name.replace(/</g,"");
+                        else displayName = short;
+                        
+                        // Render Avatar if exists
+                        if(p.picture && p.picture.startsWith('http')) {
+                            avatarHtml = `<img src="${p.picture}" class="avatar" onerror="this.style.display='none'">`;
+                        }
+                    } else {
+                        displayName = short;
+                    }
                 } catch(e) { displayName = "Error"; }
 
                 const content = ev.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
-                return `<div class="post" ${isMe}><div class="meta">USER: <span class="username-link" onclick="viewProfile('${ev.pubkey}')">${displayName}</span> • ${time}</div><div class="content">${content}</div></div>`;
+                return `
+                    <div class="post" ${isMe}>
+                        <div class="meta">
+                            ${avatarHtml}
+                            <span class="username-link" onclick="viewProfile('${ev.pubkey}')">${displayName}</span> 
+                            <span style="margin-left:5px; opacity:0.5; font-size:0.6rem;">• ${time}</span>
+                        </div>
+                        <div class="content">${content}</div>
+                    </div>
+                `;
             }).join('');
         }
         
-        // Start Auth Check
         checkAuth();
     </script>
 </body>
