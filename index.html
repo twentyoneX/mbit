@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mBIT</title>
+    <title>mBIT Protocol</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
@@ -166,3 +166,217 @@
             try {
                 const ws = new WebSocket(url);
                 sockets[url] = ws;
+                ws.onopen = () => {
+                    renderRelays();
+                    const req = ["REQ", "sub_global_" + Date.now(), { kinds: [1], limit: 20 }];
+                    ws.send(JSON.stringify(req));
+                    
+                    // If logged in, fetch MY profile too
+                    if(myPubKey) fetchProfile(myPubKey);
+                };
+                ws.onmessage = (msg) => {
+                    const data = JSON.parse(msg.data);
+                    if (data[0] === 'EVENT') handleEvent(data[2]);
+                };
+                ws.onclose = () => renderRelays();
+                ws.onerror = () => renderRelays();
+            } catch(e) { console.error(e); }
+        }
+
+        savedRelays.forEach(connectToRelay);
+
+        // --- 3. IDENTITY & PROFILE ---
+        let myPrivKey = localStorage.getItem('nostr_privkey');
+        let myPubKey = null;
+
+        function checkAuth() {
+            if (myPrivKey) {
+                try {
+                    if(myPrivKey.startsWith('nsec')) {
+                        const {data} = window.NostrTools.nip19.decode(myPrivKey);
+                        myPrivKey = data;
+                    }
+                    myPubKey = window.NostrTools.getPublicKey(myPrivKey);
+                    const myNpub = window.NostrTools.nip19.npubEncode(myPubKey);
+                    
+                    document.getElementById('login-form').classList.add('hidden');
+                    document.getElementById('user-info').classList.remove('hidden');
+                    document.getElementById('composer').classList.remove('hidden');
+                    document.getElementById('pubkey-display').innerText = myNpub;
+                    
+                    // Try to fetch my own profile to pre-fill form
+                    fetchProfile(myPubKey);
+
+                } catch (e) { logout(); }
+            }
+        }
+
+        function generateNewUser() {
+            const sk = window.NostrTools.generatePrivateKey();
+            const nsec = window.NostrTools.nip19.nsecEncode(sk);
+            prompt("COPY YOUR NEW PRIVATE KEY:", nsec);
+            localStorage.setItem('nostr_privkey', sk);
+            myPrivKey = sk;
+            checkAuth();
+        }
+
+        function login() {
+            const input = document.getElementById('privkey-input').value.trim();
+            if(!input) return;
+            localStorage.setItem('nostr_privkey', input);
+            myPrivKey = input;
+            checkAuth();
+        }
+
+        function logout() {
+            localStorage.removeItem('nostr_privkey');
+            location.reload();
+        }
+
+        function toggleProfileEditor() {
+            const editor = document.getElementById('profile-editor');
+            editor.classList.toggle('hidden');
+            
+            // Pre-fill if we have data
+            if(profiles[myPubKey]) {
+                document.getElementById('p-name').value = profiles[myPubKey].name || '';
+                document.getElementById('p-about').value = profiles[myPubKey].about || '';
+                document.getElementById('p-picture').value = profiles[myPubKey].picture || '';
+            }
+        }
+
+        async function saveProfile() {
+            const name = document.getElementById('p-name').value;
+            const about = document.getElementById('p-about').value;
+            const picture = document.getElementById('p-picture').value;
+            
+            const content = JSON.stringify({ name, about, picture });
+            
+            const event = {
+                kind: 0, // Metadata Event
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [],
+                content: content,
+                pubkey: myPubKey
+            };
+            
+            event.id = window.NostrTools.getEventHash(event);
+            event.sig = window.NostrTools.signEvent(event, myPrivKey);
+            
+            const msg = JSON.stringify(["EVENT", event]);
+            Object.values(sockets).forEach(ws => { 
+                if(ws.readyState === WebSocket.OPEN) ws.send(msg); 
+            });
+            
+            // Update local cache immediately
+            profiles[myPubKey] = { name, about, picture };
+            alert("Profile Broadcasted to Network.");
+            toggleProfileEditor();
+            renderFeed(); // Update my name on past posts if visible
+        }
+
+        checkAuth();
+
+        // --- 4. DATA HANDLING ---
+        async function sendNote() {
+            const content = document.getElementById('msg-input').value;
+            if (!content || !myPrivKey) return;
+            const event = {
+                kind: 1,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [],
+                content: content,
+                pubkey: myPubKey
+            };
+            event.id = window.NostrTools.getEventHash(event);
+            event.sig = window.NostrTools.signEvent(event, myPrivKey);
+            const msg = JSON.stringify(["EVENT", event]);
+            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
+            document.getElementById('msg-input').value = "";
+            handleEvent(event);
+        }
+
+        const feed = document.getElementById('feed');
+        const processedIds = new Set();
+        const profiles = {}; 
+        const requestedProfiles = new Set(); 
+        let events = [];
+
+        function handleEvent(event) {
+            // KIND 0 (METADATA)
+            if (event.kind === 0) {
+                try {
+                    const content = JSON.parse(event.content);
+                    profiles[event.pubkey] = content;
+                    // If this is ME, and editor is open, don't overwrite inputs while typing
+                    // But if editor closed, it updates cache
+                    renderFeed();
+                } catch(e) {}
+                return;
+            }
+
+            // KIND 1 (TEXT)
+            if (event.kind === 1) {
+                if (processedIds.has(event.id)) return;
+                processedIds.add(event.id);
+                events.unshift(event);
+                events.sort((a, b) => b.created_at - a.created_at);
+                if (events.length > 50) events.pop();
+                
+                if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) {
+                    fetchProfile(event.pubkey);
+                }
+                renderFeed();
+            }
+        }
+
+        function fetchProfile(pubkey) {
+            requestedProfiles.add(pubkey);
+            const req = ["REQ", "meta_" + pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }];
+            const msg = JSON.stringify(req);
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === WebSocket.OPEN) ws.send(msg);
+            });
+        }
+
+        function renderFeed() {
+            feed.innerHTML = events.map(ev => {
+                const time = new Date(ev.created_at * 1000).toLocaleTimeString();
+                let displayName = "Unknown";
+                let npub = "";
+                let picHtml = "";
+                
+                try {
+                    npub = window.NostrTools.nip19.npubEncode(ev.pubkey);
+                    const shortNpub = npub.substring(0, 8) + "..." + npub.substring(npub.length - 4);
+                    
+                    if (profiles[ev.pubkey]) {
+                        const p = profiles[ev.pubkey];
+                        if(p.name) displayName = `<span class="username">${p.name}</span>`;
+                        else displayName = `<span class="username">${shortNpub}</span>`;
+                        
+                        // If they have a picture, we could show it, but for Matrix style we keep text mainly
+                        // Uncomment to show tiny avatar:
+                        // if(p.picture) picHtml = `<img src="${p.picture}" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:5px;">`;
+                    } else {
+                        displayName = `<span class="username">${shortNpub}</span>`;
+                    }
+                    
+                    displayName += ` <span class="npub">(${shortNpub})</span>`;
+                    
+                } catch(e) { displayName = "Error decoding key"; }
+
+                const content = ev.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
+                
+                return `
+                    <div class="post" ${isMe}>
+                        <div class="meta">${picHtml} USER: ${displayName} • ${time}</div>
+                        <div class="content">${content}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
