@@ -42,7 +42,9 @@
         button.small { padding: 5px 10px; font-size: 0.8rem; margin-left: 10px; }
         button.danger { background: #ff4141; }
         button.secondary { background: #333; color: #00FF41; border: 1px solid #00FF41; }
-        
+        button.extension { background: #9b59b6; color: white; border: 1px solid #8e44ad; width: 100%; margin-bottom: 10px; }
+        button.extension:hover { background: #8e44ad; }
+
         .hidden { display: none !important; }
         .warning { color: yellow; font-size: 0.8rem; margin-bottom: 10px; }
         
@@ -57,7 +59,6 @@
         }
         .meta { font-size: 0.75rem; opacity: 0.8; margin-bottom: 5px; color: #ccffcc; }
         
-        /* CLICKABLE USERNAME */
         .username-link { 
             font-weight: bold; color: #fff; cursor: pointer; text-decoration: underline;
         }
@@ -66,7 +67,7 @@
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* PROFILE MODAL */
+        /* MODAL */
         #modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 100;
@@ -110,14 +111,21 @@
         </div>
     </div>
 
-    <!-- AUTH & PROFILE -->
+    <!-- AUTH -->
     <div class="box" id="auth-ui">
         <h3>>> IDENTITY</h3>
         <div id="login-form">
+            <!-- EXTENSION LOGIN -->
+            <button onclick="loginExtension()" class="extension">
+                ⚡ LOGIN WITH EXTENSION (Alby / Nos2x)
+            </button>
+            
+            <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR USE LEGACY KEY ---</div>
+
             <input type="text" id="privkey-input" placeholder="paste private key (hex or nsec)">
-            <button onclick="login()">Login</button>
-            <span style="margin: 0 10px">OR</span>
-            <button onclick="generateNewUser()">Generate New Identity</button>
+            <button onclick="login()">Login with Key</button>
+            <span style="margin: 0 10px">|</span>
+            <button onclick="generateNewUser()">Generate New</button>
         </div>
         
         <div id="user-info" class="hidden">
@@ -129,7 +137,6 @@
                 <button onclick="logout()" class="danger">LOGOUT</button>
             </div>
 
-            <!-- PROFILE EDITOR FORM -->
             <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px;">
                 <label>Name / Alias:</label>
                 <input type="text" id="p-name" placeholder="Neo">
@@ -137,7 +144,7 @@
                 <input type="text" id="p-about" placeholder="Follow the white rabbit.">
                 <label>Picture URL:</label>
                 <input type="text" id="p-picture" placeholder="https://...">
-                <button onclick="saveProfile()">PUBLISH PROFILE UPDATE</button>
+                <button onclick="saveProfile()">PUBLISH UPDATE</button>
                 <button onclick="toggleProfileEditor()" class="small secondary">CANCEL</button>
             </div>
         </div>
@@ -157,42 +164,7 @@
         // --- 1. SETUP ---
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         
-        // --- 2. MODAL LOGIC (VIEW PROFILE) ---
-        function viewProfile(pubkey) {
-            const p = profiles[pubkey] || {};
-            let npub = "";
-            try { npub = window.NostrTools.nip19.npubEncode(pubkey); } catch(e){}
-
-            // Image handling
-            let imgHtml = '<div style="font-size:3rem; margin-bottom:10px;">?</div>';
-            if (p.picture) {
-                // Basic Sanitization check to ensure it's a URL
-                if(p.picture.startsWith('http')) {
-                    imgHtml = `<img src="${p.picture}" class="p-img" onerror="this.style.display='none'">`;
-                }
-            }
-
-            const nameHtml = p.name ? `<h2>${p.name.replace(/</g,"")}</h2>` : `<h2>Unknown Agent</h2>`;
-            const aboutHtml = p.about ? `<p style="opacity:0.8">${p.about.replace(/</g,"")}</p>` : `<p style="opacity:0.5">_no bio available_</p>`;
-
-            const html = `
-                ${imgHtml}
-                ${nameHtml}
-                <div style="font-size:0.7rem; opacity:0.6; margin-bottom:15px; word-break:break-all; border:1px solid #333; padding:5px;">${npub}</div>
-                ${aboutHtml}
-            `;
-            
-            document.getElementById('modal-content').innerHTML = html;
-            document.getElementById('modal-overlay').classList.remove('hidden');
-        }
-
-        function closeModal(e) {
-             // Close if clicked overlay or button, but not inside card
-             if(e && e.target.id !== 'modal-overlay' && e.target.tagName !== 'BUTTON') return;
-             document.getElementById('modal-overlay').classList.add('hidden');
-        }
-
-        // --- 3. RELAY LOGIC ---
+        // --- 2. RELAY LOGIC ---
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
@@ -202,8 +174,7 @@
             list.innerHTML = savedRelays.map(url => {
                 const isOpen = sockets[url] && sockets[url].readyState === WebSocket.OPEN;
                 const statusClass = isOpen ? 'status-open' : 'status-closed';
-                const statusText = isOpen ? '[ON]' : '[OFF]';
-                return `<div class="relay-item"><span><span class="relay-status ${statusClass}">${statusText}</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
+                return `<div class="relay-item"><span><span class="relay-status ${statusClass}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
             }).join('');
         }
 
@@ -235,8 +206,7 @@
                 sockets[url] = ws;
                 ws.onopen = () => {
                     renderRelays();
-                    const req = ["REQ", "sub_global_" + Date.now(), { kinds: [1], limit: 20 }];
-                    ws.send(JSON.stringify(req));
+                    ws.send(JSON.stringify(["REQ", "sub_global_" + Date.now(), { kinds: [1], limit: 20 }]));
                     if(myPubKey) fetchProfile(myPubKey);
                 };
                 ws.onmessage = (msg) => {
@@ -247,30 +217,71 @@
                 ws.onerror = () => renderRelays();
             } catch(e) { console.error(e); }
         }
-
         savedRelays.forEach(connectToRelay);
 
-        // --- 4. IDENTITY & PROFILE ---
+        // --- 3. IDENTITY (HYBRID MODE: EXTENSION OR LOCAL KEY) ---
         let myPrivKey = localStorage.getItem('nostr_privkey');
-        let myPubKey = null;
+        let myPubKey = localStorage.getItem('nostr_pubkey');
+        let authMode = localStorage.getItem('nostr_mode') || 'none'; // 'local' or 'extension'
 
-        function checkAuth() {
-            if (myPrivKey) {
+        async function checkAuth() {
+            // MODE: EXTENSION
+            if (authMode === 'extension') {
+                // We rely on the stored pubkey, we don't have private key
+                if (myPubKey) {
+                    initUserUI(myPubKey);
+                }
+            } 
+            // MODE: LOCAL KEY
+            else if (myPrivKey) {
                 try {
                     if(myPrivKey.startsWith('nsec')) {
                         const {data} = window.NostrTools.nip19.decode(myPrivKey);
                         myPrivKey = data;
                     }
                     myPubKey = window.NostrTools.getPublicKey(myPrivKey);
-                    const myNpub = window.NostrTools.nip19.npubEncode(myPubKey);
-                    
-                    document.getElementById('login-form').classList.add('hidden');
-                    document.getElementById('user-info').classList.remove('hidden');
-                    document.getElementById('composer').classList.remove('hidden');
-                    document.getElementById('pubkey-display').innerText = myNpub;
-                    fetchProfile(myPubKey);
+                    initUserUI(myPubKey);
                 } catch (e) { logout(); }
             }
+        }
+
+        function initUserUI(pubkey) {
+            const myNpub = window.NostrTools.nip19.npubEncode(pubkey);
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('user-info').classList.remove('hidden');
+            document.getElementById('composer').classList.remove('hidden');
+            document.getElementById('pubkey-display').innerText = myNpub;
+            fetchProfile(pubkey);
+        }
+
+        // --- LOGIN: EXTENSION (NIP-07) ---
+        async function loginExtension() {
+            if (!window.nostr) {
+                alert("Nostr extension not found! Please install Alby, Nos2x, or Flamingo.");
+                return;
+            }
+            try {
+                const pubkey = await window.nostr.getPublicKey();
+                localStorage.setItem('nostr_pubkey', pubkey);
+                localStorage.setItem('nostr_mode', 'extension');
+                authMode = 'extension';
+                myPubKey = pubkey;
+                checkAuth();
+            } catch(err) {
+                console.error(err);
+                alert("Extension login denied.");
+            }
+        }
+
+        // --- LOGIN: LOCAL KEY ---
+        function login() {
+            const input = document.getElementById('privkey-input').value.trim();
+            if(!input) return;
+            localStorage.setItem('nostr_privkey', input);
+            localStorage.setItem('nostr_mode', 'local');
+            authMode = 'local';
+            myPrivKey = input;
+            checkAuth();
         }
 
         function generateNewUser() {
@@ -278,23 +289,90 @@
             const nsec = window.NostrTools.nip19.nsecEncode(sk);
             prompt("COPY YOUR NEW PRIVATE KEY:", nsec);
             localStorage.setItem('nostr_privkey', sk);
+            localStorage.setItem('nostr_mode', 'local');
+            authMode = 'local';
             myPrivKey = sk;
-            checkAuth();
-        }
-
-        function login() {
-            const input = document.getElementById('privkey-input').value.trim();
-            if(!input) return;
-            localStorage.setItem('nostr_privkey', input);
-            myPrivKey = input;
             checkAuth();
         }
 
         function logout() {
             localStorage.removeItem('nostr_privkey');
+            localStorage.removeItem('nostr_pubkey');
+            localStorage.removeItem('nostr_mode');
             location.reload();
         }
 
+        // --- 4. SIGNING & SENDING (HYBRID) ---
+        async function signEventWrapper(event) {
+            // If Extension Mode
+            if (authMode === 'extension') {
+                return await window.nostr.signEvent(event);
+            } 
+            // If Local Mode
+            else {
+                event.id = window.NostrTools.getEventHash(event);
+                event.sig = window.NostrTools.signEvent(event, myPrivKey);
+                return event;
+            }
+        }
+
+        async function sendNote() {
+            const content = document.getElementById('msg-input').value;
+            if (!content || !myPubKey) return;
+
+            let event = {
+                kind: 1,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [],
+                content: content,
+                pubkey: myPubKey
+            };
+
+            try {
+                // Sign using either Extension or Local Key
+                event = await signEventWrapper(event);
+                
+                // Broadcast
+                const msg = JSON.stringify(["EVENT", event]);
+                Object.values(sockets).forEach(ws => { 
+                    if(ws.readyState === WebSocket.OPEN) ws.send(msg); 
+                });
+
+                document.getElementById('msg-input').value = "";
+                handleEvent(event);
+            } catch (err) {
+                alert("Signing failed or rejected by extension.");
+            }
+        }
+
+        async function saveProfile() {
+            const name = document.getElementById('p-name').value;
+            const about = document.getElementById('p-about').value;
+            const picture = document.getElementById('p-picture').value;
+            const content = JSON.stringify({ name, about, picture });
+            
+            let event = {
+                kind: 0,
+                created_at: Math.floor(Date.now() / 1000),
+                tags: [],
+                content: content,
+                pubkey: myPubKey
+            };
+            
+            try {
+                event = await signEventWrapper(event);
+                const msg = JSON.stringify(["EVENT", event]);
+                Object.values(sockets).forEach(ws => { 
+                    if(ws.readyState === WebSocket.OPEN) ws.send(msg); 
+                });
+                profiles[myPubKey] = { name, about, picture };
+                alert("Profile Broadcasted.");
+                toggleProfileEditor();
+                renderFeed();
+            } catch(e) { alert("Failed to sign profile update."); }
+        }
+
+        // --- 5. UI & DATA ---
         function toggleProfileEditor() {
             const editor = document.getElementById('profile-editor');
             editor.classList.toggle('hidden');
@@ -305,55 +383,27 @@
             }
         }
 
-        async function saveProfile() {
-            const name = document.getElementById('p-name').value;
-            const about = document.getElementById('p-about').value;
-            const picture = document.getElementById('p-picture').value;
-            
-            const content = JSON.stringify({ name, about, picture });
-            
-            const event = {
-                kind: 0,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [],
-                content: content,
-                pubkey: myPubKey
-            };
-            
-            event.id = window.NostrTools.getEventHash(event);
-            event.sig = window.NostrTools.signEvent(event, myPrivKey);
-            
-            const msg = JSON.stringify(["EVENT", event]);
-            Object.values(sockets).forEach(ws => { 
-                if(ws.readyState === WebSocket.OPEN) ws.send(msg); 
-            });
-            profiles[myPubKey] = { name, about, picture };
-            alert("Profile Broadcasted.");
-            toggleProfileEditor();
-            renderFeed();
+        // --- MODAL ---
+        function viewProfile(pubkey) {
+            const p = profiles[pubkey] || {};
+            let npub = "";
+            try { npub = window.NostrTools.nip19.npubEncode(pubkey); } catch(e){}
+            let imgHtml = '<div style="font-size:3rem; margin-bottom:10px;">?</div>';
+            if (p.picture && p.picture.startsWith('http')) {
+                imgHtml = `<img src="${p.picture}" class="p-img" onerror="this.style.display='none'">`;
+            }
+            const nameHtml = p.name ? `<h2>${p.name.replace(/</g,"")}</h2>` : `<h2>Unknown Agent</h2>`;
+            const aboutHtml = p.about ? `<p style="opacity:0.8">${p.about.replace(/</g,"")}</p>` : `<p style="opacity:0.5">_no bio available_</p>`;
+            const html = `${imgHtml}${nameHtml}<div style="font-size:0.7rem; opacity:0.6; margin-bottom:15px; word-break:break-all; border:1px solid #333; padding:5px;">${npub}</div>${aboutHtml}`;
+            document.getElementById('modal-content').innerHTML = html;
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+        function closeModal(e) {
+             if(e && e.target.id !== 'modal-overlay' && e.target.tagName !== 'BUTTON') return;
+             document.getElementById('modal-overlay').classList.add('hidden');
         }
 
-        checkAuth();
-
-        // --- 5. DATA HANDLING ---
-        async function sendNote() {
-            const content = document.getElementById('msg-input').value;
-            if (!content || !myPrivKey) return;
-            const event = {
-                kind: 1,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [],
-                content: content,
-                pubkey: myPubKey
-            };
-            event.id = window.NostrTools.getEventHash(event);
-            event.sig = window.NostrTools.signEvent(event, myPrivKey);
-            const msg = JSON.stringify(["EVENT", event]);
-            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
-            document.getElementById('msg-input').value = "";
-            handleEvent(event);
-        }
-
+        // --- FEED HANDLING ---
         const feed = document.getElementById('feed');
         const processedIds = new Set();
         const profiles = {}; 
@@ -363,70 +413,47 @@
         function handleEvent(event) {
             if (event.kind === 0) {
                 try {
-                    const content = JSON.parse(event.content);
-                    profiles[event.pubkey] = content;
+                    profiles[event.pubkey] = JSON.parse(event.content);
                     renderFeed();
                 } catch(e) {}
                 return;
             }
-
             if (event.kind === 1) {
                 if (processedIds.has(event.id)) return;
                 processedIds.add(event.id);
                 events.unshift(event);
                 events.sort((a, b) => b.created_at - a.created_at);
                 if (events.length > 50) events.pop();
-                
-                if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) {
-                    fetchProfile(event.pubkey);
-                }
+                if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) fetchProfile(event.pubkey);
                 renderFeed();
             }
         }
 
         function fetchProfile(pubkey) {
             requestedProfiles.add(pubkey);
-            const req = ["REQ", "meta_" + pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }];
-            const msg = JSON.stringify(req);
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === WebSocket.OPEN) ws.send(msg);
-            });
+            const msg = JSON.stringify(["REQ", "meta_" + pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]);
+            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
         }
 
         function renderFeed() {
             feed.innerHTML = events.map(ev => {
                 const time = new Date(ev.created_at * 1000).toLocaleTimeString();
                 let displayName = "Unknown";
-                let npub = "";
-                
                 try {
-                    npub = window.NostrTools.nip19.npubEncode(ev.pubkey);
-                    const shortNpub = npub.substring(0, 8) + "..." + npub.substring(npub.length - 4);
-                    
-                    if (profiles[ev.pubkey]) {
-                        const p = profiles[ev.pubkey];
-                        const name = p.name ? p.name.replace(/</g,"") : shortNpub;
-                        displayName = name;
-                    } else {
-                        displayName = shortNpub;
-                    }
+                    const npub = window.NostrTools.nip19.npubEncode(ev.pubkey);
+                    const short = npub.substring(0, 8) + "...";
+                    if (profiles[ev.pubkey] && profiles[ev.pubkey].name) displayName = profiles[ev.pubkey].name.replace(/</g,"");
+                    else displayName = short;
                 } catch(e) { displayName = "Error"; }
 
                 const content = ev.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
-                
-                return `
-                    <div class="post" ${isMe}>
-                        <div class="meta">
-                            USER: 
-                            <span class="username-link" onclick="viewProfile('${ev.pubkey}')">${displayName}</span> 
-                            • ${time}
-                        </div>
-                        <div class="content">${content}</div>
-                    </div>
-                `;
+                return `<div class="post" ${isMe}><div class="meta">USER: <span class="username-link" onclick="viewProfile('${ev.pubkey}')">${displayName}</span> • ${time}</div><div class="content">${content}</div></div>`;
             }).join('');
         }
+        
+        // Start Auth Check
+        checkAuth();
     </script>
 </body>
 </html>
