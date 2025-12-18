@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mBIt Nostr</title>
+    <title>mBIT Protocol</title>
     <link rel="manifest" href="manifest.json">
     <!-- Load Nostr Crypto Library -->
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
@@ -25,11 +25,14 @@
         h1 { font-size: 2.5rem; margin: 0; text-shadow: 0 0 5px #00FF41; text-transform: lowercase; }
         .subtitle { opacity: 0.7; font-size: 0.9rem; margin-top: 5px; }
         
-        /* AUTH SECTIONS */
-        #auth-ui, #composer {
+        /* SECTIONS */
+        .box {
             max-width: 600px; margin: 0 auto 30px auto;
             border: 1px dashed #00FF41; padding: 15px;
         }
+        h3 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        
+        /* FORMS */
         input, textarea {
             background: #001100; border: 1px solid #00FF41; color: #00FF41;
             font-family: inherit; padding: 10px; width: 95%; margin-bottom: 10px;
@@ -39,8 +42,17 @@
             font-family: inherit; font-weight: bold; cursor: pointer; text-transform: uppercase;
         }
         button:hover { background: #fff; }
+        button.small { padding: 5px 10px; font-size: 0.8rem; margin-left: 10px; }
+        button.danger { background: #ff4141; }
+        
         .hidden { display: none; }
         .warning { color: yellow; font-size: 0.8rem; margin-bottom: 10px; }
+
+        /* RELAY LIST */
+        .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
+        .relay-status { margin-right: 10px; }
+        .status-open { color: #00FF41; }
+        .status-closed { color: red; }
 
         /* FEED */
         #feed { max-width: 600px; margin: 0 auto; }
@@ -56,12 +68,21 @@
 <body>
     <header>
         <h1>mBIT</h1>
-        <div class="subtitle">protocol: nostr | relay: damus.io</div>
-        <div class="subtitle" id="status">connecting...</div>
+        <div class="subtitle">protocol: nostr | decentralized mesh</div>
     </header>
 
-    <!-- LOGIN / REGISTER -->
-    <div id="auth-ui">
+    <!-- RELAY MANAGER -->
+    <div class="box">
+        <h3>>> NETWORK NODES (RELAYS)</h3>
+        <div id="relay-list"></div>
+        <div style="margin-top: 10px; display:flex;">
+            <input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0;">
+            <button onclick="addRelay()" style="margin-left:5px;">ADD</button>
+        </div>
+    </div>
+
+    <!-- AUTH -->
+    <div class="box" id="auth-ui">
         <h3>>> IDENTITY</h3>
         <div id="login-form">
             <input type="text" id="privkey-input" placeholder="paste private key (hex or nsec)">
@@ -76,30 +97,101 @@
         </div>
     </div>
 
-    <!-- POST COMPOSER (Hidden until logged in) -->
-    <div id="composer" class="hidden">
+    <!-- POST COMPOSER -->
+    <div class="box hidden" id="composer">
         <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
         <button onclick="sendNote()">SEND SIGNAL</button>
     </div>
 
     <div id="feed">
-        <div style="text-align:center; margin-top:50px;">_waiting for signals_</div>
+        <div style="text-align:center; margin-top:50px;">_scanning frequencies_</div>
     </div>
 
     <script>
-        // --- 1. SETUP & SERVICE WORKER ---
+        // --- 1. SETUP ---
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         
-        const relayUrl = 'wss://relay.damus.io';
-        let ws = new WebSocket(relayUrl);
+        // --- 2. RELAY MANAGEMENT ---
+        const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
+        let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
+        const sockets = {}; // Store active connections
+        
+        function renderRelays() {
+            const list = document.getElementById('relay-list');
+            list.innerHTML = savedRelays.map(url => {
+                const isOpen = sockets[url] && sockets[url].readyState === WebSocket.OPEN;
+                const statusClass = isOpen ? 'status-open' : 'status-closed';
+                const statusText = isOpen ? '[CONNECTED]' : '[OFFLINE]';
+                
+                return `
+                <div class="relay-item">
+                    <span><span class="relay-status ${statusClass}">${statusText}</span> ${url}</span>
+                    <button class="small danger" onclick="removeRelay('${url}')">X</button>
+                </div>`;
+            }).join('');
+        }
+
+        function addRelay() {
+            const input = document.getElementById('new-relay');
+            let url = input.value.trim();
+            if(!url) return;
+            if(!url.startsWith('wss://')) url = 'wss://' + url;
+            
+            if(!savedRelays.includes(url)) {
+                savedRelays.push(url);
+                localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
+                connectToRelay(url);
+                input.value = '';
+                renderRelays();
+            }
+        }
+
+        function removeRelay(url) {
+            savedRelays = savedRelays.filter(r => r !== url);
+            localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
+            if(sockets[url]) {
+                sockets[url].close();
+                delete sockets[url];
+            }
+            renderRelays();
+        }
+
+        function connectToRelay(url) {
+            if(sockets[url]) return; // Already exists
+            
+            try {
+                const ws = new WebSocket(url);
+                sockets[url] = ws;
+
+                ws.onopen = () => {
+                    renderRelays();
+                    // Subscribe to Global Feed (Kind 1)
+                    const req = ["REQ", "sub_global_" + Date.now(), { kinds: [1], limit: 20 }];
+                    ws.send(JSON.stringify(req));
+                };
+
+                ws.onmessage = (msg) => {
+                    const data = JSON.parse(msg.data);
+                    if (data[0] === 'EVENT') addEventToFeed(data[2]);
+                };
+
+                ws.onclose = () => { renderRelays(); };
+                ws.onerror = () => { renderRelays(); };
+
+            } catch(e) { console.error("Invalid Relay", e); }
+        }
+
+        // Connect to all saved relays on boot
+        savedRelays.forEach(connectToRelay);
+
+
+        // --- 3. IDENTITY & AUTH ---
         let myPrivKey = localStorage.getItem('nostr_privkey');
         let myPubKey = null;
 
-        // --- 2. AUTH LOGIC ---
         function checkAuth() {
             if (myPrivKey) {
                 try {
-                    // Handle nsec decoding if necessary, simplified here to assume Hex or simple nsec
                     if(myPrivKey.startsWith('nsec')) {
                         const {data} = window.NostrTools.nip19.decode(myPrivKey);
                         myPrivKey = data;
@@ -110,20 +202,14 @@
                     document.getElementById('user-info').classList.remove('hidden');
                     document.getElementById('composer').classList.remove('hidden');
                     document.getElementById('pubkey-display').innerText = myPubKey;
-                } catch (e) {
-                    console.error(e);
-                    logout(); // Invalid key
-                }
+                } catch (e) { logout(); }
             }
         }
 
         function generateNewUser() {
             const sk = window.NostrTools.generatePrivateKey();
-            // Convert to nsec for user friendliness
             const nsec = window.NostrTools.nip19.nsecEncode(sk);
-            
-            prompt("IMPORTANT: COPY YOUR NEW PRIVATE KEY NOW. WE DO NOT STORE IT SECURELY.", nsec);
-            
+            prompt("IMPORTANT: COPY YOUR NEW PRIVATE KEY NOW.", nsec);
             localStorage.setItem('nostr_privkey', sk);
             myPrivKey = sk;
             checkAuth();
@@ -142,14 +228,12 @@
             location.reload();
         }
 
-        // Initialize Auth
         checkAuth();
 
-        // --- 3. SENDING MESSAGES ---
+        // --- 4. SENDING & FEED ---
         async function sendNote() {
             const content = document.getElementById('msg-input').value;
-            if (!content) return;
-            if (!myPrivKey) return alert("Not logged in");
+            if (!content || !myPrivKey) return;
 
             const event = {
                 kind: 1,
@@ -162,38 +246,28 @@
             event.id = window.NostrTools.getEventHash(event);
             event.sig = window.NostrTools.signEvent(event, myPrivKey);
 
-            ws.send(JSON.stringify(["EVENT", event]));
-            document.getElementById('msg-input').value = ""; // Clear input
-            
-            // Optimistically add to feed
+            // Broadcast to ALL connected sockets
+            const msg = JSON.stringify(["EVENT", event]);
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === WebSocket.OPEN) ws.send(msg);
+            });
+
+            document.getElementById('msg-input').value = "";
             addEventToFeed(event);
         }
 
-        // --- 4. FEED LOGIC ---
         const feed = document.getElementById('feed');
-        const statusDiv = document.getElementById('status');
         const processedIds = new Set();
         let events = [];
-
-        ws.onopen = () => {
-            statusDiv.textContent = "connected. encrypted channel open.";
-            const req = ["REQ", "sub_1", { kinds: [1], limit: 20 }];
-            ws.send(JSON.stringify(req));
-        };
-
-        ws.onmessage = (msg) => {
-            const data = JSON.parse(msg.data);
-            if (data[0] === 'EVENT') {
-                addEventToFeed(data[2]);
-            }
-        };
-
-        ws.onerror = () => { statusDiv.textContent = "connection severed."; };
 
         function addEventToFeed(event) {
             if (processedIds.has(event.id)) return;
             processedIds.add(event.id);
             events.unshift(event);
+            
+            // Sort by time (newest first) to handle multiple relays sending out of order
+            events.sort((a, b) => b.created_at - a.created_at);
+            
             if (events.length > 50) events.pop();
             renderFeed();
         }
