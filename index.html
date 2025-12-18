@@ -7,6 +7,9 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
+        /* GLOBAL RESET FOR SIZING */
+        * { box-sizing: border-box; }
+
         body {
             background-color: #000000;
             color: #00FF41;
@@ -40,7 +43,7 @@
         /* INPUTS & BUTTONS */
         input, textarea {
             background: #001100; border: 1px solid #00FF41; color: #00FF41;
-            font-family: inherit; padding: 10px; width: 95%; margin-bottom: 10px;
+            font-family: inherit; padding: 10px; width: 100%; margin-bottom: 10px; display: block;
         }
         button {
             background: #00FF41; color: black; border: none; padding: 10px 20px;
@@ -99,8 +102,6 @@
         .act-btn:hover { background: #00FF41; color: black; }
         .zap-btn { color: #f1c40f; } .zap-btn:hover { background: #f1c40f; color: black; }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
         /* MODALS */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -137,14 +138,14 @@
         <h3 style="margin-top:0">>> NETWORK NODES (RELAYS)</h3>
         <div id="relay-list"></div>
         <div style="margin-top: 10px; display:flex;">
-            <input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0;">
-            <button onclick="addRelay()" style="margin-left:5px;">ADD</button>
+            <input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0; width: 80%;">
+            <button onclick="addRelay()" style="width: 18%; margin-left: 2%;">ADD</button>
         </div>
         <br>
         <button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
     </div>
 
-    <!-- 2. IDENTITY DROPDOWN -->
+    <!-- 2. IDENTITY DROPDOWN (KEYS & LOGOUT ONLY) -->
     <div id="panel-identity" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> IDENTITY</h3>
         <div id="login-form">
@@ -172,33 +173,38 @@
                 </div>
                 <div class="warning-text">⚠️ WARNING: Secret Key. Do not share.</div>
             </div>
-            <div style="margin-bottom: 15px; border-top:1px dashed #333; padding-top:15px;">
-                <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
-                <button onclick="logout()" class="danger">LOGOUT</button>
-            </div>
-            <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px;">
-                <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
-                <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
-                <label>Picture URL:</label> <input type="text" id="p-picture" placeholder="https://...">
-                <label style="color:#f1c40f">Zap Wallet:</label> <input type="text" id="p-lud16" placeholder="name@getalby.com" style="border-color:#f1c40f">
-                <button onclick="saveProfile()">PUBLISH UPDATE</button>
-                <button onclick="toggleProfileEditor()" class="small secondary">CANCEL</button>
+            <div style="margin-top: 15px;">
+                <button onclick="logout()" class="danger" style="width:100%">LOGOUT</button>
             </div>
         </div>
         <br>
         <button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
     </div>
 
-    <!-- 3. MY PROFILE DROPDOWN -->
+    <!-- 3. MY PROFILE DROPDOWN (EDIT PROFILE IS HERE NOW) -->
     <div id="panel-my-profile" class="dropdown-panel hidden">
         <div id="my-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;">
             <div id="my-p-img"></div>
             <h2 id="my-p-name">Unknown</h2>
             <p id="my-p-about" style="opacity:0.7"></p>
+            
+            <!-- EDIT BUTTON MOVED HERE -->
+            <button onclick="toggleProfileEditor()" class="secondary" style="margin-top:10px;">EDIT PROFILE</button>
+            
+            <!-- EDITOR FORM -->
+            <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px; margin-top:15px; text-align:left;">
+                <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
+                <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
+                <label>Picture URL:</label> <input type="text" id="p-picture" placeholder="https://...">
+                <label style="color:#f1c40f">Zap Wallet:</label> <input type="text" id="p-lud16" placeholder="name@getalby.com" style="border-color:#f1c40f">
+                <button onclick="saveProfile()">PUBLISH UPDATE</button>
+                <button onclick="toggleProfileEditor()" class="small secondary" style="margin-top:5px;">CANCEL</button>
+            </div>
         </div>
+
         <h3 style="margin-top:0">>> MY SIGNAL HISTORY</h3>
         <div id="my-feed">
-            <div style="text-align:center; opacity:0.5;">_fetching your signals_</div>
+            <div style="text-align:center; opacity:0.5;">_fetching history_</div>
         </div>
         <br>
         <button class="small secondary" onclick="togglePanel('panel-my-profile')">CLOSE</button>
@@ -238,40 +244,28 @@
     </div>
 
     <script>
-        // --- 1. UI TOGGLES & DATA ---
+        // --- 1. SETUP & UI ---
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
-        
-        let events = []; // Global feed
-        let pendingEvents = [];
-        let myEvents = []; // My profile feed
+        let events = []; let pendingEvents = []; let myEvents = [];
         
         function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile'].forEach(p => {
-                if(p !== id) document.getElementById(p).classList.add('hidden');
-            });
-            const panel = document.getElementById(id);
-            panel.classList.toggle('hidden');
-            
-            // If opening My Profile, fetch history
-            if(id === 'panel-my-profile' && !panel.classList.contains('hidden')) {
-                loadMyHistory();
-            }
+            ['panel-relays', 'panel-identity', 'panel-my-profile'].forEach(p => { if(p !== id) document.getElementById(p).classList.add('hidden'); });
+            const panel = document.getElementById(id); panel.classList.toggle('hidden');
+            if(id === 'panel-my-profile' && !panel.classList.contains('hidden')) loadMyHistory();
         }
 
-        // --- 2. RELAY & NETWORK ---
+        // --- 2. RELAYS ---
         function renderRelays() {
-            const list = document.getElementById('relay-list');
-            list.innerHTML = savedRelays.map(url => {
+            document.getElementById('relay-list').innerHTML = savedRelays.map(url => {
                 const isOpen = sockets[url] && sockets[url].readyState === WebSocket.OPEN;
                 return `<div class="relay-item"><span><span class="relay-status ${isOpen?'status-open':'status-closed'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
             }).join('');
         }
         function addRelay() {
-            let url = document.getElementById('new-relay').value.trim();
-            if(!url) return;
+            let url = document.getElementById('new-relay').value.trim(); if(!url) return;
             if(!url.startsWith('wss://')) url = 'wss://' + url;
             if(!savedRelays.includes(url)) { savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; renderRelays(); }
         }
@@ -283,16 +277,11 @@
             if(sockets[url]) return;
             try {
                 const ws = new WebSocket(url); sockets[url] = ws;
-                ws.onopen = () => { 
-                    renderRelays(); 
-                    // Sub Global
-                    ws.send(JSON.stringify(["REQ", "sub_global", { kinds: [1, 6], limit: 20 }])); 
-                    if(myPubKey) fetchProfile(myPubKey); 
-                };
+                ws.onopen = () => { renderRelays(); ws.send(JSON.stringify(["REQ", "g", { kinds: [1, 6], limit: 20 }])); if(myPubKey) fetchProfile(myPubKey); };
                 ws.onmessage = (msg) => { 
                     const data = JSON.parse(msg.data); 
                     if (data[0] === 'EVENT') {
-                        if(data[1] === 'sub_global') handleGlobalEvent(data[2]);
+                        if(data[1] === 'g') handleGlobalEvent(data[2]);
                         if(data[1] === 'sub_me') handleMyEvent(data[2]);
                         if(data[1].startsWith('m_')) handleMetadata(data[2]);
                     }
@@ -302,7 +291,7 @@
         }
         savedRelays.forEach(connectToRelay);
 
-        // --- 3. AUTH & IDENTITY ---
+        // --- 3. AUTH ---
         let myPrivKey = localStorage.getItem('nostr_privkey');
         let myPubKey = localStorage.getItem('nostr_pubkey');
         let authMode = localStorage.getItem('nostr_mode') || 'none';
@@ -347,78 +336,61 @@
             const sk = window.NostrTools.generatePrivateKey();
             localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_mode', 'local');
             authMode = 'local'; myPrivKey = sk; checkAuth();
-            alert("NEW IDENTITY GENERATED. CHECK 'IDENTITY' TAB.");
+            alert("NEW IDENTITY GENERATED.");
         }
         function logout() { localStorage.clear(); location.reload(); }
 
-        // --- 4. MY PROFILE LOGIC ---
+        // --- 4. MY PROFILE & EDITOR ---
         function loadMyHistory() {
             if(!myPubKey) { document.getElementById('my-feed').innerHTML = "PLEASE LOGIN FIRST"; return; }
-            
-            // Render Header
             const p = profiles[myPubKey] || {};
             document.getElementById('my-p-name').innerText = p.name || 'Unknown';
             document.getElementById('my-p-about').innerText = p.about || '';
             if(p.picture) document.getElementById('my-p-img').innerHTML = `<img src="${p.picture}" class="p-img-large">`;
             
-            // Reset and Fetch
             myEvents = [];
             document.getElementById('my-feed').innerHTML = '<div style="text-align:center;">_fetching history_</div>';
-            
             const msg = JSON.stringify(["REQ", "sub_me", { kinds: [1], authors: [myPubKey], limit: 20 }]);
             Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
         }
-
         function handleMyEvent(event) {
-            // Dedup
             if(myEvents.some(e => e.id === event.id)) return;
-            myEvents.push(event);
-            myEvents.sort((a,b) => b.created_at - a.created_at);
-            renderMyFeed();
+            myEvents.push(event); myEvents.sort((a,b) => b.created_at - a.created_at);
+            document.getElementById('my-feed').innerHTML = myEvents.map(ev => generatePostHTML(ev)).join('');
+        }
+        function toggleProfileEditor() { 
+            document.getElementById('profile-editor').classList.toggle('hidden'); 
+            if(profiles[myPubKey]) {
+                const p = profiles[myPubKey];
+                document.getElementById('p-name').value = p.name||''; document.getElementById('p-about').value = p.about||'';
+                document.getElementById('p-picture').value = p.picture||''; document.getElementById('p-lud16').value = p.lud16||'';
+            }
+        }
+        async function saveProfile() {
+            const content = JSON.stringify({ name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value, lud16: document.getElementById('p-lud16').value });
+            const event = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
+            try { await signAndBroadcast(event); alert("Updated"); toggleProfileEditor(); profiles[myPubKey] = JSON.parse(content); loadMyHistory(); } catch(e) { alert("Error"); }
         }
 
-        function renderMyFeed() {
-            const container = document.getElementById('my-feed');
-            container.innerHTML = myEvents.map(ev => generatePostHTML(ev)).join('');
-        }
-
-        // --- 5. GLOBAL FEED & QUEUE ---
+        // --- 5. GLOBAL FEED ---
         const processedIds = new Set();
         const profiles = {};
         const requestedProfiles = new Set();
-
+        
         function handleGlobalEvent(event) {
             if (processedIds.has(event.id)) return;
             processedIds.add(event.id);
             if (events.length >= 20) { pendingEvents.unshift(event); updateNewButton(); } 
             else { events.unshift(event); events.sort((a, b) => b.created_at - a.created_at); fetchProfileIfNeeded(event.pubkey); renderGlobalFeed(); }
         }
-        function handleMetadata(event) {
-            try { profiles[event.pubkey] = JSON.parse(event.content); renderGlobalFeed(); } catch(e){}
-        }
+        function handleMetadata(event) { try { profiles[event.pubkey] = JSON.parse(event.content); renderGlobalFeed(); } catch(e){} }
+        function updateNewButton() { const btn = document.getElementById('new-btn'); if (pendingEvents.length > 0) { btn.classList.remove('hidden'); btn.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; } else { btn.classList.add('hidden'); } }
+        function mergeQueue() { pendingEvents.forEach(e => { events.unshift(e); fetchProfileIfNeeded(e.pubkey); }); pendingEvents = []; events.sort((a, b) => b.created_at - a.created_at); if(events.length > 100) events = events.slice(0, 100); renderGlobalFeed(); updateNewButton(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function fetchProfileIfNeeded(pubkey) { if (!profiles[pubkey] && !requestedProfiles.has(pubkey)) fetchProfile(pubkey); }
+        function fetchProfile(pubkey) { requestedProfiles.add(pubkey); const msg = JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]); Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); }); }
+        function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(ev => generatePostHTML(ev)).join(''); }
 
-        function updateNewButton() {
-            const btn = document.getElementById('new-btn');
-            if (pendingEvents.length > 0) { btn.classList.remove('hidden'); btn.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; } else { btn.classList.add('hidden'); }
-        }
-        function mergeQueue() {
-            pendingEvents.forEach(e => { events.unshift(e); fetchProfileIfNeeded(e.pubkey); });
-            pendingEvents = []; events.sort((a, b) => b.created_at - a.created_at); if(events.length > 100) events = events.slice(0, 100);
-            renderGlobalFeed(); updateNewButton(); window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        function fetchProfileIfNeeded(pubkey) {
-            if (!profiles[pubkey] && !requestedProfiles.has(pubkey)) fetchProfile(pubkey);
-        }
-        function fetchProfile(pubkey) {
-            requestedProfiles.add(pubkey);
-            const msg = JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]);
-            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
-        }
-        function renderGlobalFeed() {
-            document.getElementById('feed').innerHTML = events.map(ev => generatePostHTML(ev)).join('');
-        }
-
-        // --- 6. POST RENDERING (SHARED) ---
+        // --- 6. SHARED RENDER ---
         function generatePostHTML(ev) {
             let content = ev.content; let repostHeader = "";
             if (ev.kind === 6) { try { const original = JSON.parse(ev.content); content = original.content; repostHeader = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`; } catch(e) { content = "[Repost Data Error]"; } }
@@ -444,57 +416,23 @@
             `;
         }
 
-        // --- 7. CORE ACTIONS ---
+        // --- 7. ACTIONS ---
         async function signAndBroadcast(event) {
             if (authMode === 'extension') event = await window.nostr.signEvent(event);
             else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); }
-            const msg = JSON.stringify(["EVENT", event]);
-            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
-            return event;
+            const msg = JSON.stringify(["EVENT", event]); Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); }); return event;
         }
-        async function sendNote() {
-            const content = document.getElementById('msg-input').value; if (!content || !myPubKey) return;
-            const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
-            try { const s = await signAndBroadcast(event); document.getElementById('msg-input').value = ""; events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Error sending"); }
-        }
-        async function saveProfile() {
-            const content = JSON.stringify({ name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value, lud16: document.getElementById('p-lud16').value });
-            const event = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
-            try { await signAndBroadcast(event); alert("Updated"); toggleProfileEditor(); profiles[myPubKey] = JSON.parse(content); renderGlobalFeed(); if(!document.getElementById('panel-my-profile').classList.contains('hidden')) loadMyHistory(); } catch(e) { alert("Error"); }
-        }
-        async function doLike(id, pubkey) {
-            if(!myPubKey) return alert("Login to Like");
-            const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
-            try { await signAndBroadcast(event); alert("Liked!"); } catch(e) { alert("Failed"); }
-        }
-        async function doRepost(id, pubkey, originalJSON) {
-            if(!myPubKey) return alert("Login to Repost");
-            const event = { kind: 6, created_at: Math.floor(Date.now()/1000), tags: [['e', id, 'wss://relay.damus.io'], ['p', pubkey]], content: originalJSON, pubkey: myPubKey };
-            try { await signAndBroadcast(event); alert("Reposted!"); } catch(e) { alert("Failed"); }
-        }
-        // ... (Reply/Quote/Zap/Modals same as before) ...
+        async function sendNote() { const content = document.getElementById('msg-input').value; if (!content || !myPubKey) return; const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey }; try { const s = await signAndBroadcast(event); document.getElementById('msg-input').value = ""; events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Error sending"); } }
+        async function doLike(id, pubkey) { if(!myPubKey) return alert("Login to Like"); const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; try { await signAndBroadcast(event); alert("Liked!"); } catch(e) { alert("Failed"); } }
+        async function doRepost(id, pubkey, originalJSON) { if(!myPubKey) return alert("Login to Repost"); const event = { kind: 6, created_at: Math.floor(Date.now()/1000), tags: [['e', id, 'wss://relay.damus.io'], ['p', pubkey]], content: originalJSON, pubkey: myPubKey }; try { await signAndBroadcast(event); alert("Reposted!"); } catch(e) { alert("Failed"); } }
         let activeAction = null; let targetNote = null;
         function openReply(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'reply'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> REPLYING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
         function openQuote(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'quote'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> QUOTING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
-        async function sendReplyOrQuote() {
-            const content = document.getElementById('reply-input').value; if(!content) return;
-            let event = { kind: 1, created_at: Math.floor(Date.now()/1000), content: content, pubkey: myPubKey, tags: [] };
-            if (activeAction === 'reply') event.tags = [['e', targetNote.id, '', 'root'], ['p', targetNote.pubkey]];
-            else if (activeAction === 'quote') { try { const nevent = window.NostrTools.nip19.neventEncode({id: targetNote.id}); event.content = content + "\n\nnostr:" + nevent; event.tags = [['e', targetNote.id, '', 'mention'], ['p', targetNote.pubkey]]; } catch(e) {} }
-            try { const s = await signAndBroadcast(event); document.getElementById('reply-input').value = ""; closeModals(null); events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Failed"); }
-        }
-        async function doZap(pubkey) {
-            if(!myPubKey) return alert("Login first"); const p = profiles[pubkey]; if(!p || !p.lud16) return alert("No Zap Address.");
-            if (window.webln) { try { await window.webln.enable(); const amount = prompt("Sats?"); if(!amount) return; const parts = p.lud16.split('@'); const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`; const res = await fetch(url); const data = await res.json(); const invRes = await fetch(`${data.callback}?amount=${amount*1000}`); const invData = await invRes.json(); await window.webln.sendPayment(invData.pr); alert("Zapped"); } catch(e) { alert("Zap failed"); } } else { alert("Install Alby"); }
-        }
-        function toggleProfileEditor() { document.getElementById('profile-editor').classList.toggle('hidden'); if(profiles[myPubKey]) { const p = profiles[myPubKey]; document.getElementById('p-name').value = p.name||''; document.getElementById('p-about').value = p.about||''; document.getElementById('p-picture').value = p.picture||''; document.getElementById('p-lud16').value = p.lud16||''; } }
+        async function sendReplyOrQuote() { const content = document.getElementById('reply-input').value; if(!content) return; let event = { kind: 1, created_at: Math.floor(Date.now()/1000), content: content, pubkey: myPubKey, tags: [] }; if (activeAction === 'reply') event.tags = [['e', targetNote.id, '', 'root'], ['p', targetNote.pubkey]]; else if (activeAction === 'quote') { try { const nevent = window.NostrTools.nip19.neventEncode({id: targetNote.id}); event.content = content + "\n\nnostr:" + nevent; event.tags = [['e', targetNote.id, '', 'mention'], ['p', targetNote.pubkey]]; } catch(e) {} } try { const s = await signAndBroadcast(event); document.getElementById('reply-input').value = ""; closeModals(null); events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Failed"); } }
+        async function doZap(pubkey) { if(!myPubKey) return alert("Login first"); const p = profiles[pubkey]; if(!p || !p.lud16) return alert("No Zap Address."); if (window.webln) { try { await window.webln.enable(); const amount = prompt("Sats?"); if(!amount) return; const parts = p.lud16.split('@'); const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`; const res = await fetch(url); const data = await res.json(); const invRes = await fetch(`${data.callback}?amount=${amount*1000}`); const invData = await invRes.json(); await window.webln.sendPayment(invData.pr); alert("Zapped"); } catch(e) { alert("Zap failed"); } } else { alert("Install Alby"); } }
         function closeModals(e) { if(e && !e.target.classList.contains('modal-overlay') && e.target.tagName !== 'BUTTON') return; document.getElementById('generic-modal').classList.add('hidden'); document.getElementById('reply-modal').classList.add('hidden'); }
-        function viewProfile(pubkey) {
-            const p = profiles[pubkey] || {}; let img = '<div style="font-size:3rem;">?</div>'; if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`;
-            let walletHtml = ""; if(p.lud16) walletHtml = `<div style="color:#f1c40f; font-size:0.8rem; margin:10px 0;">⚡ ${p.lud16}</div>`;
-            const html = `${img}<h2>${(p.name||'Unknown').replace(/</g,"")}</h2>${walletHtml}<p>${(p.about||'').replace(/</g,"")}</p>`;
-            document.getElementById('modal-content').innerHTML = html; document.getElementById('generic-modal').classList.remove('hidden');
-        }
+        function viewProfile(pubkey) { const p = profiles[pubkey] || {}; let img = '<div style="font-size:3rem;">?</div>'; if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`; let walletHtml = ""; if(p.lud16) walletHtml = `<div style="color:#f1c40f; font-size:0.8rem; margin:10px 0;">⚡ ${p.lud16}</div>`; const html = `${img}<h2>${(p.name||'Unknown').replace(/</g,"")}</h2>${walletHtml}<p>${(p.about||'').replace(/</g,"")}</p>`; document.getElementById('modal-content').innerHTML = html; document.getElementById('generic-modal').classList.remove('hidden'); }
+        
         checkAuth();
     </script>
 </body>
