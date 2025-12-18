@@ -181,15 +181,17 @@
         <button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
     </div>
 
-    <!-- 3. MY PROFILE DROPDOWN -->
+    <!-- 3. MY PROFILE DROPDOWN (EDIT PROFILE IS HERE NOW) -->
     <div id="panel-my-profile" class="dropdown-panel hidden">
         <div id="my-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;">
             <div id="my-p-img"></div>
             <h2 id="my-p-name">Unknown</h2>
             <p id="my-p-about" style="opacity:0.7"></p>
             
+            <!-- EDIT BUTTON MOVED HERE -->
             <button onclick="toggleProfileEditor()" class="secondary" style="margin-top:10px;">EDIT PROFILE</button>
             
+            <!-- EDITOR FORM -->
             <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px; margin-top:15px; text-align:left;">
                 <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
                 <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
@@ -348,7 +350,6 @@
             
             myEvents = [];
             document.getElementById('my-feed').innerHTML = '<div style="text-align:center;">_fetching history_</div>';
-            // UPDATE: Request Kind 1 (Text) AND Kind 6 (Reposts) for current user
             const msg = JSON.stringify(["REQ", "sub_me", { kinds: [1, 6], authors: [myPubKey], limit: 20 }]);
             Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
         }
@@ -392,13 +393,26 @@
         // --- 6. SHARED RENDER ---
         function generatePostHTML(ev) {
             let content = ev.content; let repostHeader = "";
-            if (ev.kind === 6) { try { const original = JSON.parse(ev.content); content = original.content; repostHeader = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`; } catch(e) { content = "[Repost Data Error]"; } }
+            if (ev.kind === 6) { 
+                repostHeader = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`;
+                try { 
+                    const original = JSON.parse(ev.content); 
+                    // Handle cases where JSON is valid but content field is missing/empty
+                    if(original.content) content = original.content;
+                    else content = "[Reposted Signal]";
+                } catch(e) { 
+                    content = "[Reposted Signal]"; 
+                } 
+            }
             const p = profiles[ev.pubkey] || {};
             let name = p.name ? p.name.replace(/</g,"") : ev.pubkey.substring(0,6)+'...';
             let avatar = ''; if(p.picture) avatar = `<img src="${p.picture}" class="avatar">`;
             content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
+            
+            // Safe JSON for repost button
             const evJson = JSON.stringify(ev).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            
             return `
                 <div class="post" ${isMe}>
                     ${repostHeader}
@@ -423,7 +437,17 @@
         }
         async function sendNote() { const content = document.getElementById('msg-input').value; if (!content || !myPubKey) return; const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey }; try { const s = await signAndBroadcast(event); document.getElementById('msg-input').value = ""; events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Error sending"); } }
         async function doLike(id, pubkey) { if(!myPubKey) return alert("Login to Like"); const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; try { await signAndBroadcast(event); alert("Liked!"); } catch(e) { alert("Failed"); } }
-        async function doRepost(id, pubkey, originalJSON) { if(!myPubKey) return alert("Login to Repost"); const event = { kind: 6, created_at: Math.floor(Date.now()/1000), tags: [['e', id, 'wss://relay.damus.io'], ['p', pubkey]], content: originalJSON, pubkey: myPubKey }; try { await signAndBroadcast(event); alert("Reposted!"); } catch(e) { alert("Failed"); } }
+        
+        async function doRepost(id, pubkey, originalJSON) { 
+            if(!myPubKey) return alert("Login to Repost"); 
+            // IMPROVEMENT: Ensure originalJSON is clean
+            let contentToPost = originalJSON;
+            if(!contentToPost) contentToPost = ""; 
+            
+            const event = { kind: 6, created_at: Math.floor(Date.now()/1000), tags: [['e', id, 'wss://relay.damus.io'], ['p', pubkey]], content: contentToPost, pubkey: myPubKey }; 
+            try { await signAndBroadcast(event); alert("Reposted!"); } catch(e) { alert("Failed"); } 
+        }
+        
         let activeAction = null; let targetNote = null;
         function openReply(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'reply'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> REPLYING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
         function openQuote(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'quote'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> QUOTING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
