@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
-        /* GLOBAL RESET FOR SIZING */
+        /* GLOBAL RESET */
         * { box-sizing: border-box; }
 
         body {
@@ -86,7 +86,7 @@
         }
         .avatar {
             width: 30px; height: 30px; border-radius: 50%; border: 1px solid #00FF41;
-            margin-right: 10px; object-fit: cover; background: #111;
+            margin-right: 10px; object-fit: cover; background: #111; cursor: pointer;
         }
         .username-link { font-weight: bold; color: #fff; cursor: pointer; text-decoration: underline; }
         .username-link:hover { color: #00FF41; text-shadow: 0 0 5px #00FF41; }
@@ -145,7 +145,7 @@
         <button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
     </div>
 
-    <!-- 2. IDENTITY DROPDOWN (KEYS & LOGOUT ONLY) -->
+    <!-- 2. IDENTITY DROPDOWN -->
     <div id="panel-identity" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> IDENTITY</h3>
         <div id="login-form">
@@ -181,17 +181,13 @@
         <button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
     </div>
 
-    <!-- 3. MY PROFILE DROPDOWN (EDIT PROFILE IS HERE NOW) -->
+    <!-- 3. MY PROFILE DROPDOWN -->
     <div id="panel-my-profile" class="dropdown-panel hidden">
         <div id="my-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;">
             <div id="my-p-img"></div>
             <h2 id="my-p-name">Unknown</h2>
             <p id="my-p-about" style="opacity:0.7"></p>
-            
-            <!-- EDIT BUTTON MOVED HERE -->
             <button onclick="toggleProfileEditor()" class="secondary" style="margin-top:10px;">EDIT PROFILE</button>
-            
-            <!-- EDITOR FORM -->
             <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px; margin-top:15px; text-align:left;">
                 <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
                 <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
@@ -201,7 +197,6 @@
                 <button onclick="toggleProfileEditor()" class="small secondary" style="margin-top:5px;">CANCEL</button>
             </div>
         </div>
-
         <h3 style="margin-top:0">>> MY SIGNAL HISTORY</h3>
         <div id="my-feed">
             <div style="text-align:center; opacity:0.5;">_fetching history_</div>
@@ -210,13 +205,20 @@
         <button class="small secondary" onclick="togglePanel('panel-my-profile')">CLOSE</button>
     </div>
 
-    <!-- MODALS -->
-    <div id="generic-modal" class="modal-overlay hidden" onclick="closeModals(event)">
-        <div class="modal-card">
-            <div id="modal-content"></div>
-            <br><button onclick="closeModals(null)">CLOSE</button>
+    <!-- 4. PUBLIC PROFILE VIEW PANEL (THE NEW FEATURE) -->
+    <div id="panel-user-profile" class="dropdown-panel hidden">
+        <div id="user-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;">
+            <!-- Content Injected via JS -->
         </div>
+        <h3 style="margin-top:0">>> SIGNAL HISTORY</h3>
+        <div id="user-feed">
+            <div style="text-align:center; opacity:0.5;">_scanning user signals_</div>
+        </div>
+        <br>
+        <button class="small secondary" onclick="togglePanel('panel-user-profile')">CLOSE</button>
     </div>
+
+    <!-- REPLY MODAL -->
     <div id="reply-modal" class="modal-overlay hidden" onclick="closeModals(event)">
         <div class="modal-card" style="text-align: left;">
             <h3 id="reply-title">>> REPLYING</h3>
@@ -249,11 +251,25 @@
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
-        let events = []; let pendingEvents = []; let myEvents = [];
+        
+        // Data Stores
+        let events = []; // Global
+        let pendingEvents = [];
+        let myEvents = []; // Me
+        let userEvents = []; // Third-party view
         
         function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile'].forEach(p => { if(p !== id) document.getElementById(p).classList.add('hidden'); });
-            const panel = document.getElementById(id); panel.classList.toggle('hidden');
+            // Close all others
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile'].forEach(p => { 
+                if(p !== id) document.getElementById(p).classList.add('hidden'); 
+            });
+            
+            const panel = document.getElementById(id);
+            // Toggle Logic: If clicking an already open panel (via nav), close it. 
+            // If calling specifically (like viewProfile), ensure it opens.
+            if(panel.classList.contains('hidden')) panel.classList.remove('hidden');
+            else panel.classList.add('hidden');
+
             if(id === 'panel-my-profile' && !panel.classList.contains('hidden')) loadMyHistory();
         }
 
@@ -283,6 +299,7 @@
                     if (data[0] === 'EVENT') {
                         if(data[1] === 'g') handleGlobalEvent(data[2]);
                         if(data[1] === 'sub_me') handleMyEvent(data[2]);
+                        if(data[1] === 'sub_user') handleUserEvent(data[2]);
                         if(data[1].startsWith('m_')) handleMetadata(data[2]);
                     }
                 };
@@ -340,7 +357,7 @@
         }
         function logout() { localStorage.clear(); location.reload(); }
 
-        // --- 4. MY PROFILE & EDITOR ---
+        // --- 4. MY PROFILE ---
         function loadMyHistory() {
             if(!myPubKey) { document.getElementById('my-feed').innerHTML = "PLEASE LOGIN FIRST"; return; }
             const p = profiles[myPubKey] || {};
@@ -372,7 +389,46 @@
             try { await signAndBroadcast(event); alert("Updated"); toggleProfileEditor(); profiles[myPubKey] = JSON.parse(content); loadMyHistory(); } catch(e) { alert("Error"); }
         }
 
-        // --- 5. GLOBAL FEED ---
+        // --- 5. USER PROFILE VIEW (NEW) ---
+        function viewProfile(pubkey) {
+            // 1. Open User Panel (hides others)
+            ['panel-relays', 'panel-identity', 'panel-my-profile'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            document.getElementById('panel-user-profile').classList.remove('hidden');
+            
+            // 2. Render Header
+            const p = profiles[pubkey] || {};
+            let img = '<div style="font-size:3rem;">?</div>'; 
+            if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`;
+            
+            let zapBtn = "";
+            if(p.lud16) zapBtn = `<button class="act-btn zap-btn" style="font-size:1rem; border:1px solid #f1c40f; padding:5px 15px; margin-top:5px;" onclick="doZap('${pubkey}')">ZAP ⚡</button>`;
+            
+            const html = `
+                ${img}
+                <h2>${(p.name||'Unknown').replace(/</g,"")}</h2>
+                <div style="opacity:0.7">${(p.about||'').replace(/</g,"")}</div>
+                ${zapBtn}
+            `;
+            document.getElementById('user-profile-header').innerHTML = html;
+            
+            // 3. Fetch History
+            userEvents = [];
+            document.getElementById('user-feed').innerHTML = '<div style="text-align:center;">_fetching history_</div>';
+            
+            // Ensure we have metadata incase it wasn't loaded
+            if(!profiles[pubkey]) fetchProfile(pubkey);
+
+            const msg = JSON.stringify(["REQ", "sub_user", { kinds: [1, 6], authors: [pubkey], limit: 20 }]);
+            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
+        }
+
+        function handleUserEvent(event) {
+            if(userEvents.some(e => e.id === event.id)) return;
+            userEvents.push(event); userEvents.sort((a,b) => b.created_at - a.created_at);
+            document.getElementById('user-feed').innerHTML = userEvents.map(ev => generatePostHTML(ev)).join('');
+        }
+
+        // --- 6. GLOBAL FEED ---
         const processedIds = new Set();
         const profiles = {};
         const requestedProfiles = new Set();
@@ -390,33 +446,26 @@
         function fetchProfile(pubkey) { requestedProfiles.add(pubkey); const msg = JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]); Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); }); }
         function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(ev => generatePostHTML(ev)).join(''); }
 
-        // --- 6. SHARED RENDER ---
+        // --- 7. SHARED RENDER ---
         function generatePostHTML(ev) {
             let content = ev.content; let repostHeader = "";
             if (ev.kind === 6) { 
                 repostHeader = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`;
                 try { 
                     const original = JSON.parse(ev.content); 
-                    // Handle cases where JSON is valid but content field is missing/empty
-                    if(original.content) content = original.content;
-                    else content = "[Reposted Signal]";
-                } catch(e) { 
-                    content = "[Reposted Signal]"; 
-                } 
+                    if(original.content) content = original.content; else content = "[Reposted Signal]";
+                } catch(e) { content = "[Reposted Signal]"; } 
             }
             const p = profiles[ev.pubkey] || {};
             let name = p.name ? p.name.replace(/</g,"") : ev.pubkey.substring(0,6)+'...';
             let avatar = ''; if(p.picture) avatar = `<img src="${p.picture}" class="avatar">`;
             content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
-            
-            // Safe JSON for repost button
             const evJson = JSON.stringify(ev).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-            
             return `
                 <div class="post" ${isMe}>
                     ${repostHeader}
-                    <div class="meta">${avatar}<span class="username-link" onclick="viewProfile('${ev.pubkey}')">${name}</span><span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span></div>
+                    <div class="meta" onclick="viewProfile('${ev.pubkey}')" style="cursor:pointer">${avatar}<span class="username-link">${name}</span><span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span></div>
                     <div class="content">${content}</div>
                     <div class="actions">
                         <button class="act-btn" onclick="openReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
@@ -429,7 +478,7 @@
             `;
         }
 
-        // --- 7. ACTIONS ---
+        // --- 8. ACTIONS ---
         async function signAndBroadcast(event) {
             if (authMode === 'extension') event = await window.nostr.signEvent(event);
             else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); }
@@ -437,24 +486,18 @@
         }
         async function sendNote() { const content = document.getElementById('msg-input').value; if (!content || !myPubKey) return; const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey }; try { const s = await signAndBroadcast(event); document.getElementById('msg-input').value = ""; events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Error sending"); } }
         async function doLike(id, pubkey) { if(!myPubKey) return alert("Login to Like"); const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; try { await signAndBroadcast(event); alert("Liked!"); } catch(e) { alert("Failed"); } }
-        
         async function doRepost(id, pubkey, originalJSON) { 
             if(!myPubKey) return alert("Login to Repost"); 
-            // IMPROVEMENT: Ensure originalJSON is clean
-            let contentToPost = originalJSON;
-            if(!contentToPost) contentToPost = ""; 
-            
+            let contentToPost = originalJSON || ""; 
             const event = { kind: 6, created_at: Math.floor(Date.now()/1000), tags: [['e', id, 'wss://relay.damus.io'], ['p', pubkey]], content: contentToPost, pubkey: myPubKey }; 
             try { await signAndBroadcast(event); alert("Reposted!"); } catch(e) { alert("Failed"); } 
         }
-        
         let activeAction = null; let targetNote = null;
         function openReply(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'reply'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> REPLYING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
         function openQuote(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'quote'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> QUOTING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
         async function sendReplyOrQuote() { const content = document.getElementById('reply-input').value; if(!content) return; let event = { kind: 1, created_at: Math.floor(Date.now()/1000), content: content, pubkey: myPubKey, tags: [] }; if (activeAction === 'reply') event.tags = [['e', targetNote.id, '', 'root'], ['p', targetNote.pubkey]]; else if (activeAction === 'quote') { try { const nevent = window.NostrTools.nip19.neventEncode({id: targetNote.id}); event.content = content + "\n\nnostr:" + nevent; event.tags = [['e', targetNote.id, '', 'mention'], ['p', targetNote.pubkey]]; } catch(e) {} } try { const s = await signAndBroadcast(event); document.getElementById('reply-input').value = ""; closeModals(null); events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Failed"); } }
         async function doZap(pubkey) { if(!myPubKey) return alert("Login first"); const p = profiles[pubkey]; if(!p || !p.lud16) return alert("No Zap Address."); if (window.webln) { try { await window.webln.enable(); const amount = prompt("Sats?"); if(!amount) return; const parts = p.lud16.split('@'); const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`; const res = await fetch(url); const data = await res.json(); const invRes = await fetch(`${data.callback}?amount=${amount*1000}`); const invData = await invRes.json(); await window.webln.sendPayment(invData.pr); alert("Zapped"); } catch(e) { alert("Zap failed"); } } else { alert("Install Alby"); } }
-        function closeModals(e) { if(e && !e.target.classList.contains('modal-overlay') && e.target.tagName !== 'BUTTON') return; document.getElementById('generic-modal').classList.add('hidden'); document.getElementById('reply-modal').classList.add('hidden'); }
-        function viewProfile(pubkey) { const p = profiles[pubkey] || {}; let img = '<div style="font-size:3rem;">?</div>'; if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`; let walletHtml = ""; if(p.lud16) walletHtml = `<div style="color:#f1c40f; font-size:0.8rem; margin:10px 0;">⚡ ${p.lud16}</div>`; const html = `${img}<h2>${(p.name||'Unknown').replace(/</g,"")}</h2>${walletHtml}<p>${(p.about||'').replace(/</g,"")}</p>`; document.getElementById('modal-content').innerHTML = html; document.getElementById('generic-modal').classList.remove('hidden'); }
+        function closeModals(e) { if(e && !e.target.classList.contains('modal-overlay') && e.target.tagName !== 'BUTTON') return; document.getElementById('reply-modal').classList.add('hidden'); }
         
         checkAuth();
     </script>
