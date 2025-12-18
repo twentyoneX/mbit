@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>mBIT</title>
     <link rel="manifest" href="manifest.json">
-    <!-- Load Nostr Crypto Library -->
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
         body {
             background-color: #000000;
-            color: #00FF41; /* Matrix Green */
+            color: #00FF41;
             font-family: "Courier New", Courier, monospace;
             padding: 20px;
             margin: 0;
@@ -42,14 +41,15 @@
         button:hover { background: #fff; }
         button.small { padding: 5px 10px; font-size: 0.8rem; margin-left: 10px; }
         button.danger { background: #ff4141; }
+        button.secondary { background: #333; color: #00FF41; border: 1px solid #00FF41; }
         
         .hidden { display: none; }
         .warning { color: yellow; font-size: 0.8rem; margin-bottom: 10px; }
+        
+        /* FEED & RELAY STYLES */
         .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
         .status-open { color: #00FF41; }
         .status-closed { color: red; }
-
-        /* FEED STYLES */
         #feed { max-width: 600px; margin: 0 auto; }
         .post {
             border-left: 2px solid #333; padding-left: 15px; margin-bottom: 30px;
@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <!-- AUTH -->
+    <!-- AUTH & PROFILE -->
     <div class="box" id="auth-ui">
         <h3>>> IDENTITY</h3>
         <div id="login-form">
@@ -87,10 +87,27 @@
             <span style="margin: 0 10px">OR</span>
             <button onclick="generateNewUser()">Generate New Identity</button>
         </div>
+        
         <div id="user-info" class="hidden">
             <div class="warning">LOGGED IN AS:</div>
             <div id="pubkey-display" style="word-break: break-all; margin-bottom:10px; opacity:0.8;"></div>
-            <button onclick="logout()">Logout</button>
+            
+            <div style="margin-bottom: 15px;">
+                <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
+                <button onclick="logout()" class="danger">LOGOUT</button>
+            </div>
+
+            <!-- PROFILE EDITOR FORM -->
+            <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px;">
+                <label>Name / Alias:</label>
+                <input type="text" id="p-name" placeholder="Neo">
+                <label>About / Bio:</label>
+                <input type="text" id="p-about" placeholder="Follow the white rabbit.">
+                <label>Picture URL:</label>
+                <input type="text" id="p-picture" placeholder="https://...">
+                <button onclick="saveProfile()">PUBLISH PROFILE UPDATE</button>
+                <button onclick="toggleProfileEditor()" class="small secondary">CANCEL</button>
+            </div>
         </div>
     </div>
 
@@ -108,7 +125,7 @@
         // --- 1. SETUP ---
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         
-        // --- 2. RELAY MANAGEMENT ---
+        // --- 2. RELAY LOGIC ---
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
@@ -149,168 +166,3 @@
             try {
                 const ws = new WebSocket(url);
                 sockets[url] = ws;
-                ws.onopen = () => {
-                    renderRelays();
-                    // Subscribe to Global Feed
-                    const req = ["REQ", "sub_global_" + Date.now(), { kinds: [1], limit: 20 }];
-                    ws.send(JSON.stringify(req));
-                };
-                ws.onmessage = (msg) => {
-                    const data = JSON.parse(msg.data);
-                    if (data[0] === 'EVENT') handleEvent(data[2]);
-                };
-                ws.onclose = () => renderRelays();
-                ws.onerror = () => renderRelays();
-            } catch(e) { console.error(e); }
-        }
-
-        savedRelays.forEach(connectToRelay);
-
-        // --- 3. IDENTITY ---
-        let myPrivKey = localStorage.getItem('nostr_privkey');
-        let myPubKey = null;
-
-        function checkAuth() {
-            if (myPrivKey) {
-                try {
-                    if(myPrivKey.startsWith('nsec')) {
-                        const {data} = window.NostrTools.nip19.decode(myPrivKey);
-                        myPrivKey = data;
-                    }
-                    myPubKey = window.NostrTools.getPublicKey(myPrivKey);
-                    const myNpub = window.NostrTools.nip19.npubEncode(myPubKey);
-                    
-                    document.getElementById('login-form').classList.add('hidden');
-                    document.getElementById('user-info').classList.remove('hidden');
-                    document.getElementById('composer').classList.remove('hidden');
-                    document.getElementById('pubkey-display').innerText = myNpub;
-                } catch (e) { logout(); }
-            }
-        }
-
-        function generateNewUser() {
-            const sk = window.NostrTools.generatePrivateKey();
-            const nsec = window.NostrTools.nip19.nsecEncode(sk);
-            prompt("COPY YOUR NEW PRIVATE KEY:", nsec);
-            localStorage.setItem('nostr_privkey', sk);
-            myPrivKey = sk;
-            checkAuth();
-        }
-
-        function login() {
-            const input = document.getElementById('privkey-input').value.trim();
-            if(!input) return;
-            localStorage.setItem('nostr_privkey', input);
-            myPrivKey = input;
-            checkAuth();
-        }
-
-        function logout() {
-            localStorage.removeItem('nostr_privkey');
-            location.reload();
-        }
-        checkAuth();
-
-        // --- 4. DATA HANDLING (PROFILES & FEED) ---
-        async function sendNote() {
-            const content = document.getElementById('msg-input').value;
-            if (!content || !myPrivKey) return;
-            const event = {
-                kind: 1,
-                created_at: Math.floor(Date.now() / 1000),
-                tags: [],
-                content: content,
-                pubkey: myPubKey
-            };
-            event.id = window.NostrTools.getEventHash(event);
-            event.sig = window.NostrTools.signEvent(event, myPrivKey);
-            const msg = JSON.stringify(["EVENT", event]);
-            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
-            document.getElementById('msg-input').value = "";
-            handleEvent(event);
-        }
-
-        const feed = document.getElementById('feed');
-        const processedIds = new Set();
-        const profiles = {}; // Cache for usernames { hexKey: {name: '...', picture: '...'} }
-        const requestedProfiles = new Set(); // To prevent spamming requests
-        let events = [];
-
-        function handleEvent(event) {
-            // IF KIND 0 (METADATA) -> STORE PROFILE
-            if (event.kind === 0) {
-                try {
-                    const content = JSON.parse(event.content);
-                    profiles[event.pubkey] = content;
-                    renderFeed(); // Re-render to update names
-                } catch(e) {}
-                return;
-            }
-
-            // IF KIND 1 (TEXT) -> ADD TO FEED
-            if (event.kind === 1) {
-                if (processedIds.has(event.id)) return;
-                processedIds.add(event.id);
-                events.unshift(event);
-                events.sort((a, b) => b.created_at - a.created_at);
-                if (events.length > 50) events.pop();
-                
-                // Fetch Author Metadata if missing
-                if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) {
-                    fetchProfile(event.pubkey);
-                }
-                
-                renderFeed();
-            }
-        }
-
-        function fetchProfile(pubkey) {
-            requestedProfiles.add(pubkey);
-            // Ask relays for Kind 0 (Metadata) for this user
-            const req = ["REQ", "meta_" + pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }];
-            const msg = JSON.stringify(req);
-            
-            // Send to all open sockets
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === WebSocket.OPEN) ws.send(msg);
-            });
-        }
-
-        function renderFeed() {
-            feed.innerHTML = events.map(ev => {
-                const time = new Date(ev.created_at * 1000).toLocaleTimeString();
-                
-                // USER DISPLAY LOGIC
-                let displayName = "Unknown";
-                let npub = "";
-                
-                try {
-                    npub = window.NostrTools.nip19.npubEncode(ev.pubkey);
-                    const shortNpub = npub.substring(0, 10) + "..." + npub.substring(npub.length - 4);
-                    
-                    // Check if we found the name in profiles
-                    if (profiles[ev.pubkey] && profiles[ev.pubkey].name) {
-                        displayName = `<span class="username">${profiles[ev.pubkey].name}</span>`;
-                    } else {
-                        displayName = `<span class="username">${shortNpub}</span>`;
-                    }
-                    
-                    // Add hover info
-                    displayName += ` <span class="npub">(${shortNpub})</span>`;
-                    
-                } catch(e) { displayName = "Error decoding key"; }
-
-                const content = ev.content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
-                
-                return `
-                    <div class="post" ${isMe}>
-                        <div class="meta">USER: ${displayName} • ${time}</div>
-                        <div class="content">${content}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-    </script>
-</body>
-</html>
