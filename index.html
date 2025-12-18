@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mBIT Protocol</title>
+    <title>mBIT</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
@@ -22,14 +22,23 @@
             margin-bottom: 20px;
         }
         h1 { font-size: 2.5rem; margin: 0; text-shadow: 0 0 5px #00FF41; text-transform: lowercase; }
-        .subtitle { opacity: 0.7; font-size: 0.9rem; margin-top: 5px; }
         
-        .box {
-            max-width: 600px; margin: 0 auto 30px auto;
+        /* NEW NAV BAR STYLES */
+        .nav-bar { margin-top: 10px; font-size: 0.9rem; user-select: none; }
+        .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; margin: 0 10px; }
+        .nav-item:hover { opacity: 1; text-shadow: 0 0 5px #00FF41; text-decoration: underline; }
+        .nav-separator { opacity: 0.3; }
+        
+        /* DROPDOWN PANELS */
+        .dropdown-panel {
+            max-width: 600px; margin: 0 auto 20px auto;
             border: 1px dashed #00FF41; padding: 15px;
+            background: #050505;
+            animation: slideDown 0.3s;
         }
-        h3 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        
+        @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* INPUTS & BUTTONS */
         input, textarea {
             background: #001100; border: 1px solid #00FF41; color: #00FF41;
             font-family: inherit; padding: 10px; width: 95%; margin-bottom: 10px;
@@ -47,13 +56,13 @@
         .hidden { display: none !important; }
         .warning-text { color: #ff4141; font-size: 0.8rem; margin-top: 5px; font-weight: bold; }
         
-        /* KEY DISPLAY BOXES */
+        /* KEYS */
         .key-container { margin-bottom: 15px; border: 1px solid #333; padding: 10px; }
         .key-label { font-size: 0.7rem; opacity: 0.7; display: block; margin-bottom: 5px; }
         .key-row { display: flex; gap: 5px; }
         .key-input { flex-grow: 1; background: #000; color: #fff; font-size: 0.8rem; border: 1px solid #333; }
         
-        /* FEED STYLES */
+        /* FEED */
         .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
         .status-open { color: #00FF41; } .status-closed { color: red; }
         #feed-container { max-width: 600px; margin: 0 auto; position: relative; }
@@ -86,12 +95,10 @@
             display: flex; gap: 10px; border-top: 1px dotted #333; padding-top: 5px; flex-wrap: wrap;
         }
         .act-btn { 
-            background: transparent; color: #00FF41; border: none; padding: 2px 5px; cursor: pointer; 
-            font-family: inherit; font-size: 0.75rem;
+            background: transparent; color: #00FF41; border: none; padding: 2px 5px; cursor: pointer; font-family: inherit; font-size: 0.75rem;
         }
         .act-btn:hover { background: #00FF41; color: black; }
-        .zap-btn { color: #f1c40f; } 
-        .zap-btn:hover { background: #f1c40f; color: black; }
+        .zap-btn { color: #f1c40f; } .zap-btn:hover { background: #f1c40f; color: black; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -117,41 +124,31 @@
 <body>
     <header>
         <h1>mBIT</h1>
-        <div class="subtitle">protocol: nostr | decentralized mesh</div>
+        <!-- NAVIGATION BAR -->
+        <div class="nav-bar">
+            <span class="nav-item" onclick="togglePanel('panel-relays')">[ NETWORK NODES ]</span>
+            <span class="nav-separator">|</span>
+            <span class="nav-item" onclick="togglePanel('panel-identity')">[ IDENTITY ]</span>
+        </div>
     </header>
 
-    <!-- MODALS -->
-    <div id="generic-modal" class="modal-overlay hidden" onclick="closeModals(event)">
-        <div class="modal-card">
-            <div id="modal-content"></div>
-            <br>
-            <button onclick="closeModals(null)">CLOSE</button>
-        </div>
-    </div>
-
-    <div id="reply-modal" class="modal-overlay hidden" onclick="closeModals(event)">
-        <div class="modal-card" style="text-align: left;">
-            <h3 id="reply-title">>> REPLYING TO SIGNAL</h3>
-            <div id="reply-context" style="opacity: 0.5; font-size: 0.8rem; margin-bottom: 10px;"></div>
-            <textarea id="reply-input" rows="4" placeholder="enter transmission..."></textarea>
-            <button onclick="sendReplyOrQuote()">TRANSMIT</button>
-            <button class="secondary" onclick="closeModals(null)">CANCEL</button>
-        </div>
-    </div>
-
-    <!-- RELAY MANAGER -->
-    <div class="box">
-        <h3>>> NETWORK NODES</h3>
+    <!-- 1. RELAY DROPDOWN -->
+    <div id="panel-relays" class="dropdown-panel hidden">
+        <h3 style="margin-top:0">>> NETWORK NODES (RELAYS)</h3>
         <div id="relay-list"></div>
         <div style="margin-top: 10px; display:flex;">
             <input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0;">
             <button onclick="addRelay()" style="margin-left:5px;">ADD</button>
         </div>
+        <br>
+        <button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
     </div>
 
-    <!-- AUTH -->
-    <div class="box" id="auth-ui">
-        <h3>>> IDENTITY</h3>
+    <!-- 2. IDENTITY DROPDOWN -->
+    <div id="panel-identity" class="dropdown-panel hidden">
+        <h3 style="margin-top:0">>> IDENTITY</h3>
+        
+        <!-- LOGIN FORM -->
         <div id="login-form">
             <button onclick="loginExtension()" class="extension">⚡ LOGIN WITH EXTENSION</button>
             <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR LEGACY KEY ---</div>
@@ -161,10 +158,10 @@
             <button onclick="generateNewUser()">New Key</button>
         </div>
         
+        <!-- LOGGED IN VIEW -->
         <div id="user-info" class="hidden">
-            <!-- KEY DISPLAY -->
             <div class="key-container">
-                <span class="key-label">PUBLIC ID (NPUB) - SAFE TO SHARE</span>
+                <span class="key-label">PUBLIC ID (NPUB)</span>
                 <div class="key-row">
                     <input type="text" id="display-npub" class="key-input" readonly>
                     <button class="small" onclick="copyKey('display-npub')">COPY</button>
@@ -172,13 +169,13 @@
             </div>
 
             <div class="key-container" id="nsec-container">
-                <span class="key-label" style="color:#ff4141">SECRET KEY (NSEC) - DO NOT SHARE!</span>
+                <span class="key-label" style="color:#ff4141">SECRET KEY (NSEC)</span>
                 <div class="key-row">
                     <input type="password" id="display-nsec" class="key-input" readonly value="">
                     <button class="small secondary" onclick="toggleSecret()">SHOW</button>
                     <button class="small danger" onclick="copyKey('display-nsec')">COPY</button>
                 </div>
-                <div class="warning-text">⚠️ WARNING: This key controls your account. If you lose it, your account is gone. If you share it, you will be hacked.</div>
+                <div class="warning-text">⚠️ WARNING: Secret Key. Do not share.</div>
             </div>
 
             <div style="margin-bottom: 15px; border-top:1px dashed #333; padding-top:15px;">
@@ -190,18 +187,38 @@
                 <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
                 <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
                 <label>Picture URL:</label> <input type="text" id="p-picture" placeholder="https://...">
-                <label style="color:#f1c40f">Zap Wallet (Lightning):</label> 
-                <input type="text" id="p-lud16" placeholder="name@getalby.com" style="border-color:#f1c40f">
+                <label style="color:#f1c40f">Zap Wallet:</label> <input type="text" id="p-lud16" placeholder="name@getalby.com" style="border-color:#f1c40f">
                 <button onclick="saveProfile()">PUBLISH UPDATE</button>
                 <button onclick="toggleProfileEditor()" class="small secondary">CANCEL</button>
             </div>
         </div>
+        <br>
+        <button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
+    </div>
+
+    <!-- MODALS -->
+    <div id="generic-modal" class="modal-overlay hidden" onclick="closeModals(event)">
+        <div class="modal-card">
+            <div id="modal-content"></div>
+            <br><button onclick="closeModals(null)">CLOSE</button>
+        </div>
+    </div>
+    <div id="reply-modal" class="modal-overlay hidden" onclick="closeModals(event)">
+        <div class="modal-card" style="text-align: left;">
+            <h3 id="reply-title">>> REPLYING</h3>
+            <div id="reply-context" style="opacity: 0.5; font-size: 0.8rem; margin-bottom: 10px;"></div>
+            <textarea id="reply-input" rows="4" placeholder="enter transmission..."></textarea>
+            <button onclick="sendReplyOrQuote()">TRANSMIT</button>
+            <button class="secondary" onclick="closeModals(null)">CANCEL</button>
+        </div>
     </div>
 
     <!-- MAIN COMPOSER -->
-    <div class="box hidden" id="composer">
-        <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
-        <button onclick="sendNote()">SEND SIGNAL</button>
+    <div id="composer-container" style="max-width:600px; margin:0 auto;" class="hidden">
+        <div style="border: 1px dashed #00FF41; padding: 15px; margin-bottom:20px;">
+            <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
+            <button onclick="sendNote()">SEND SIGNAL</button>
+        </div>
     </div>
 
     <!-- FEED -->
@@ -213,7 +230,17 @@
     </div>
 
     <script>
-        // --- 1. SETUP ---
+        // --- 1. UI TOGGLES ---
+        function togglePanel(id) {
+            // Close others
+            const panels = ['panel-relays', 'panel-identity'];
+            panels.forEach(p => {
+                if(p !== id) document.getElementById(p).classList.add('hidden');
+            });
+            document.getElementById(id).classList.toggle('hidden');
+        }
+
+        // --- 2. SETUP ---
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
@@ -247,7 +274,7 @@
         }
         savedRelays.forEach(connectToRelay);
 
-        // --- 2. AUTH ---
+        // --- 3. AUTH ---
         let myPrivKey = localStorage.getItem('nostr_privkey');
         let myPubKey = localStorage.getItem('nostr_pubkey');
         let authMode = localStorage.getItem('nostr_mode') || 'none';
@@ -265,37 +292,26 @@
         function initUserUI(pubkey) {
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('user-info').classList.remove('hidden');
-            document.getElementById('composer').classList.remove('hidden');
-            
-            // Populate Keys
+            document.getElementById('composer-container').classList.remove('hidden'); // Show composer in feed
             try { 
                 document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(pubkey); 
-                
-                // Only show NSEC if we actually have the private key locally
                 if(myPrivKey && authMode === 'local') {
                     document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey);
                 } else {
-                    document.getElementById('nsec-container').style.display = 'none'; // Hide if extension
+                    document.getElementById('nsec-container').style.display = 'none';
                 }
             } catch(e){}
-            
             fetchProfile(pubkey);
         }
 
-        // --- KEY UI FUNCTIONS ---
+        // --- KEY UI ---
         function toggleSecret() {
             const el = document.getElementById('display-nsec');
-            if(el.type === "password") el.type = "text";
-            else el.type = "password";
+            if(el.type === "password") el.type = "text"; else el.type = "password";
         }
         function copyKey(id) {
-            const el = document.getElementById(id);
-            el.select();
-            el.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(el.value);
-            alert("Copied to clipboard");
+            const el = document.getElementById(id); el.select(); el.setSelectionRange(0, 99999); navigator.clipboard.writeText(el.value); alert("Copied");
         }
-
         async function loginExtension() {
             if (!window.nostr) return alert("No Extension");
             try {
@@ -312,14 +328,13 @@
         }
         function generateNewUser() {
             const sk = window.NostrTools.generatePrivateKey();
-            // Don't prompt anymore, we show it in UI
             localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_mode', 'local');
             authMode = 'local'; myPrivKey = sk; checkAuth();
-            alert("NEW IDENTITY GENERATED. \n\nIMPORTANT: Scroll down to 'SECRET KEY' and save it immediately!");
+            alert("NEW IDENTITY GENERATED. CHECK 'IDENTITY' TAB FOR KEYS.");
         }
         function logout() { localStorage.clear(); location.reload(); }
 
-        // --- 3. ACTIONS ---
+        // --- 4. ACTIONS ---
         async function signAndBroadcast(event) {
             if (authMode === 'extension') event = await window.nostr.signEvent(event);
             else {
@@ -335,19 +350,13 @@
             const content = document.getElementById('msg-input').value;
             if (!content || !myPubKey) return;
             const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
-            try { 
-                const s = await signAndBroadcast(event); 
-                document.getElementById('msg-input').value = ""; 
-                events.unshift(s); renderFeed(); 
-            } catch(e) { alert("Error sending"); }
+            try { const s = await signAndBroadcast(event); document.getElementById('msg-input').value = ""; events.unshift(s); renderFeed(); } catch(e) { alert("Error sending"); }
         }
 
         async function saveProfile() {
             const content = JSON.stringify({ 
-                name: document.getElementById('p-name').value, 
-                about: document.getElementById('p-about').value, 
-                picture: document.getElementById('p-picture').value,
-                lud16: document.getElementById('p-lud16').value 
+                name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, 
+                picture: document.getElementById('p-picture').value, lud16: document.getElementById('p-lud16').value 
             });
             const event = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
             try { await signAndBroadcast(event); alert("Updated"); toggleProfileEditor(); profiles[myPubKey] = JSON.parse(content); renderFeed(); } catch(e) { alert("Error"); }
@@ -393,7 +402,6 @@
             }
             try { const s = await signAndBroadcast(event); document.getElementById('reply-input').value = ""; closeModals(null); events.unshift(s); renderFeed(); } catch(e) { alert("Failed"); }
         }
-
         async function doZap(pubkey) {
             if(!myPubKey) return alert("Login first");
             const p = profiles[pubkey];
@@ -401,31 +409,22 @@
             if (window.webln) {
                 try {
                     await window.webln.enable();
-                    const amount = prompt("Sats to Zap " + p.lud16 + "?");
-                    if(!amount) return;
-                    const parts = p.lud16.split('@');
-                    const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    const callback = data.callback;
-                    const amountMillisats = amount * 1000;
-                    const invRes = await fetch(`${callback}?amount=${amountMillisats}`);
-                    const invData = await invRes.json();
-                    await window.webln.sendPayment(invData.pr);
-                    alert("Zapped ⚡");
+                    const amount = prompt("Sats to Zap " + p.lud16 + "?"); if(!amount) return;
+                    const parts = p.lud16.split('@'); const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
+                    const res = await fetch(url); const data = await res.json();
+                    const invRes = await fetch(`${data.callback}?amount=${amount*1000}`); const invData = await invRes.json();
+                    await window.webln.sendPayment(invData.pr); alert("Zapped ⚡");
                 } catch(e) { alert("Zap failed."); }
             } else { alert("Please install Alby extension to Zap."); }
         }
 
-        // --- 4. UI & DATA ---
+        // --- 5. UI & DATA ---
         function toggleProfileEditor() {
             document.getElementById('profile-editor').classList.toggle('hidden');
             if(profiles[myPubKey]) {
                 const p = profiles[myPubKey];
-                document.getElementById('p-name').value = p.name||'';
-                document.getElementById('p-about').value = p.about||'';
-                document.getElementById('p-picture').value = p.picture||'';
-                document.getElementById('p-lud16').value = p.lud16||'';
+                document.getElementById('p-name').value = p.name||''; document.getElementById('p-about').value = p.about||'';
+                document.getElementById('p-picture').value = p.picture||''; document.getElementById('p-lud16').value = p.lud16||'';
             }
         }
         function closeModals(e) {
@@ -435,16 +434,14 @@
         }
         function viewProfile(pubkey) {
             const p = profiles[pubkey] || {};
-            let img = '<div style="font-size:3rem;">?</div>';
-            if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`;
-            let walletHtml = "";
-            if(p.lud16) walletHtml = `<div style="color:#f1c40f; font-size:0.8rem; margin:10px 0;">⚡ ${p.lud16}</div>`;
+            let img = '<div style="font-size:3rem;">?</div>'; if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`;
+            let walletHtml = ""; if(p.lud16) walletHtml = `<div style="color:#f1c40f; font-size:0.8rem; margin:10px 0;">⚡ ${p.lud16}</div>`;
             const html = `${img}<h2>${(p.name||'Unknown').replace(/</g,"")}</h2>${walletHtml}<p>${(p.about||'').replace(/</g,"")}</p>`;
             document.getElementById('modal-content').innerHTML = html;
             document.getElementById('generic-modal').classList.remove('hidden');
         }
 
-        // --- 5. QUEUE LOGIC ---
+        // --- 6. FEED ---
         const feed = document.getElementById('feed');
         const processedIds = new Set();
         const profiles = {};
@@ -458,56 +455,31 @@
             } else if (event.kind === 1 || event.kind === 6) {
                 if (processedIds.has(event.id)) return;
                 processedIds.add(event.id);
-                if (events.length >= 20) {
-                    pendingEvents.unshift(event);
-                    updateNewButton();
-                } else {
-                    events.unshift(event);
-                    events.sort((a, b) => b.created_at - a.created_at);
-                    if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) fetchProfile(event.pubkey);
-                    renderFeed();
-                }
+                if (events.length >= 20) { pendingEvents.unshift(event); updateNewButton(); } 
+                else { events.unshift(event); events.sort((a, b) => b.created_at - a.created_at); if (!profiles[event.pubkey] && !requestedProfiles.has(event.pubkey)) fetchProfile(event.pubkey); renderFeed(); }
             }
         }
-
         function updateNewButton() {
             const btn = document.getElementById('new-btn');
-            if (pendingEvents.length > 0) {
-                btn.classList.remove('hidden');
-                btn.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`;
-            } else { btn.classList.add('hidden'); }
+            if (pendingEvents.length > 0) { btn.classList.remove('hidden'); btn.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; } else { btn.classList.add('hidden'); }
         }
-
         function mergeQueue() {
-            pendingEvents.forEach(e => {
-                events.unshift(e);
-                if (!profiles[e.pubkey] && !requestedProfiles.has(e.pubkey)) fetchProfile(e.pubkey);
-            });
-            pendingEvents = [];
-            events.sort((a, b) => b.created_at - a.created_at);
-            if(events.length > 100) events = events.slice(0, 100);
-            renderFeed();
-            updateNewButton();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            pendingEvents.forEach(e => { events.unshift(e); if (!profiles[e.pubkey] && !requestedProfiles.has(e.pubkey)) fetchProfile(e.pubkey); });
+            pendingEvents = []; events.sort((a, b) => b.created_at - a.created_at); if(events.length > 100) events = events.slice(0, 100);
+            renderFeed(); updateNewButton(); window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
         function fetchProfile(pubkey) {
             requestedProfiles.add(pubkey);
             const msg = JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]);
             Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
         }
-
         function renderFeed() {
             feed.innerHTML = events.map(ev => {
-                let content = ev.content;
-                let repostHeader = "";
-                if (ev.kind === 6) {
-                    try { const original = JSON.parse(ev.content); content = original.content; repostHeader = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`; } catch(e) { content = "[Repost Data Error]"; }
-                }
+                let content = ev.content; let repostHeader = "";
+                if (ev.kind === 6) { try { const original = JSON.parse(ev.content); content = original.content; repostHeader = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`; } catch(e) { content = "[Repost Data Error]"; } }
                 const p = profiles[ev.pubkey] || {};
                 let name = p.name ? p.name.replace(/</g,"") : ev.pubkey.substring(0,6)+'...';
-                let avatar = '';
-                if(p.picture) avatar = `<img src="${p.picture}" class="avatar">`;
+                let avatar = ''; if(p.picture) avatar = `<img src="${p.picture}" class="avatar">`;
                 content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
                 const evJson = JSON.stringify(ev).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
