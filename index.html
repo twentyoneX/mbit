@@ -22,6 +22,8 @@
             --reply-indicator: #222;
             --footer-bg: #000000;
             --tag-bg: #333;
+            --fab-bg: #ffffff;
+            --fab-text: #000000;
         }
 
         [data-theme="matrix"] {
@@ -34,6 +36,8 @@
             --reply-indicator: #002200;
             --footer-bg: #001100;
             --tag-bg: #003300;
+            --fab-bg: #00FF41;
+            --fab-text: #000000;
         }
 
         [data-theme="light"] {
@@ -49,6 +53,8 @@
             --reply-indicator: #e0e0e0;
             --footer-bg: #eeeeee;
             --tag-bg: #ddd;
+            --fab-bg: #000000;
+            --fab-text: #ffffff;
         }
 
         /* GLOBAL STYLES */
@@ -117,13 +123,6 @@
 
         .p-img-large { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border-color); margin-bottom: 15px; object-fit: cover; }
         .hidden { display: none !important; }
-        
-        #reply-context-bar {
-            background-color: var(--reply-indicator);
-            padding: 10px; margin-bottom: 10px; font-size: 0.8rem;
-            display: flex; justify-content: space-between; align-items: center;
-            border-left: 3px solid var(--text-color);
-        }
 
         .profile-detail-box {
             margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
@@ -159,7 +158,6 @@
         .notif-item { padding: 10px; border-bottom: 1px solid var(--post-border); font-size: 0.9rem; }
         .profile-actions { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
 
-        /* FILTER TAGS */
         .filter-tag {
             display: inline-flex; align-items: center; 
             background: var(--tag-bg); padding: 2px 8px; 
@@ -167,6 +165,46 @@
         }
         .remove-tag {
             margin-left: 5px; cursor: pointer; color: #ff4141; font-weight: bold;
+        }
+
+        /* FAB & MODAL */
+        .fab-btn {
+            position: fixed;
+            bottom: 70px; /* Above footer */
+            right: 20px;
+            width: 60px; height: 60px;
+            background: var(--fab-bg);
+            color: var(--fab-text);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: bold;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+            z-index: 1500;
+            transition: 0.2s;
+        }
+        .fab-btn:hover { transform: scale(1.1); box-shadow: var(--glow); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            width: 100%; max-width: 600px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        #reply-context-bar {
+            background-color: var(--reply-indicator);
+            padding: 10px; margin-bottom: 10px; font-size: 0.8rem;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 3px solid var(--text-color);
         }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -310,18 +348,27 @@
         </div>
 
         <!-- MAIN FEED STUFF -->
-        <div id="composer-container" class="hidden" style="border: 1px dashed var(--border-color); padding: 15px; margin-bottom:20px;">
+        <div id="feed-container">
+            <div id="new-btn" class="hidden" onclick="mergeQueue()">>> LOAD NEW SIGNALS <<</div>
+            <div id="feed"></div>
+        </div>
+    </div>
+
+    <!-- FLOATING ACTION BUTTON -->
+    <div class="fab-btn" onclick="openComposer()">+</div>
+
+    <!-- COMPOSER MODAL (POPUP) -->
+    <div id="composer-modal" class="modal-overlay hidden">
+        <div class="modal-content">
             <div id="reply-context-bar" class="hidden">
                 <span id="reply-text">Replying to...</span>
                 <button class="small danger" onclick="cancelReply()">CANCEL</button>
             </div>
-            <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
-            <button onclick="sendNote()" style="width:100%;">SEND SIGNAL</button>
-        </div>
-
-        <div id="feed-container">
-            <div id="new-btn" class="hidden" onclick="mergeQueue()">>> LOAD NEW SIGNALS <<</div>
-            <div id="feed"></div>
+            <textarea id="msg-input" rows="5" placeholder="broadcast signal..."></textarea>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button onclick="closeComposer()" class="secondary" style="flex:1">CANCEL</button>
+                <button onclick="sendNote()" style="flex:2">SEND SIGNAL</button>
+            </div>
         </div>
     </div>
 
@@ -337,15 +384,11 @@
     <script>
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
-        // Load Filters
         let filterSettings = JSON.parse(localStorage.getItem('mbit_filters')) || { hideNsfw: false, blockedTags: [] };
         
         const sockets = {};
         
-        let events = []; 
-        let incomingBuffer = []; 
-        let pendingEvents = []; 
-        
+        let events = [], incomingBuffer = [], pendingEvents = []; 
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [];
         let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
         let myContacts = new Set(); 
@@ -372,19 +415,30 @@
         function goHome() {
             ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('feed-container').classList.remove('hidden');
-            if (myPubKey) document.getElementById('composer-container').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
             currentViewedProfile = null;
         }
 
         function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container', 'composer-container'].forEach(p => {
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container'].forEach(p => {
                 const el = document.getElementById(p); if(el) el.classList.add('hidden');
             });
             document.getElementById(id).classList.remove('hidden');
             if (id === 'panel-my-profile') loadMyHistory();
             if (id === 'panel-relays') renderRelays();
             currentViewedProfile = null;
+        }
+
+        /* --- COMPOSER LOGIC --- */
+        function openComposer() {
+            if(!myPubKey) return alert("Please Login First");
+            document.getElementById('composer-modal').classList.remove('hidden');
+            document.getElementById('msg-input').focus();
+        }
+
+        function closeComposer() {
+            document.getElementById('composer-modal').classList.add('hidden');
+            cancelReply();
         }
 
         /* --- FILTERING LOGIC --- */
@@ -411,7 +465,6 @@
 
         function saveFilters() {
             localStorage.setItem('mbit_filters', JSON.stringify(filterSettings));
-            // Reload feed to apply changes immediately
             if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
         }
 
@@ -422,20 +475,16 @@
         }
 
         function isBlocked(ev) {
-            // Check Tags in Event (Standard)
             const evTags = ev.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase());
-            
             if (filterSettings.hideNsfw && evTags.includes('nsfw')) return true;
-            
             for (let blocked of filterSettings.blockedTags) {
                 if (evTags.includes(blocked)) return true;
             }
             return false;
         }
 
-        /* --- GENERATE HTML (With Filter Check) --- */
+        /* --- GENERATE HTML --- */
         function generatePostHTML(ev) {
-            // Apply Content Filter
             if (isBlocked(ev)) return '';
 
             const p = profiles[ev.pubkey] || {};
@@ -457,6 +506,24 @@
                     <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
                 </div>
             </div>`;
+        }
+
+        /* --- LIKE LOGIC FIXED --- */
+        async function doLike(id, pubkey) {
+            if(!myPubKey) return alert("Login first");
+            likedPosts.add(id);
+            localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
+            
+            // Re-render the active view to show the like state immediately
+            if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
+            if(!document.getElementById('panel-user-profile').classList.contains('hidden')) renderUserFeed();
+            if(!document.getElementById('panel-my-profile').classList.contains('hidden')) {
+                // Manually re-render my feed html
+                document.getElementById('my-feed').innerHTML = myEvents.map(generatePostHTML).join('');
+            }
+
+            const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
+            await signAndBroadcast(event);
         }
 
         /* --- SEARCH AND UNIVERSAL FEED LOGIC --- */
@@ -586,12 +653,15 @@
 
         function initReply(eventId, pubkey) {
             if(!myPubKey) return alert("Login required.");
-            goHome(); 
+            
             const p = profiles[pubkey] || {name: pubkey.substring(0,8)};
             replyContext = { id: eventId, pubkey: pubkey };
+            
+            // Open Modal
+            openComposer();
+            
             document.getElementById('reply-context-bar').classList.remove('hidden');
             document.getElementById('reply-text').innerHTML = `Replying to: <b>${p.name}</b>`;
-            document.getElementById('msg-input').focus();
         }
 
         function cancelReply() {
@@ -601,22 +671,13 @@
 
         function initQuote(eventId) {
             if(!myPubKey) return alert("Login required.");
-            goHome();
+            openComposer();
             try {
                 const noteId = window.NostrTools.nip19.noteEncode(eventId);
                 const input = document.getElementById('msg-input');
                 input.value += `\nnostr:${noteId}\n`;
                 input.focus();
             } catch(e) {}
-        }
-
-        async function doLike(id, pubkey) {
-            if(!myPubKey) return alert("Login first");
-            likedPosts.add(id);
-            localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
-            renderGlobalFeed();
-            const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
-            await signAndBroadcast(event);
         }
 
         function connectToRelay(url) {
@@ -760,7 +821,7 @@
             const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: tags, content: content, pubkey: myPubKey };
             await signAndBroadcast(event); 
             document.getElementById('msg-input').value = "";
-            cancelReply();
+            closeComposer();
         }
 
         function login() {
@@ -824,7 +885,6 @@
         if (myPubKey) {
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('user-info').classList.remove('hidden');
-            document.getElementById('composer-container').classList.remove('hidden');
             document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(myPubKey);
             if (myPrivKey) document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey);
             else document.getElementById('nsec-display-container').classList.add('hidden');
