@@ -24,6 +24,7 @@
             --tag-bg: #333;
             --fab-bg: #ffffff;
             --fab-text: #000000;
+            --quote-bg: #111;
         }
 
         [data-theme="matrix"] {
@@ -38,6 +39,7 @@
             --tag-bg: #003300;
             --fab-bg: #00FF41;
             --fab-text: #000000;
+            --quote-bg: #001100;
         }
 
         [data-theme="light"] {
@@ -55,6 +57,7 @@
             --tag-bg: #ddd;
             --fab-bg: #000000;
             --fab-text: #ffffff;
+            --quote-bg: #f9f9f9;
         }
 
         /* GLOBAL STYLES */
@@ -109,6 +112,17 @@
 
         .media-img, .media-video { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
         .hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
+
+        /* QUOTE CARD STYLE */
+        .quote-card {
+            border: 1px solid var(--post-border);
+            background: var(--quote-bg);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
         .actions { margin-top: 10px; font-size: 0.75rem; display: flex; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 8px; flex-wrap: wrap; }
         .act-btn { background: transparent; color: var(--text-color); border: 1px solid var(--text-color); padding: 2px 8px; cursor: pointer; font-family: inherit; font-size: 0.7rem; }
@@ -553,25 +567,40 @@
                 <div class="actions">
                     <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
                     <button class="act-btn" onclick="initQuote('${ev.id}')">[QUOTE]</button>
+                    <button class="act-btn" onclick="doRepost('${ev.id}', '${ev.pubkey}', '')">[REPOST]</button>
                     <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
                     <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
                 </div>
             </div>`;
         }
 
-        /* --- LIKE LOGIC FIXED --- */
+        /* --- LIKE & REPOST LOGIC --- */
         async function doLike(id, pubkey) {
             if(!myPubKey) return alert("Login first");
             likedPosts.add(id);
             localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
             
-            // Re-render active view
             if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
             if(!document.getElementById('panel-user-profile').classList.contains('hidden')) renderUserFeed();
             if(!document.getElementById('panel-my-profile').classList.contains('hidden')) renderMyFeed();
 
             const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
             await signAndBroadcast(event);
+        }
+
+        async function doRepost(id, pubkey, originalContent) {
+            if(!myPubKey) return alert("Login first");
+            if(confirm("Repost this note?")) {
+                const event = { 
+                    kind: 6, 
+                    created_at: Math.floor(Date.now()/1000), 
+                    tags: [['e', id], ['p', pubkey]], 
+                    content: "", 
+                    pubkey: myPubKey 
+                };
+                await signAndBroadcast(event);
+                alert("Reposted!");
+            }
         }
 
         /* --- SEARCH AND UNIVERSAL FEED LOGIC --- */
@@ -626,7 +655,31 @@
         function parseContent(text) {
             if(!text) return "";
             let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            content = content.replace(/nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g, '<a href="#" class="hashtag">[$1]</a>');
+            
+            // Check for Nostr Links (Quotes)
+            const nostrRegex = /nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g;
+            content = content.replace(nostrRegex, (match, id) => {
+                // Try to find the event in our cache to render a card
+                let decodedId = id;
+                try {
+                    const decoded = window.NostrTools.nip19.decode(id);
+                    decodedId = decoded.data.id || decoded.data;
+                } catch(e){}
+
+                // Check cache (global events or my events)
+                const cached = events.find(e => e.id === decodedId) || myEvents.find(e => e.id === decodedId);
+                
+                if(cached) {
+                    const p = profiles[cached.pubkey] || {};
+                    return `<div class="quote-card">
+                        <div class="meta"><b>${p.name||cached.pubkey.substring(0,6)}</b></div>
+                        <div>${parseContent(cached.content)}</div>
+                    </div>`;
+                } else {
+                    return `<a href="#" class="hashtag">[ Quoted Note: ${id.substring(0,10)}... ]</a>`;
+                }
+            });
+
             const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi;
             content = content.replace(videoRegex, (url) => `<video controls class="media-video"><source src="${url}"></video>`);
             const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi;
@@ -818,7 +871,7 @@
             renderUserFeed();
         }
         
-        // --- NEW MY PROFILE TAB LOGIC ---
+        // --- MY PROFILE TAB LOGIC ---
         function switchMyTab(tab) {
             currentMyTab = tab;
             document.getElementById('my-tab-notes').className = tab === 'notes' ? 'tab-btn active' : 'tab-btn';
