@@ -19,6 +19,7 @@
             --meta-color: #bbbbbb;
             --post-border: #333;
             --glow: 0 0 0px transparent;
+            --reply-indicator: #222;
         }
 
         [data-theme="matrix"] {
@@ -28,6 +29,7 @@
             --btn-bg: #00FF41;
             --meta-color: #ccffcc;
             --glow: 0 0 5px #00FF41;
+            --reply-indicator: #002200;
         }
 
         [data-theme="light"] {
@@ -40,6 +42,7 @@
             --btn-text: #ffffff;
             --meta-color: #444444;
             --post-border: #cccccc;
+            --reply-indicator: #e0e0e0;
         }
 
         /* GLOBAL STYLES */
@@ -104,6 +107,19 @@
 
         .p-img-large { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border-color); margin-bottom: 15px; object-fit: cover; }
         .hidden { display: none !important; }
+        
+        /* REPLY INDICATOR */
+        #reply-context-bar {
+            background-color: var(--reply-indicator);
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid var(--text-color);
+        }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -199,6 +215,11 @@
 
         <!-- MAIN FEED STUFF -->
         <div id="composer-container" class="hidden" style="border: 1px dashed var(--border-color); padding: 15px; margin-bottom:20px;">
+            <!-- REPLY INDICATOR (New) -->
+            <div id="reply-context-bar" class="hidden">
+                <span id="reply-text">Replying to...</span>
+                <button class="small danger" onclick="cancelReply()">CANCEL</button>
+            </div>
             <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
             <button onclick="sendNote()" style="width:100%;">SEND SIGNAL</button>
         </div>
@@ -217,6 +238,9 @@
         let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
+        
+        // NEW STATE FOR REPLY
+        let replyContext = null;
 
         function changeTheme(theme) {
             document.documentElement.removeAttribute('data-theme');
@@ -244,6 +268,10 @@
 
         function parseContent(text) {
             let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            
+            // Render NIP-19 nostr: prefixes as links or text
+            content = content.replace(/nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g, '<a href="#" class="hashtag">[$1]</a>');
+
             const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi;
             content = content.replace(videoRegex, (url) => `<video controls class="media-video"><source src="${url}"></video>`);
             const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi;
@@ -258,6 +286,8 @@
             let content = ev.content;
             if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; }
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
+            
+            // Buttons now have onclick handlers for Reply and Quote
             return `<div class="post">
                 <div class="meta" onclick="viewProfile('${ev.pubkey}')">
                     ${p.picture?`<img src="${p.picture}" class="avatar">`:''}
@@ -266,12 +296,51 @@
                 </div>
                 <div class="content">${parseContent(content)}</div>
                 <div class="actions">
-                    <button class="act-btn">[REPLY]</button><button class="act-btn">[QUOTE]</button>
+                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
+                    <button class="act-btn" onclick="initQuote('${ev.id}')">[QUOTE]</button>
                     <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
                     <button class="act-btn zap-btn" onclick="alert('Zap to: ${p.lud16||'no address'}')">[ZAP ⚡]</button>
                 </div>
             </div>`;
         }
+
+        /* --- REPLY AND QUOTE FUNCTIONS --- */
+
+        function initReply(eventId, pubkey) {
+            if(!myPubKey) return alert("Login required to reply.");
+            goHome(); // Bring composer into view
+            
+            const p = profiles[pubkey] || {name: pubkey.substring(0,8)};
+            replyContext = { id: eventId, pubkey: pubkey };
+            
+            document.getElementById('reply-context-bar').classList.remove('hidden');
+            document.getElementById('reply-text').innerHTML = `Replying to: <b>${p.name}</b>`;
+            document.getElementById('msg-input').focus();
+        }
+
+        function cancelReply() {
+            replyContext = null;
+            document.getElementById('reply-context-bar').classList.add('hidden');
+        }
+
+        function initQuote(eventId) {
+            if(!myPubKey) return alert("Login required to quote.");
+            goHome();
+            
+            // Convert Hex ID to Bech32 (note1...) for quoting
+            try {
+                const noteId = window.NostrTools.nip19.noteEncode(eventId);
+                const quoteStr = `\nnostr:${noteId}\n`;
+                const input = document.getElementById('msg-input');
+                input.value += quoteStr;
+                input.focus();
+            } catch(e) {
+                console.error(e);
+                alert("Error creating quote link");
+            }
+        }
+
+        /* -------------------------------- */
 
         async function doLike(id, pubkey) {
             if(!myPubKey) return alert("Login first");
@@ -341,8 +410,29 @@
 
         async function sendNote() {
             const content = document.getElementById('msg-input').value; if (!content) return;
-            const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content, pubkey: myPubKey };
-            await signAndBroadcast(event); document.getElementById('msg-input').value = "";
+            
+            // Build Tags
+            let tags = [];
+            
+            // If Replying, add NIP-10 tags
+            if (replyContext) {
+                tags.push(['e', replyContext.id, '', 'reply']); // Mark as reply
+                tags.push(['p', replyContext.pubkey]); // Tag the author
+            }
+
+            const event = { 
+                kind: 1, 
+                created_at: Math.floor(Date.now()/1000), 
+                tags: tags, 
+                content: content, 
+                pubkey: myPubKey 
+            };
+            
+            await signAndBroadcast(event); 
+            
+            // Cleanup
+            document.getElementById('msg-input').value = "";
+            cancelReply();
         }
 
         function login() {
