@@ -180,12 +180,23 @@
             <div id="my-profile-header" style="text-align:center;">
                 <div id="my-p-img"></div>
                 <h2 id="my-p-name">Unknown</h2>
+                
+                <!-- NEW VISIBLE FIELDS -->
+                <a id="my-p-website" href="" target="_blank" class="hidden" style="display:block; margin-bottom:5px; color:var(--text-color); text-decoration:underline;"></a>
+                <div id="my-p-lud16-container" class="hidden" style="font-size:0.85rem; color:#f1c40f; margin-bottom:10px; font-weight:bold;">
+                    ⚡ <span id="my-p-lud16"></span>
+                </div>
                 <p id="my-p-about" style="opacity:0.7"></p>
+                <!-- END NEW FIELDS -->
+
                 <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
+                
                 <div id="profile-editor" class="hidden" style="text-align:left; margin-top:15px; border-top:1px dotted var(--border-color); padding-top:10px;">
                     <label>Name:</label><input type="text" id="p-name">
                     <label>Bio:</label><input type="text" id="p-about">
                     <label>Picture URL:</label><input type="text" id="p-picture">
+                    <!-- NEW WEBSITE INPUT -->
+                    <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
                     <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
                     <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
                 </div>
@@ -215,7 +226,7 @@
 
         <!-- MAIN FEED STUFF -->
         <div id="composer-container" class="hidden" style="border: 1px dashed var(--border-color); padding: 15px; margin-bottom:20px;">
-            <!-- REPLY INDICATOR (New) -->
+            <!-- REPLY INDICATOR -->
             <div id="reply-context-bar" class="hidden">
                 <span id="reply-text">Replying to...</span>
                 <button class="small danger" onclick="cancelReply()">CANCEL</button>
@@ -239,7 +250,6 @@
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
         
-        // NEW STATE FOR REPLY
         let replyContext = null;
 
         function changeTheme(theme) {
@@ -269,7 +279,6 @@
         function parseContent(text) {
             let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             
-            // Render NIP-19 nostr: prefixes as links or text
             content = content.replace(/nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g, '<a href="#" class="hashtag">[$1]</a>');
 
             const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi;
@@ -287,7 +296,6 @@
             if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; }
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
             
-            // Buttons now have onclick handlers for Reply and Quote
             return `<div class="post">
                 <div class="meta" onclick="viewProfile('${ev.pubkey}')">
                     ${p.picture?`<img src="${p.picture}" class="avatar">`:''}
@@ -308,7 +316,7 @@
 
         function initReply(eventId, pubkey) {
             if(!myPubKey) return alert("Login required to reply.");
-            goHome(); // Bring composer into view
+            goHome(); 
             
             const p = profiles[pubkey] || {name: pubkey.substring(0,8)};
             replyContext = { id: eventId, pubkey: pubkey };
@@ -326,18 +334,13 @@
         function initQuote(eventId) {
             if(!myPubKey) return alert("Login required to quote.");
             goHome();
-            
-            // Convert Hex ID to Bech32 (note1...) for quoting
             try {
                 const noteId = window.NostrTools.nip19.noteEncode(eventId);
                 const quoteStr = `\nnostr:${noteId}\n`;
                 const input = document.getElementById('msg-input');
                 input.value += quoteStr;
                 input.focus();
-            } catch(e) {
-                console.error(e);
-                alert("Error creating quote link");
-            }
+            } catch(e) { console.error(e); alert("Error creating quote link"); }
         }
 
         /* -------------------------------- */
@@ -410,16 +413,11 @@
 
         async function sendNote() {
             const content = document.getElementById('msg-input').value; if (!content) return;
-            
-            // Build Tags
             let tags = [];
-            
-            // If Replying, add NIP-10 tags
             if (replyContext) {
-                tags.push(['e', replyContext.id, '', 'reply']); // Mark as reply
-                tags.push(['p', replyContext.pubkey]); // Tag the author
+                tags.push(['e', replyContext.id, '', 'reply']); 
+                tags.push(['p', replyContext.pubkey]); 
             }
-
             const event = { 
                 kind: 1, 
                 created_at: Math.floor(Date.now()/1000), 
@@ -427,10 +425,7 @@
                 content: content, 
                 pubkey: myPubKey 
             };
-            
             await signAndBroadcast(event); 
-            
-            // Cleanup
             document.getElementById('msg-input').value = "";
             cancelReply();
         }
@@ -447,13 +442,56 @@
         }
 
         async function saveProfile() {
-            const data = { name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value, lud16: document.getElementById('p-lud16').value };
+            const data = { 
+                name: document.getElementById('p-name').value, 
+                about: document.getElementById('p-about').value, 
+                picture: document.getElementById('p-picture').value, 
+                website: document.getElementById('p-website').value, 
+                lud16: document.getElementById('p-lud16').value 
+            };
             let ev = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: JSON.stringify(data), pubkey: myPubKey };
             await signAndBroadcast(ev); alert("PUBLISHED"); location.reload();
         }
 
-        function toggleProfileEditor() { document.getElementById('profile-editor').classList.toggle('hidden'); const p = profiles[myPubKey] || {}; document.getElementById('p-name').value = p.name||''; document.getElementById('p-about').value = p.about||''; document.getElementById('p-picture').value = p.picture||''; document.getElementById('p-lud16').value = p.lud16||''; }
-        function loadMyHistory() { const p = profiles[myPubKey] || {}; document.getElementById('my-p-name').innerText = p.name || 'Unknown'; document.getElementById('my-p-about').innerText = p.about || ''; document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; myEvents = []; Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]))); }
+        function toggleProfileEditor() { 
+            document.getElementById('profile-editor').classList.toggle('hidden'); 
+            const p = profiles[myPubKey] || {}; 
+            document.getElementById('p-name').value = p.name||''; 
+            document.getElementById('p-about').value = p.about||''; 
+            document.getElementById('p-picture').value = p.picture||''; 
+            document.getElementById('p-website').value = p.website||''; 
+            document.getElementById('p-lud16').value = p.lud16||''; 
+        }
+
+        function loadMyHistory() { 
+            const p = profiles[myPubKey] || {}; 
+            document.getElementById('my-p-name').innerText = p.name || 'Unknown'; 
+            document.getElementById('my-p-about').innerText = p.about || ''; 
+            document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; 
+            
+            // Handle Website Display
+            const webEl = document.getElementById('my-p-website');
+            if(p.website) {
+                webEl.href = p.website;
+                webEl.innerText = p.website;
+                webEl.classList.remove('hidden');
+            } else {
+                webEl.classList.add('hidden');
+            }
+
+            // Handle Lud16 Display
+            const zapEl = document.getElementById('my-p-lud16');
+            if(p.lud16) {
+                zapEl.innerText = p.lud16;
+                document.getElementById('my-p-lud16-container').classList.remove('hidden');
+            } else {
+                document.getElementById('my-p-lud16-container').classList.add('hidden');
+            }
+
+            myEvents = []; 
+            Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]))); 
+        }
+
         function handleMyEvent(ev) { if (myEvents.some(e => e.id === ev.id)) return; myEvents.unshift(ev); document.getElementById('my-feed').innerHTML = myEvents.map(generatePostHTML).join(''); }
         function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><span><span style="color:${isOpen?'#00FF41':'red'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
         function addRelay() { let url = document.getElementById('new-relay').value.trim(); if(url){ if(!url.startsWith('wss://')) url = 'wss://' + url; savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; } }
