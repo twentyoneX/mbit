@@ -67,7 +67,7 @@
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
-        /* CENTERED CONTAINERS */
+        /* DESKTOP BOX SIZE (MATCHING SCREENSHOT 2) */
         #main-container {
             max-width: 600px;
             margin: 0 auto;
@@ -126,7 +126,7 @@
         .act-btn:hover { text-decoration: underline; }
         .zap-btn { color: #f1c40f; font-weight: bold; }
 
-        /* LOAD NEW SIGNALS BUTTON */
+        /* LOAD NEW SIGNALS BUTTON (PULSING) */
         #new-btn {
             width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
             font-weight: bold; text-align: center; cursor: pointer;
@@ -200,7 +200,7 @@
 
         <div id="panel-settings" class="dropdown-panel hidden">
             <h3>>> SETTINGS</h3>
-            <label>THEME:</label>
+            <label>SYSTEM THEME:</label>
             <select id="theme-selector" onchange="changeTheme(this.value)">
                 <option value="dark">White on Black</option>
                 <option value="matrix">Matrix Green</option>
@@ -210,8 +210,8 @@
         </div>
 
         <div id="panel-user-profile" class="dropdown-panel hidden">
-            <button class="back-btn" onclick="goHome()">&lt; BACK</button>
-            <div id="user-profile-header" style="text-align:center;"></div>
+            <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
+            <div id="user-profile-header" style="text-align:center; border-bottom:1px solid var(--post-border); padding-bottom:15px;"></div>
             <div id="user-feed"></div>
         </div>
 
@@ -235,6 +235,7 @@
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
         let myPubKey = localStorage.getItem('nostr_pubkey'), myPrivKey = localStorage.getItem('nostr_privkey'), authMode = localStorage.getItem('nostr_mode');
 
+        // Theme logic
         function changeTheme(theme) {
             document.documentElement.removeAttribute('data-theme');
             if (theme !== 'dark') document.documentElement.setAttribute('data-theme', theme);
@@ -243,6 +244,7 @@
         changeTheme(localStorage.getItem('mbit_theme') || 'dark');
         document.getElementById('theme-selector').value = localStorage.getItem('mbit_theme') || 'dark';
 
+        // Navigation
         function goHome() {
             ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('feed-container').classList.remove('hidden');
@@ -254,8 +256,9 @@
             const panel = document.getElementById(id);
             const isClosing = !panel.classList.contains('hidden');
             ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings'].forEach(p => document.getElementById(p).classList.add('hidden'));
-            if (isClosing) goHome();
-            else {
+            if (isClosing) {
+                goHome();
+            } else {
                 panel.classList.remove('hidden');
                 document.getElementById('feed-container').classList.add('hidden');
                 document.getElementById('composer-container').classList.add('hidden');
@@ -300,6 +303,24 @@
             </div>`;
         }
 
+        // Nostr Logic
+        async function signAndBroadcast(event) {
+            if (authMode === 'extension') event = await window.nostr.signEvent(event);
+            else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); }
+            Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["EVENT", event])); });
+            return event;
+        }
+
+        async function sendNote() {
+            const content = document.getElementById('msg-input').value; if (!content) return;
+            const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content, pubkey: myPubKey };
+            try {
+                const signed = await signAndBroadcast(event);
+                document.getElementById('msg-input').value = "";
+                events.unshift(signed); renderGlobalFeed();
+            } catch(e) { alert("ERROR SENDING"); }
+        }
+
         function connectToRelay(url) {
             try {
                 const ws = new WebSocket(url); sockets[url] = ws;
@@ -322,7 +343,7 @@
             else { events.unshift(ev); events.sort((a,b)=>b.created_at - a.created_at); renderGlobalFeed(); }
             if (!profiles[ev.pubkey] && !requestedProfiles.has(ev.pubkey)) {
                 requestedProfiles.add(ev.pubkey);
-                Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "m_"+ev.pubkey.substring(0,8), { kinds:[0], authors:[ev.pubkey], limit:1 }])));
+                Object.values(sockets).forEach(s => { if(s.readyState === 1) s.send(JSON.stringify(["REQ", "m_"+ev.pubkey.substring(0,8), { kinds:[0], authors:[ev.pubkey], limit:1 }])); });
             }
         }
 
@@ -335,7 +356,7 @@
             document.getElementById('my-p-name').innerText = p.name || 'Unknown';
             document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : '';
             myEvents = [];
-            Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }])));
+            Object.values(sockets).forEach(s => { if(s.readyState === 1) s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }])); });
         }
 
         function handleMyEvent(ev) {
@@ -358,9 +379,7 @@
         async function saveProfile() {
             const content = JSON.stringify({ name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value });
             let ev = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content, pubkey: myPubKey };
-            if (authMode === 'extension') ev = await window.nostr.signEvent(ev);
-            else { ev.id = window.NostrTools.getEventHash(ev); ev.sig = window.NostrTools.signEvent(ev, myPrivKey); }
-            Object.values(sockets).forEach(s => s.send(JSON.stringify(["EVENT", ev])));
+            await signAndBroadcast(ev);
             profiles[myPubKey] = JSON.parse(content); alert("PUBLISHED"); toggleProfileEditor(); loadMyHistory();
         }
 
