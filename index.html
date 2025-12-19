@@ -56,7 +56,7 @@
             color: var(--text-color);
             font-family: "Courier New", Courier, monospace;
             padding: 20px; 
-            padding-bottom: 80px; /* Space for footer */
+            padding-bottom: 60px; /* Adjusted for smaller footer */
             margin: 0; 
             min-height: 100vh;
         }
@@ -130,29 +130,37 @@
             margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
         }
 
-        /* STICKY FOOTER */
+        /* STICKY FOOTER - UPDATED */
         .sticky-footer {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
             background-color: var(--footer-bg);
-            border-top: 2px solid var(--border-color);
+            border-top: 1px solid var(--border-color);
             display: flex;
-            justify-content: space-around;
-            padding: 15px 0;
+            justify-content: space-evenly;
+            padding: 10px 0;
             z-index: 1000;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+            font-family: inherit;
         }
-        .footer-icon {
-            font-size: 1.5rem;
+        .footer-item {
+            font-size: 0.85rem;
             cursor: pointer;
             text-align: center;
-            transition: 0.2s;
+            transition: 0.3s;
             color: var(--text-color);
             text-decoration: none;
+            text-transform: uppercase;
+            font-weight: bold;
+            opacity: 0.8;
         }
-        .footer-icon:hover { opacity: 0.7; transform: scale(1.1); text-shadow: var(--glow); }
+        .footer-item:hover { 
+            opacity: 1; 
+            text-decoration: underline;
+            text-shadow: var(--glow); 
+        }
 
         .notif-item {
             padding: 10px; border-bottom: 1px solid var(--post-border); font-size: 0.9rem;
@@ -292,11 +300,11 @@
         </div>
     </div>
 
-    <!-- STICKY FOOTER -->
+    <!-- STICKY FOOTER TEXT BASED -->
     <div class="sticky-footer">
-        <div class="footer-icon" onclick="goHome()" title="Home">🏠</div>
-        <div class="footer-icon" onclick="openSearch()" title="Search">🔍</div>
-        <div class="footer-icon" onclick="openNotifications()" title="Notifications">🔔</div>
+        <div class="footer-item" onclick="goHome()">[ HOME ]</div>
+        <div class="footer-item" onclick="openSearch()">[ SEARCH ]</div>
+        <div class="footer-item" onclick="openNotifications()">[ NOTIFICATIONS ]</div>
     </div>
 
     <script>
@@ -384,16 +392,13 @@
         async function handleZap(lud16, pubkey) {
             if(!lud16) return alert("User has no Lightning address set.");
             
-            // 1. Parse address (user@domain.com)
             const parts = lud16.split('@');
-            if(parts.length !== 2) return window.open(`lightning:${lud16}`); // Fallback
+            if(parts.length !== 2) return window.open(`lightning:${lud16}`); 
             
-            // 2. Try LNURL fetch
             const amount = prompt(`Zap ${lud16} (sats):`, "21");
             if(!amount) return;
 
             try {
-                // Construct LNURL-Pay URL
                 const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
                 const res = await fetch(url);
                 const data = await res.json();
@@ -418,7 +423,6 @@
                 }
             } catch(e) {
                 console.error(e);
-                // Fallback for CORS errors or simplified setups
                 if(confirm(`Could not fetch invoice automatically (CORS/Error). Open default wallet with address: ${lud16}?`)) {
                     window.location.href = `lightning:${lud16}`;
                 }
@@ -436,21 +440,17 @@
             let filter = { kinds: [1], limit: 20 };
             
             if(q.startsWith('npub')) {
-                // Profile Search
                 try {
                     const decoded = window.NostrTools.nip19.decode(q).data;
                     viewProfile(decoded);
                     return;
                 } catch(e) { alert("Invalid npub"); return; }
             } else if (q.startsWith('#')) {
-                // Hashtag Search
                 filter['#t'] = [q.substring(1)];
             } else {
-                // Text Search (NIP-50)
                 filter['search'] = q;
             }
 
-            // Send to relays
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter]));
             });
@@ -462,7 +462,6 @@
             notifEvents = [];
             document.getElementById('notifications-feed').innerHTML = "Loading...";
             
-            // Subscribe to Replies (1) and Likes (7) pointing to me
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) {
                     ws.send(JSON.stringify(["REQ", "notif_sub", { 
