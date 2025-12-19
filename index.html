@@ -7,21 +7,21 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
-        /* THEME VARIABLES - DEFAULT MATRIX */
+        /* THEME VARIABLES - DEFAULT WHITE ON BLACK */
         :root {
             --bg-color: #000000;
-            --text-color: #00FF41;
+            --text-color: #ffffff;
             --panel-bg: #050505;
-            --border-color: #00FF41;
-            --input-bg: #001100;
-            --btn-bg: #00FF41;
+            --border-color: #ffffff;
+            --input-bg: #000000;
+            --btn-bg: #ffffff;
             --btn-text: #000000;
-            --meta-color: #ccffcc;
+            --meta-color: #bbbbbb;
             --post-border: #333;
         }
 
-        /* WHITE THEME OVERRIDES */
-        [data-theme="white"] {
+        /* LIGHT THEME OVERRIDES (BLACK ON WHITE) */
+        [data-theme="light"] {
             --bg-color: #ffffff;
             --text-color: #000000;
             --panel-bg: #f5f5f5;
@@ -79,8 +79,8 @@
         button:hover { opacity: 0.8; }
         button.small { padding: 5px 10px; font-size: 0.8rem; margin-left: 10px; }
         button.danger { background: #ff4141; color: white; }
-        button.secondary { background: #333; color: #00FF41; border: 1px solid #00FF41; }
-        [data-theme="white"] button.secondary { background: #eee; color: #000; border: 1px solid #000; }
+        button.secondary { background: #333; color: #fff; border: 1px solid #fff; }
+        [data-theme="light"] button.secondary { background: #eee; color: #000; border: 1px solid #000; }
         
         button.extension { background: #9b59b6; color: white; border: 1px solid #8e44ad; width: 100%; margin-bottom: 10px; }
         
@@ -180,7 +180,7 @@
         </div>
     </header>
 
-    <!-- 1. RELAYS DROPDOWN -->
+    <!-- RELAYS DROPDOWN -->
     <div id="panel-relays" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> RELAYS</h3>
         <div id="relay-list"></div>
@@ -192,7 +192,7 @@
         <button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
     </div>
 
-    <!-- 2. KEYS DROPDOWN -->
+    <!-- KEYS DROPDOWN -->
     <div id="panel-identity" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> KEYS</h3>
         <div id="login-form">
@@ -228,7 +228,7 @@
         <button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
     </div>
 
-    <!-- 3. MY PROFILE DROPDOWN -->
+    <!-- MY PROFILE DROPDOWN -->
     <div id="panel-my-profile" class="dropdown-panel hidden">
         <div id="my-profile-header" style="text-align:center; border-bottom:1px solid var(--post-border); padding-bottom:15px; margin-bottom:15px;">
             <div id="my-p-img"></div>
@@ -252,14 +252,14 @@
         <button class="small secondary" onclick="togglePanel('panel-my-profile')">CLOSE</button>
     </div>
 
-    <!-- 4. SETTINGS PANEL -->
+    <!-- SETTINGS PANEL -->
     <div id="panel-settings" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> SETTINGS</h3>
         <div style="text-align:left; margin-bottom: 15px;">
             <label style="font-size:0.8rem; display:block; margin-bottom:5px;">INTERFACE THEME:</label>
             <select id="theme-selector" onchange="changeTheme(this.value)">
-                <option value="matrix">Matrix Green (Default)</option>
-                <option value="white">White Theme</option>
+                <option value="dark">White on Black (Default)</option>
+                <option value="light">Black on White (Light Theme)</option>
             </select>
         </div>
         <div style="text-align:left; opacity:0.8; font-size:0.8rem;">
@@ -270,7 +270,7 @@
         <button class="small secondary" onclick="togglePanel('panel-settings')">CLOSE</button>
     </div>
 
-    <!-- 5. PUBLIC PROFILE PANEL -->
+    <!-- PUBLIC PROFILE PANEL -->
     <div id="panel-user-profile" class="dropdown-panel hidden">
         <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
         <div id="user-profile-header" style="text-align:center; border-bottom:1px solid var(--post-border); padding-bottom:15px; margin-bottom:15px;"></div>
@@ -322,15 +322,14 @@
 
         // --- THEME LOGIC ---
         function changeTheme(theme) {
-            if (theme === 'white') {
-                document.documentElement.setAttribute('data-theme', 'white');
+            if (theme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
             } else {
                 document.documentElement.removeAttribute('data-theme');
             }
             localStorage.setItem('mbit_theme', theme);
         }
-        // Load saved theme
-        const savedTheme = localStorage.getItem('mbit_theme') || 'matrix';
+        const savedTheme = localStorage.getItem('mbit_theme') || 'dark';
         changeTheme(savedTheme);
         document.getElementById('theme-selector').value = savedTheme;
 
@@ -473,7 +472,7 @@
         function generatePostHTML(ev) {
             let content = ev.content; let header = "";
             if (ev.kind === 6) { 
-                header = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`;
+                header = `<div style="font-size:0.7rem; color:var(--text-color); margin-bottom:5px;">↻ REPOSTED</div>`;
                 try { const original = JSON.parse(ev.content); content = original.content || "[Signal]"; } catch(e) { content = "[Signal]"; } 
             } else if (ev.kind === 1 && ev.tags.some(t => t[0] === 'e')) {
                 header = `<div style="font-size:0.7rem; color:#888; margin-bottom:5px;">↳ REPLYING</div>`;
