@@ -56,7 +56,7 @@
             color: var(--text-color);
             font-family: "Courier New", Courier, monospace;
             padding: 20px; 
-            padding-bottom: 80px; /* Space for footer */
+            padding-bottom: 80px;
             margin: 0; 
             min-height: 100vh;
         }
@@ -86,6 +86,7 @@
         button.small { padding: 5px 10px; font-size: 0.8rem; margin-left: 5px; }
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
+        button.zap-active { background: #f1c40f; color: #000; border: 1px solid #f1c40f; }
 
         /* LIKE BUTTON ACTIVE STATE */
         button.act-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; font-weight: bold; }
@@ -125,7 +126,7 @@
             margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
         }
 
-        /* STICKY FOOTER - MATCHING HEADER SIZE */
+        /* STICKY FOOTER */
         .sticky-footer {
             position: fixed;
             bottom: 0;
@@ -134,29 +135,30 @@
             background-color: var(--footer-bg);
             border-top: 1px solid var(--border-color);
             display: flex;
-            justify-content: center; /* Center like header */
-            gap: 15px; /* Match header gap */
-            padding: 15px 0; /* Match header padding area */
+            justify-content: center;
+            gap: 15px;
+            padding: 15px 0;
             z-index: 1000;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
             font-family: inherit;
         }
         .footer-item {
-            font-size: 0.9rem; /* Match header .nav-item font size */
+            font-size: 0.9rem;
             cursor: pointer;
             text-align: center;
             transition: 0.3s;
             color: var(--text-color);
             text-decoration: none;
-            opacity: 0.7; /* Match header opacity */
+            opacity: 0.7;
         }
-        .footer-item:hover { 
-            opacity: 1; 
-            text-decoration: underline;
-            text-shadow: var(--glow); 
-        }
+        .footer-item:hover { opacity: 1; text-decoration: underline; text-shadow: var(--glow); }
 
         .notif-item { padding: 10px; border-bottom: 1px solid var(--post-border); font-size: 0.9rem; }
+
+        /* PROFILE BUTTONS */
+        .profile-actions {
+            display: flex; gap: 10px; justify-content: center; margin-top: 10px;
+        }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -261,7 +263,7 @@
             <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
-        <!-- 6. SEARCH PANEL (WITH UNIVERSAL FEED) -->
+        <!-- 6. SEARCH PANEL -->
         <div id="panel-search" class="dropdown-panel hidden">
             <h3>>> SEARCH & DISCOVERY</h3>
             <div style="display:flex; gap:10px;">
@@ -316,10 +318,13 @@
         
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [];
         let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
+        let myContacts = new Set(); // Stores pubkeys I follow
+        
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
         
         let replyContext = null;
+        let currentViewedProfile = null; // Track who we are looking at
 
         function changeTheme(theme) {
             document.documentElement.removeAttribute('data-theme');
@@ -334,6 +339,7 @@
             document.getElementById('feed-container').classList.remove('hidden');
             if (myPubKey) document.getElementById('composer-container').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            currentViewedProfile = null;
         }
 
         function togglePanel(id) {
@@ -343,18 +349,16 @@
             document.getElementById(id).classList.remove('hidden');
             if (id === 'panel-my-profile') loadMyHistory();
             if (id === 'panel-relays') renderRelays();
+            currentViewedProfile = null;
         }
 
         /* --- SEARCH AND UNIVERSAL FEED LOGIC --- */
         function openSearch() { 
             togglePanel('panel-search'); 
-            // Reset and load universal feed immediately
             document.getElementById('search-input').value = "";
             document.getElementById('search-status').innerText = "UNIVERSAL FEED (LIVE):";
             document.getElementById('search-results').innerHTML = "Loading global stream...";
             searchEvents = [];
-            
-            // Subscribe to global feed (Kind 1, generic) to populate search area
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", { kinds: [1], limit: 20 }]));
             });
@@ -362,14 +366,11 @@
 
         function handleSearch() {
             const q = document.getElementById('search-input').value.trim();
-            if(!q) return openSearch(); // If empty, reload universal feed
-            
+            if(!q) return openSearch();
             document.getElementById('search-status').innerText = `RESULTS FOR: "${q}"`;
             document.getElementById('search-results').innerHTML = "Searching...";
             searchEvents = [];
-            
             let filter = { kinds: [1], limit: 20 };
-            
             if(q.startsWith('npub')) {
                 try {
                     const decoded = window.NostrTools.nip19.decode(q).data;
@@ -381,7 +382,6 @@
             } else {
                 filter['search'] = q;
             }
-
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter]));
             });
@@ -390,7 +390,6 @@
         function handleSearchEvent(ev) {
             if(searchEvents.some(e => e.id === ev.id)) return;
             searchEvents.push(ev);
-            // Sort by newness
             searchEvents.sort((a,b) => b.created_at - a.created_at);
             document.getElementById('search-results').innerHTML = searchEvents.map(generatePostHTML).join('');
             fetchProfileIfNeeded(ev.pubkey);
@@ -421,7 +420,6 @@
             let content = ev.content;
             if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; }
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
-            
             return `<div class="post">
                 <div class="meta" onclick="viewProfile('${ev.pubkey}')">
                     ${p.picture?`<img src="${p.picture}" class="avatar">`:''}
@@ -539,7 +537,16 @@
         function connectToRelay(url) {
             try {
                 const ws = new WebSocket(url); sockets[url] = ws;
-                ws.onopen = () => { ws.send(JSON.stringify(["REQ", "g", { kinds:[1,6], limit:40 }])); if(myPubKey) fetchProfile(myPubKey); renderRelays(); };
+                ws.onopen = () => { 
+                    // Main Feed
+                    ws.send(JSON.stringify(["REQ", "g", { kinds:[1,6], limit:40 }])); 
+                    // Fetch My Profile & Contacts
+                    if(myPubKey) {
+                        fetchProfile(myPubKey);
+                        ws.send(JSON.stringify(["REQ", "my_contacts", { kinds:[3], authors:[myPubKey], limit:1 }]));
+                    }
+                    renderRelays(); 
+                };
                 ws.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
                     if (data[0] === 'EVENT') {
@@ -548,10 +555,24 @@
                         if (data[1] === 'sub_user') handleUserEvent(data[2]);
                         if (data[1] === 'search_sub') handleSearchEvent(data[2]);
                         if (data[1] === 'notif_sub') handleNotifEvent(data[2]);
-                        if (data[1].startsWith('m_')) { profiles[data[2].pubkey] = JSON.parse(data[2].content); renderNotifications(); }
+                        if (data[1] === 'my_contacts') handleContacts(data[2]);
+                        if (data[1].startsWith('m_')) { 
+                            profiles[data[2].pubkey] = JSON.parse(data[2].content); 
+                            renderNotifications(); 
+                            // If we are currently looking at this profile, update the header (e.g. for Zap button)
+                            if(currentViewedProfile === data[2].pubkey) renderUserProfileHeader(data[2].pubkey);
+                        }
                     }
                 };
             } catch(e) {}
+        }
+
+        function handleContacts(ev) {
+            if(ev.kind === 3) {
+                const pTags = ev.tags.filter(t => t[0] === 'p').map(t => t[1]);
+                myContacts = new Set(pTags);
+                if(currentViewedProfile) renderUserProfileHeader(currentViewedProfile); // Update follow button state
+            }
         }
 
         function handleGlobalEvent(ev) {
@@ -588,11 +609,68 @@
         function viewProfile(pubkey) {
             ['panel-search', 'panel-notifications'].forEach(p => document.getElementById(p).classList.add('hidden'));
             togglePanel('panel-user-profile');
-            const p = profiles[pubkey] || {};
-            document.getElementById('user-profile-header').innerHTML = `${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}<h2>${p.name||pubkey.substring(0,8)}</h2><p>${p.about||''}</p>`;
-            userEvents = []; document.getElementById('user-feed').innerHTML = "...scanning user history...";
+            currentViewedProfile = pubkey;
+            renderUserProfileHeader(pubkey);
+            
+            userEvents = []; 
+            document.getElementById('user-feed').innerHTML = "...scanning user history...";
             Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_user", { kinds:[1,6], authors:[pubkey], limit:20 }])));
         }
+
+        function renderUserProfileHeader(pubkey) {
+            const p = profiles[pubkey] || {};
+            const isFollowing = myContacts.has(pubkey);
+            const isMe = pubkey === myPubKey;
+            
+            let followBtn = '';
+            if (!isMe && myPubKey) {
+                followBtn = isFollowing 
+                    ? `<button class="secondary" onclick="toggleFollow('${pubkey}')">[ UNFOLLOW ]</button>`
+                    : `<button onclick="toggleFollow('${pubkey}')">[ FOLLOW ]</button>`;
+            }
+
+            let zapBtn = '';
+            if (p.lud16) {
+                zapBtn = `<button class="zap-active" onclick="handleZap('${p.lud16}', '${pubkey}')">⚡ ZAP</button>`;
+            }
+
+            const html = `
+                ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
+                <h2>${p.name||pubkey.substring(0,8)}</h2>
+                <p>${p.about||''}</p>
+                <div class="profile-actions">
+                    ${followBtn}
+                    ${zapBtn}
+                </div>
+            `;
+            document.getElementById('user-profile-header').innerHTML = html;
+        }
+
+        async function toggleFollow(pubkey) {
+            if(!myPubKey) return alert("Login required");
+            
+            if(myContacts.has(pubkey)) {
+                myContacts.delete(pubkey);
+            } else {
+                myContacts.add(pubkey);
+            }
+            
+            // Re-render UI immediately
+            renderUserProfileHeader(pubkey);
+            
+            // Broadcast new Contact List (Kind 3)
+            const tags = Array.from(myContacts).map(p => ['p', p]);
+            // Preserve existing relays if we had full kind 3 parsing, but for simple app we just send p tags
+            const event = { 
+                kind: 3, 
+                created_at: Math.floor(Date.now()/1000), 
+                tags: tags, 
+                content: "", 
+                pubkey: myPubKey 
+            };
+            await signAndBroadcast(event);
+        }
+
         function handleUserEvent(ev) {
             if (userEvents.some(e => e.id === ev.id)) return;
             userEvents.unshift(ev); userEvents.sort((a,b)=>b.created_at - a.created_at);
