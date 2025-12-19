@@ -137,8 +137,15 @@
         .username-link:hover { text-shadow: var(--glow); }
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
         
-        /* MEDIA */
-        .media-img { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
+        /* MEDIA (IMAGES & VIDEOS) */
+        .media-img, .media-video { 
+            max-width: 100%; 
+            height: auto; 
+            display: block; 
+            margin: 10px 0; 
+            border: 1px solid var(--post-border); 
+        }
+        
         .hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
         .hashtag:hover { background: var(--text-color); color: var(--bg-color); }
 
@@ -361,10 +368,20 @@
 
         function parseContent(text) {
             let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            
+            // Render Videos
+            const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi;
+            content = content.replace(videoRegex, (url) => {
+                return `<video controls class="media-video" loading="lazy"><source src="${url}">Video content missing.</video>`;
+            });
+
+            // Render Images
             const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi;
             content = content.replace(imgRegex, (url) => {
                 return `<a href="${url}" target="_blank" style="display:block;"><img src="${url}" class="media-img" loading="lazy"></a>`;
             });
+
+            // Hashtags
             const hashtagRegex = /#(\w+)/g;
             content = content.replace(hashtagRegex, (match, tag) => {
                 return `<span class="hashtag" onclick="alert('Filtering by #${tag} coming soon')">#${tag}</span>`;
@@ -511,7 +528,7 @@
             `;
         }
 
-        // --- HISTORY LOGIC ---
+        // --- HISTORY & PROFILES ---
         function loadMyHistory() {
             if(!myPubKey) { document.getElementById('my-feed').innerHTML = "PLEASE LOGIN FIRST"; return; }
             const p = profiles[myPubKey] || {};
