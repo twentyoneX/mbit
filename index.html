@@ -99,7 +99,7 @@
         .username-link:hover { color: #00FF41; text-shadow: 0 0 5px #00FF41; }
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
         
-        /* IMAGES - FIXED TO FIT CONTAINER */
+        /* IMAGES - FIT CONTAINER */
         .media-img { 
             max-width: 100%; 
             height: auto; 
@@ -148,17 +148,19 @@
         <div class="nav-bar">
             <span class="nav-item" onclick="goHome()">[ HOME ]</span>
             <span>|</span>
-            <span class="nav-item" onclick="togglePanel('panel-relays')">[ NETWORK NODES ]</span>
+            <span class="nav-item" onclick="togglePanel('panel-relays')">[ RELAYS ]</span>
             <span>|</span>
-            <span class="nav-item" onclick="togglePanel('panel-identity')">[ IDENTITY ]</span>
+            <span class="nav-item" onclick="togglePanel('panel-identity')">[ KEYS ]</span>
             <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-my-profile')">[ MY PROFILE ]</span>
+            <span>|</span>
+            <span class="nav-item" onclick="togglePanel('panel-settings')">[ SETTINGS ]</span>
         </div>
     </header>
 
-    <!-- 1. RELAY DROPDOWN -->
+    <!-- 1. RELAYS DROPDOWN -->
     <div id="panel-relays" class="dropdown-panel hidden">
-        <h3 style="margin-top:0">>> NETWORK NODES (RELAYS)</h3>
+        <h3 style="margin-top:0">>> RELAYS</h3>
         <div id="relay-list"></div>
         <div style="margin-top: 10px; display:flex;">
             <input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0; width: 80%;">
@@ -168,9 +170,9 @@
         <button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
     </div>
 
-    <!-- 2. IDENTITY DROPDOWN -->
+    <!-- 2. KEYS (IDENTITY) DROPDOWN -->
     <div id="panel-identity" class="dropdown-panel hidden">
-        <h3 style="margin-top:0">>> IDENTITY</h3>
+        <h3 style="margin-top:0">>> KEYS</h3>
         <div id="login-form">
             <button onclick="loginExtension()" class="extension">⚡ LOGIN WITH EXTENSION</button>
             <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR LEGACY KEY ---</div>
@@ -228,7 +230,20 @@
         <button class="small secondary" onclick="togglePanel('panel-my-profile')">CLOSE</button>
     </div>
 
-    <!-- 4. PUBLIC PROFILE PANEL -->
+    <!-- 4. SETTINGS PANEL -->
+    <div id="panel-settings" class="dropdown-panel hidden">
+        <h3 style="margin-top:0">>> SETTINGS</h3>
+        <p style="opacity:0.7">_system preferences_</p>
+        <div style="text-align:left;">
+            <p>[ ] Auto-load new signals</p>
+            <p>[x] Render media content</p>
+            <p>[x] Matrix Green theme</p>
+        </div>
+        <br>
+        <button class="small secondary" onclick="togglePanel('panel-settings')">CLOSE</button>
+    </div>
+
+    <!-- 5. PUBLIC PROFILE PANEL -->
     <div id="panel-user-profile" class="dropdown-panel hidden">
         <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
         <div id="user-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;"></div>
@@ -279,7 +294,7 @@
         const requestedProfiles = new Set();
 
         function goHome() {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile'].forEach(p => { 
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings'].forEach(p => { 
                 document.getElementById(p).classList.add('hidden'); 
             });
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -287,12 +302,10 @@
 
         function parseContent(text) {
             let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            // Render images and make them block links so they respect padding
             const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi;
             content = content.replace(imgRegex, (url) => {
                 return `<a href="${url}" target="_blank" style="display:block;"><img src="${url}" class="media-img" loading="lazy"></a>`;
             });
-            // Clickable hashtags
             const hashtagRegex = /#(\w+)/g;
             content = content.replace(hashtagRegex, (match, tag) => {
                 return `<span class="hashtag" onclick="alert('Filtering by #${tag} coming soon')">#${tag}</span>`;
@@ -301,7 +314,7 @@
         }
 
         function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile'].forEach(p => { 
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings'].forEach(p => { 
                 if(p !== id) document.getElementById(p).classList.add('hidden'); 
             });
             const panel = document.getElementById(id); 
@@ -448,7 +461,7 @@
             `;
         }
 
-        // --- ACTIONS ---
+        // --- PROFILE LOGIC ---
         function loadMyHistory() {
             if(!myPubKey) { document.getElementById('my-feed').innerHTML = "PLEASE LOGIN FIRST"; return; }
             const p = profiles[myPubKey] || {};
@@ -466,7 +479,7 @@
             document.getElementById('my-feed').innerHTML = myEvents.map(ev => generatePostHTML(ev)).join('');
         }
         function viewProfile(pubkey) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-settings'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('panel-user-profile').classList.remove('hidden');
             const p = profiles[pubkey] || {};
             let img = p.picture ? `<img src="${p.picture}" class="p-img-large">` : '<div style="font-size:3rem;">?</div>'; 
