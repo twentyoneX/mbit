@@ -67,7 +67,7 @@
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
-        /* CENTERED BOX FOR DESKTOP */
+        /* CENTERED BOX FOR DESKTOP (600px) */
         #main-container {
             max-width: 600px;
             margin: 0 auto;
@@ -103,7 +103,8 @@
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
 
-        /* KEYS PANEL STYLING */
+        .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; align-items: center; }
+
         .key-container { margin-bottom: 15px; border: 1px solid var(--post-border); padding: 10px; }
         .key-label { font-size: 0.7rem; opacity: 0.7; display: block; margin-bottom: 5px; }
         .key-row { display: flex; gap: 5px; }
@@ -133,7 +134,6 @@
         .act-btn:hover { text-decoration: underline; }
         .zap-btn { color: #f1c40f; font-weight: bold; }
 
-        /* PULSING LOAD BUTTON */
         #new-btn {
             width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
             font-weight: bold; text-align: center; cursor: pointer;
@@ -173,33 +173,19 @@
             <br><button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
         </div>
 
-        <!-- 2. KEYS (LOGIN/IDENTITY) PANEL -->
+        <!-- 2. KEYS PANEL -->
         <div id="panel-identity" class="dropdown-panel hidden">
             <h3>>> KEYS</h3>
             <div id="login-form">
                 <button onclick="loginExtension()" style="width:100%; background:#9b59b6; color:white; margin-bottom:10px;">⚡ LOGIN WITH EXTENSION</button>
-                <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR LEGACY KEY ---</div>
-                <input type="text" id="privkey-input" placeholder="paste private key (hex or nsec)">
+                <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR ---</div>
+                <input type="text" id="privkey-input" placeholder="paste private key">
                 <button onclick="login()" style="width:100%;">Login</button>
                 <button onclick="generateNewUser()" class="secondary" style="width:100%; margin-top:10px;">New Key</button>
             </div>
             <div id="user-info" class="hidden">
-                <div class="key-container">
-                    <span class="key-label">PUBLIC ID (NPUB)</span>
-                    <div class="key-row">
-                        <input type="text" id="display-npub" class="key-input" readonly>
-                        <button class="small" onclick="copyKey('display-npub')">COPY</button>
-                    </div>
-                </div>
-                <div class="key-container" id="nsec-container">
-                    <span class="key-label" style="color:#ff4141">SECRET KEY (NSEC)</span>
-                    <div class="key-row">
-                        <input type="password" id="display-nsec" class="key-input" readonly>
-                        <button class="small secondary" onclick="toggleSecret()">SHOW</button>
-                        <button class="small danger" onclick="copyKey('display-nsec')">COPY</button>
-                    </div>
-                    <div class="warning-text">⚠️ WARNING: Secret Key. Do not share.</div>
-                </div>
+                <div class="key-container"><span class="key-label">PUBLIC ID (NPUB)</span><div class="key-row"><input type="text" id="display-npub" class="key-input" readonly><button class="small" onclick="copyKey('display-npub')">COPY</button></div></div>
+                <div class="key-container" id="nsec-container"><span class="key-label" style="color:#ff4141">SECRET KEY (NSEC)</span><div class="key-row"><input type="password" id="display-nsec" class="key-input" readonly><button class="small secondary" onclick="toggleSecret()">SHOW</button><button class="small danger" onclick="copyKey('display-nsec')">COPY</button></div></div>
                 <button onclick="logout()" class="danger" style="width:100%; margin-top:10px;">LOGOUT</button>
             </div>
             <br><button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
@@ -215,6 +201,7 @@
                     <label>Name:</label><input type="text" id="p-name">
                     <label>Bio:</label><input type="text" id="p-about">
                     <label>Picture URL:</label><input type="text" id="p-picture">
+                    <label style="color:#f1c40f">Zap Address (LNURL/LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
                     <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
                 </div>
             </div>
@@ -235,13 +222,13 @@
             <br><button class="small secondary" onclick="togglePanel('panel-settings')">CLOSE</button>
         </div>
 
-        <!-- COMPOSER (VISIBLE ON HOME) -->
+        <!-- COMPOSER -->
         <div id="composer-container" class="hidden">
             <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
             <button onclick="sendNote()" style="width:100%;">SEND SIGNAL</button>
         </div>
 
-        <!-- FEED (VISIBLE ON HOME) -->
+        <!-- FEED -->
         <div id="feed-container">
             <div id="new-btn" class="hidden" onclick="mergeQueue()">>> LOAD NEW SIGNALS <<</div>
             <div id="feed"></div>
@@ -249,18 +236,13 @@
     </div>
 
     <script>
-        // --- 1. SETUP ---
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
         let events = [], pendingEvents = [], myEvents = [];
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
-        
-        let myPrivKey = localStorage.getItem('nostr_privkey');
-        let myPubKey = localStorage.getItem('nostr_pubkey');
-        let authMode = localStorage.getItem('nostr_mode');
+        let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
 
-        // --- THEME ---
         function changeTheme(theme) {
             document.documentElement.removeAttribute('data-theme');
             if (theme !== 'dark') document.documentElement.setAttribute('data-theme', theme);
@@ -269,7 +251,6 @@
         changeTheme(localStorage.getItem('mbit_theme') || 'dark');
         document.getElementById('theme-selector').value = localStorage.getItem('mbit_theme') || 'dark';
 
-        // --- NAVIGATION ---
         function goHome() {
             ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-settings'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('feed-container').classList.remove('hidden');
@@ -281,17 +262,33 @@
             const panel = document.getElementById(id);
             const isClosing = !panel.classList.contains('hidden');
             ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-settings'].forEach(p => document.getElementById(p).classList.add('hidden'));
-            if (isClosing) {
-                goHome();
-            } else {
+            if (isClosing) goHome();
+            else {
                 panel.classList.remove('hidden');
                 document.getElementById('feed-container').classList.add('hidden');
                 document.getElementById('composer-container').classList.add('hidden');
                 if (id === 'panel-my-profile') loadMyHistory();
+                if (id === 'panel-relays') renderRelays();
             }
         }
 
-        // --- CONTENT PARSER ---
+        function renderRelays() {
+            document.getElementById('relay-list').innerHTML = savedRelays.map(url => {
+                const isOpen = sockets[url] && sockets[url].readyState === WebSocket.OPEN;
+                return `<div class="relay-item"><span><span style="color:${isOpen?'#00FF41':'red'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
+            }).join('');
+        }
+        function addRelay() {
+            let url = document.getElementById('new-relay').value.trim();
+            if(!url) return;
+            if(!url.startsWith('wss://')) url = 'wss://' + url;
+            if(!savedRelays.includes(url)) { savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; renderRelays(); }
+        }
+        function removeRelay(url) {
+            savedRelays = savedRelays.filter(r => r !== url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
+            if(sockets[url]) { sockets[url].close(); delete sockets[url]; } renderRelays();
+        }
+
         function parseContent(text) {
             let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi;
@@ -307,13 +304,10 @@
             const p = profiles[ev.pubkey] || {};
             let content = ev.content;
             let header = "";
-            if (ev.kind === 6) {
-                header = `<div style="font-size:0.75rem; color:var(--text-color); margin-bottom:5px;">↻ REPOST</div>`;
-                try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; }
-            }
+            if (ev.kind === 6) { header = `<div style="font-size:0.75rem; color:var(--text-color); margin-bottom:5px;">↻ REPOST</div>`; try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } }
             return `<div class="post">
                 ${header}
-                <div class="meta">
+                <div class="meta" onclick="viewProfile('${ev.pubkey}')">
                     ${p.picture?`<img src="${p.picture}" class="avatar">`:''}
                     <span class="username-link">${p.name||ev.pubkey.substring(0,6)}</span>
                     <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span>
@@ -329,11 +323,10 @@
             </div>`;
         }
 
-        // --- NOSTR CORE ---
         function connectToRelay(url) {
             try {
                 const ws = new WebSocket(url); sockets[url] = ws;
-                ws.onopen = () => ws.send(JSON.stringify(["REQ", "g", { kinds:[1,6], limit:40 }]));
+                ws.onopen = () => { ws.send(JSON.stringify(["REQ", "g", { kinds:[1,6], limit:40 }])); if(myPubKey) fetchProfile(myPubKey); renderRelays(); };
                 ws.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
                     if (data[0] === 'EVENT') {
@@ -342,6 +335,7 @@
                         if (data[1].startsWith('m_')) { profiles[data[2].pubkey] = JSON.parse(data[2].content); renderGlobalFeed(); }
                     }
                 };
+                ws.onclose = () => renderRelays();
             } catch(e) {}
         }
 
@@ -350,9 +344,13 @@
             processedIds.add(ev.id);
             if (events.length >= 25) { pendingEvents.unshift(ev); updateNewButton(); }
             else { events.unshift(ev); events.sort((a,b)=>b.created_at - a.created_at); renderGlobalFeed(); }
-            if (!profiles[ev.pubkey] && !requestedProfiles.has(ev.pubkey)) {
-                requestedProfiles.add(ev.pubkey);
-                Object.values(sockets).forEach(s => { if(s.readyState === 1) s.send(JSON.stringify(["REQ", "m_"+ev.pubkey.substring(0,8), { kinds:[0], authors:[ev.pubkey], limit:1 }])); });
+            fetchProfileIfNeeded(ev.pubkey);
+        }
+
+        function fetchProfileIfNeeded(pubkey) {
+            if (!profiles[pubkey] && !requestedProfiles.has(pubkey)) {
+                requestedProfiles.add(pubkey);
+                Object.values(sockets).forEach(s => { if(s.readyState === 1) s.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds:[0], authors:[pubkey], limit:1 }])); });
             }
         }
 
@@ -360,7 +358,6 @@
         function mergeQueue() { events = [...pendingEvents, ...events].slice(0, 100); pendingEvents = []; renderGlobalFeed(); updateNewButton(); window.scrollTo(0,0); }
         function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
 
-        // --- AUTH & KEYS ---
         async function signAndBroadcast(event) {
             if (authMode === 'extension') event = await window.nostr.signEvent(event);
             else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); }
@@ -371,49 +368,23 @@
         async function sendNote() {
             const content = document.getElementById('msg-input').value; if (!content) return;
             const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content, pubkey: myPubKey };
-            try {
-                const signed = await signAndBroadcast(event);
-                document.getElementById('msg-input').value = "";
-                events.unshift(signed); renderGlobalFeed();
-            } catch(e) { alert("ERROR SENDING"); }
+            await signAndBroadcast(event); document.getElementById('msg-input').value = "";
         }
 
-        async function loginExtension() {
-            try {
-                const pk = await window.nostr.getPublicKey();
-                localStorage.setItem('nostr_pubkey', pk); localStorage.setItem('nostr_mode', 'extension');
-                location.reload();
-            } catch(e) { alert("EXTENSION DENIED"); }
-        }
-
+        async function loginExtension() { const pk = await window.nostr.getPublicKey(); localStorage.setItem('nostr_pubkey', pk); localStorage.setItem('nostr_mode', 'extension'); location.reload(); }
         function login() {
             let k = document.getElementById('privkey-input').value.trim();
-            if (!k) return;
-            try {
-                if (k.startsWith('nsec')) k = window.NostrTools.nip19.decode(k).data;
-                const pk = window.NostrTools.getPublicKey(k);
-                localStorage.setItem('nostr_privkey', k);
-                localStorage.setItem('nostr_pubkey', pk);
-                localStorage.setItem('nostr_mode', 'local');
-                location.reload();
-            } catch(e) { alert("INVALID KEY"); }
+            if (k.startsWith('nsec')) k = window.NostrTools.nip19.decode(k).data;
+            localStorage.setItem('nostr_privkey', k); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(k)); localStorage.setItem('nostr_mode', 'local'); location.reload();
         }
-
         function generateNewUser() {
             const sk = window.NostrTools.generatePrivateKey();
-            const pk = window.NostrTools.getPublicKey(sk);
-            localStorage.setItem('nostr_privkey', sk);
-            localStorage.setItem('nostr_pubkey', pk);
-            localStorage.setItem('nostr_mode', 'local');
-            alert("NEW KEY GENERATED. SAVE IT IN THE KEYS PANEL!");
-            location.reload();
+            localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(sk)); localStorage.setItem('nostr_mode', 'local'); location.reload();
         }
-
         function logout() { localStorage.clear(); location.reload(); }
         function copyKey(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); alert("COPIED"); }
         function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
 
-        // --- PROFILE ---
         function loadMyHistory() {
             const p = profiles[myPubKey] || {};
             document.getElementById('my-p-name').innerText = p.name || 'Unknown';
@@ -432,14 +403,16 @@
             document.getElementById('p-name').value = p.name || '';
             document.getElementById('p-about').value = p.about || '';
             document.getElementById('p-picture').value = p.picture || '';
+            document.getElementById('p-lud16').value = p.lud16 || '';
         }
         async function saveProfile() {
-            const content = JSON.stringify({ name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value });
+            const content = JSON.stringify({ name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value, lud16: document.getElementById('p-lud16').value });
             let ev = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content, pubkey: myPubKey };
             await signAndBroadcast(ev); alert("PUBLISHED"); location.reload();
         }
 
-        // --- START ---
+        function fetchProfile(pubkey) { requestedProfiles.add(pubkey); const msg = JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]); Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); }); }
+
         if (myPubKey) {
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('user-info').classList.remove('hidden');
