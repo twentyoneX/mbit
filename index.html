@@ -56,7 +56,7 @@
             color: var(--text-color);
             font-family: "Courier New", Courier, monospace;
             padding: 20px; 
-            padding-bottom: 60px; /* Adjusted for smaller footer */
+            padding-bottom: 80px; /* Space for footer */
             margin: 0; 
             min-height: 100vh;
         }
@@ -114,15 +114,10 @@
         .p-img-large { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border-color); margin-bottom: 15px; object-fit: cover; }
         .hidden { display: none !important; }
         
-        /* REPLY INDICATOR */
         #reply-context-bar {
             background-color: var(--reply-indicator);
-            padding: 10px;
-            margin-bottom: 10px;
-            font-size: 0.8rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 10px; margin-bottom: 10px; font-size: 0.8rem;
+            display: flex; justify-content: space-between; align-items: center;
             border-left: 3px solid var(--text-color);
         }
 
@@ -130,7 +125,7 @@
             margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
         }
 
-        /* STICKY FOOTER - UPDATED */
+        /* STICKY FOOTER - MATCHING HEADER SIZE */
         .sticky-footer {
             position: fixed;
             bottom: 0;
@@ -139,22 +134,21 @@
             background-color: var(--footer-bg);
             border-top: 1px solid var(--border-color);
             display: flex;
-            justify-content: space-evenly;
-            padding: 10px 0;
+            justify-content: center; /* Center like header */
+            gap: 15px; /* Match header gap */
+            padding: 15px 0; /* Match header padding area */
             z-index: 1000;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
             font-family: inherit;
         }
         .footer-item {
-            font-size: 0.85rem;
+            font-size: 0.9rem; /* Match header .nav-item font size */
             cursor: pointer;
             text-align: center;
             transition: 0.3s;
             color: var(--text-color);
             text-decoration: none;
-            text-transform: uppercase;
-            font-weight: bold;
-            opacity: 0.8;
+            opacity: 0.7; /* Match header opacity */
         }
         .footer-item:hover { 
             opacity: 1; 
@@ -162,9 +156,7 @@
             text-shadow: var(--glow); 
         }
 
-        .notif-item {
-            padding: 10px; border-bottom: 1px solid var(--post-border); font-size: 0.9rem;
-        }
+        .notif-item { padding: 10px; border-bottom: 1px solid var(--post-border); font-size: 0.9rem; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -269,12 +261,16 @@
             <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
-        <!-- 6. SEARCH PANEL -->
+        <!-- 6. SEARCH PANEL (WITH UNIVERSAL FEED) -->
         <div id="panel-search" class="dropdown-panel hidden">
-            <h3>>> SEARCH</h3>
-            <input type="text" id="search-input" placeholder="Search notes, #tags, or npub...">
-            <button onclick="handleSearch()">SEARCH</button>
-            <div id="search-results" style="margin-top:20px;"></div>
+            <h3>>> SEARCH & DISCOVERY</h3>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="search-input" placeholder="Search content, #tags, or npub..." style="margin-bottom:0;">
+                <button onclick="handleSearch()" style="width:auto;">GO</button>
+            </div>
+            <hr style="border:0; border-top:1px dashed var(--post-border); margin: 20px 0;">
+            <div id="search-status" style="font-size:0.8rem; opacity:0.7; margin-bottom:10px;">UNIVERSAL FEED (LIVE):</div>
+            <div id="search-results"></div>
         </div>
 
         <!-- 7. NOTIFICATIONS PANEL -->
@@ -300,10 +296,12 @@
         </div>
     </div>
 
-    <!-- STICKY FOOTER TEXT BASED -->
+    <!-- STICKY FOOTER -->
     <div class="sticky-footer">
         <div class="footer-item" onclick="goHome()">[ HOME ]</div>
+        <span style="color:var(--border-color)">|</span>
         <div class="footer-item" onclick="openSearch()">[ SEARCH ]</div>
+        <span style="color:var(--border-color)">|</span>
         <div class="footer-item" onclick="openNotifications()">[ NOTIFICATIONS ]</div>
     </div>
 
@@ -347,7 +345,59 @@
             if (id === 'panel-relays') renderRelays();
         }
 
-        function openSearch() { togglePanel('panel-search'); }
+        /* --- SEARCH AND UNIVERSAL FEED LOGIC --- */
+        function openSearch() { 
+            togglePanel('panel-search'); 
+            // Reset and load universal feed immediately
+            document.getElementById('search-input').value = "";
+            document.getElementById('search-status').innerText = "UNIVERSAL FEED (LIVE):";
+            document.getElementById('search-results').innerHTML = "Loading global stream...";
+            searchEvents = [];
+            
+            // Subscribe to global feed (Kind 1, generic) to populate search area
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", { kinds: [1], limit: 20 }]));
+            });
+        }
+
+        function handleSearch() {
+            const q = document.getElementById('search-input').value.trim();
+            if(!q) return openSearch(); // If empty, reload universal feed
+            
+            document.getElementById('search-status').innerText = `RESULTS FOR: "${q}"`;
+            document.getElementById('search-results').innerHTML = "Searching...";
+            searchEvents = [];
+            
+            let filter = { kinds: [1], limit: 20 };
+            
+            if(q.startsWith('npub')) {
+                try {
+                    const decoded = window.NostrTools.nip19.decode(q).data;
+                    viewProfile(decoded);
+                    return;
+                } catch(e) { alert("Invalid npub"); return; }
+            } else if (q.startsWith('#')) {
+                filter['#t'] = [q.substring(1)];
+            } else {
+                filter['search'] = q;
+            }
+
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter]));
+            });
+        }
+
+        function handleSearchEvent(ev) {
+            if(searchEvents.some(e => e.id === ev.id)) return;
+            searchEvents.push(ev);
+            // Sort by newness
+            searchEvents.sort((a,b) => b.created_at - a.created_at);
+            document.getElementById('search-results').innerHTML = searchEvents.map(generatePostHTML).join('');
+            fetchProfileIfNeeded(ev.pubkey);
+        }
+
+        /* ------------------------------------- */
+
         function openNotifications() { 
             togglePanel('panel-notifications'); 
             refreshNotifications(); 
@@ -388,87 +438,36 @@
             </div>`;
         }
 
-        /* --- ZAP LOGIC --- */
         async function handleZap(lud16, pubkey) {
             if(!lud16) return alert("User has no Lightning address set.");
-            
             const parts = lud16.split('@');
             if(parts.length !== 2) return window.open(`lightning:${lud16}`); 
-            
             const amount = prompt(`Zap ${lud16} (sats):`, "21");
             if(!amount) return;
-
             try {
                 const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
                 const res = await fetch(url);
                 const data = await res.json();
-
                 if(data.callback) {
                     const millisats = parseInt(amount) * 1000;
-                    if(millisats < data.minSendable || millisats > data.maxSendable) {
-                        return alert(`Amount out of range (${data.minSendable/1000} - ${data.maxSendable/1000} sats)`);
-                    }
-                    
+                    if(millisats < data.minSendable || millisats > data.maxSendable) return alert(`Amount out of range.`);
                     const cbUrl = `${data.callback}?amount=${millisats}`;
                     const cbRes = await fetch(cbUrl);
                     const cbData = await cbRes.json();
-                    
-                    if(cbData.pr) {
-                        window.location.href = `lightning:${cbData.pr}`;
-                    } else {
-                        throw new Error("No invoice returned");
-                    }
-                } else {
-                    throw new Error("Invalid LNURL response");
+                    if(cbData.pr) window.location.href = `lightning:${cbData.pr}`;
                 }
             } catch(e) {
-                console.error(e);
-                if(confirm(`Could not fetch invoice automatically (CORS/Error). Open default wallet with address: ${lud16}?`)) {
-                    window.location.href = `lightning:${lud16}`;
-                }
+                if(confirm(`Auto-zap failed. Open wallet manually?`)) window.location.href = `lightning:${lud16}`;
             }
         }
 
-        /* --- SEARCH LOGIC --- */
-        function handleSearch() {
-            const q = document.getElementById('search-input').value.trim();
-            if(!q) return;
-            
-            document.getElementById('search-results').innerHTML = "Searching relays...";
-            searchEvents = [];
-            
-            let filter = { kinds: [1], limit: 20 };
-            
-            if(q.startsWith('npub')) {
-                try {
-                    const decoded = window.NostrTools.nip19.decode(q).data;
-                    viewProfile(decoded);
-                    return;
-                } catch(e) { alert("Invalid npub"); return; }
-            } else if (q.startsWith('#')) {
-                filter['#t'] = [q.substring(1)];
-            } else {
-                filter['search'] = q;
-            }
-
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter]));
-            });
-        }
-
-        /* --- NOTIFICATIONS LOGIC --- */
         function refreshNotifications() {
             if(!myPubKey) return document.getElementById('notifications-feed').innerHTML = "Login required.";
             notifEvents = [];
             document.getElementById('notifications-feed').innerHTML = "Loading...";
-            
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) {
-                    ws.send(JSON.stringify(["REQ", "notif_sub", { 
-                        kinds: [1, 7], 
-                        '#p': [myPubKey], 
-                        limit: 50 
-                    }]));
+                    ws.send(JSON.stringify(["REQ", "notif_sub", { kinds: [1, 7], '#p': [myPubKey], limit: 50 }]));
                 }
             });
         }
@@ -477,7 +476,6 @@
             if(notifEvents.some(e => e.id === ev.id)) return;
             notifEvents.push(ev);
             notifEvents.sort((a,b) => b.created_at - a.created_at);
-            
             renderNotifications();
             fetchProfileIfNeeded(ev.pubkey);
         }
@@ -488,16 +486,11 @@
                 const name = p.name || ev.pubkey.substring(0,6);
                 const type = ev.kind === 7 ? "❤️ Liked" : "↩️ Replied";
                 const content = ev.kind === 7 ? "your note" : parseContent(ev.content);
-                
-                return `<div class="notif-item" onclick="viewProfile('${ev.pubkey}')">
-                    <b>${name}</b> ${type}:<br>
-                    <span style="opacity:0.8">${content}</span>
-                </div>`;
+                return `<div class="notif-item" onclick="viewProfile('${ev.pubkey}')"><b>${name}</b> ${type}:<br><span style="opacity:0.8">${content}</span></div>`;
             }).join('');
             document.getElementById('notifications-feed').innerHTML = html || "No notifications yet.";
         }
 
-        /* --- EXISTING LOGIC --- */
         async function loginExtension() {
             if (!window.nostr) return alert("No Nostr extension found.");
             try {
@@ -565,13 +558,6 @@
             if (processedIds.has(ev.id)) return; processedIds.add(ev.id);
             fetchProfileIfNeeded(ev.pubkey);
             incomingBuffer.push(ev);
-        }
-
-        function handleSearchEvent(ev) {
-            if(searchEvents.some(e => e.id === ev.id)) return;
-            searchEvents.push(ev);
-            document.getElementById('search-results').innerHTML = searchEvents.map(generatePostHTML).join('');
-            fetchProfileIfNeeded(ev.pubkey);
         }
 
         setInterval(() => {
