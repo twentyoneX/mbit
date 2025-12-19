@@ -59,7 +59,7 @@
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
-        /* DESKTOP BOX SIZE (MATCHING SCREENSHOT 2) */
+        /* CENTERED BOX FOR DESKTOP (MATCHING SCREENSHOT 2) */
         #main-container { max-width: 600px; margin: 0 auto; }
 
         .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
@@ -78,22 +78,23 @@
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
 
+        /* ACTIVE LIKE STATE */
+        button.act-btn.active { background: var(--text-color); color: var(--bg-color); }
+
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
-        .meta { font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
-        .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; }
-        .username-link { font-weight: bold; color: var(--text-color); text-decoration: underline; }
+        .meta { font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; cursor: pointer; }
+        .username-link { font-weight: bold; color: var(--text-color); cursor: pointer; text-decoration: underline; }
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
 
         .media-img, .media-video { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
         .hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
 
-        .actions { margin-top: 10px; font-size: 0.75rem; display: flex; gap: 15px; border-top: 1px dotted var(--post-border); padding-top: 8px; }
-        .act-btn { background: transparent; color: var(--text-color); border: none; padding: 0; cursor: pointer; font-family: inherit; }
-        .act-btn:hover { text-decoration: underline; }
-        .zap-btn { color: #f1c40f; font-weight: bold; }
+        .actions { margin-top: 10px; font-size: 0.75rem; display: flex; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 8px; flex-wrap: wrap; }
+        .act-btn { background: transparent; color: var(--text-color); border: 1px solid var(--text-color); padding: 2px 8px; cursor: pointer; font-family: inherit; font-size: 0.7rem; }
+        .zap-btn { color: #f1c40f; border-color: #f1c40f; }
 
-        /* PULSING LOAD BUTTON */
         #new-btn {
             width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
             font-weight: bold; text-align: center; cursor: pointer;
@@ -123,7 +124,7 @@
     </header>
 
     <div id="main-container">
-        <!-- 1. RELAYS PANEL -->
+        <!-- PANELS -->
         <div id="panel-relays" class="dropdown-panel hidden">
             <h3>>> RELAYS</h3>
             <div id="relay-list"></div>
@@ -134,13 +135,12 @@
             <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
-        <!-- 2. KEYS PANEL -->
         <div id="panel-identity" class="dropdown-panel hidden">
             <h3>>> KEYS</h3>
             <div id="login-form">
                 <button onclick="loginExtension()" style="width:100%; background:#9b59b6; color:white; margin-bottom:10px;">⚡ LOGIN WITH EXTENSION</button>
                 <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR LEGACY KEY ---</div>
-                <input type="text" id="privkey-input" placeholder="paste private key (hex or nsec)">
+                <input type="text" id="privkey-input" placeholder="paste private key">
                 <button onclick="login()" style="width:100%;">Login</button>
                 <button onclick="generateNewUser()" class="secondary" style="width:100%; margin-top:10px;">New Key</button>
             </div>
@@ -158,17 +158,17 @@
             <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
-        <!-- 3. MY PROFILE PANEL -->
         <div id="panel-my-profile" class="dropdown-panel hidden">
             <div id="my-profile-header" style="text-align:center;">
                 <div id="my-p-img"></div>
                 <h2 id="my-p-name">Unknown</h2>
+                <p id="my-p-about" style="opacity:0.7"></p>
                 <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
                 <div id="profile-editor" class="hidden" style="text-align:left; margin-top:15px; border-top:1px dotted var(--border-color); padding-top:10px;">
                     <label>Name:</label><input type="text" id="p-name">
                     <label>Bio:</label><input type="text" id="p-about">
                     <label>Picture URL:</label><input type="text" id="p-picture">
-                    <label style="color:#f1c40f">Zap Address (LNURL/LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
+                    <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
                     <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
                 </div>
             </div>
@@ -176,15 +176,12 @@
             <div id="my-feed"></div>
         </div>
 
-        <!-- 4. USER PROFILE PANEL (Public) -->
         <div id="panel-user-profile" class="dropdown-panel hidden">
             <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
             <div id="user-profile-header" style="text-align:center; padding-bottom:15px; border-bottom:1px solid var(--post-border);"></div>
-            <h3>>> HISTORY</h3>
             <div id="user-feed"></div>
         </div>
 
-        <!-- 5. SETTINGS PANEL -->
         <div id="panel-settings" class="dropdown-panel hidden">
             <h3>>> SETTINGS</h3>
             <label>SYSTEM THEME:</label>
@@ -196,7 +193,7 @@
             <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
-        <!-- MAIN FEED / COMPOSER -->
+        <!-- MAIN FEED -->
         <div id="composer-container" class="hidden" style="border: 1px dashed var(--border-color); padding: 15px; margin-bottom:20px;">
             <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
             <button onclick="sendNote()" style="width:100%;">SEND SIGNAL</button>
@@ -213,6 +210,7 @@
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
         let events = [], pendingEvents = [], myEvents = [], userEvents = [];
+        let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
 
@@ -232,17 +230,12 @@
         }
 
         function togglePanel(id) {
-            const panel = document.getElementById(id);
-            const isClosing = !panel.classList.contains('hidden');
             ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'feed-container', 'composer-container'].forEach(p => {
                 const el = document.getElementById(p); if(el) el.classList.add('hidden');
             });
-            if (isClosing) goHome();
-            else {
-                panel.classList.remove('hidden');
-                if (id === 'panel-my-profile') loadMyHistory();
-                if (id === 'panel-relays') renderRelays();
-            }
+            document.getElementById(id).classList.remove('hidden');
+            if (id === 'panel-my-profile') loadMyHistory();
+            if (id === 'panel-relays') renderRelays();
         }
 
         function parseContent(text) {
@@ -259,13 +252,11 @@
         function generatePostHTML(ev) {
             const p = profiles[ev.pubkey] || {};
             let content = ev.content;
-            let header = "";
-            if (ev.kind === 6) {
-                header = `<div style="font-size:0.75rem; opacity:0.6; margin-bottom:5px;">↻ REPOSTED</div>`;
-                try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; }
-            }
+            if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; }
+            
+            const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
+
             return `<div class="post">
-                ${header}
                 <div class="meta" onclick="viewProfile('${ev.pubkey}')">
                     ${p.picture?`<img src="${p.picture}" class="avatar">`:''}
                     <span class="username-link">${p.name||ev.pubkey.substring(0,6)}</span>
@@ -273,12 +264,27 @@
                 </div>
                 <div class="content">${parseContent(content)}</div>
                 <div class="actions">
-                    <span class="act-btn">[REPLY]</span><span class="act-btn">[QUOTE]</span><span class="act-btn">[LIKE]</span><span class="act-btn zap-btn">[ZAP ⚡]</span>
+                    <button class="act-btn">[REPLY]</button>
+                    <button class="act-btn">[QUOTE]</button>
+                    <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
+                    <button class="act-btn zap-btn" onclick="alert('Zap ${p.lud16 || 'none'}')">[ZAP ⚡]</button>
                 </div>
             </div>`;
         }
 
-        // NOSTR CORE
+        async function doLike(id, pubkey) {
+            if(!myPubKey) return alert("Login first");
+            const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
+            try {
+                await signAndBroadcast(event);
+                likedPosts.add(id);
+                localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
+                renderGlobalFeed();
+                // Refresh history feeds if open
+                if(!document.getElementById('panel-my-profile').classList.contains('hidden')) loadMyHistory();
+            } catch(e) { alert("Failed"); }
+        }
+
         function connectToRelay(url) {
             try {
                 const ws = new WebSocket(url); sockets[url] = ws;
@@ -313,15 +319,12 @@
         function mergeQueue() { events = [...pendingEvents, ...events].slice(0, 100); pendingEvents = []; renderGlobalFeed(); updateNewButton(); window.scrollTo(0,0); }
         function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
 
-        // USER VIEW
         function viewProfile(pubkey) {
             ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-settings', 'feed-container', 'composer-container'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('panel-user-profile').classList.remove('hidden');
             const p = profiles[pubkey] || {};
-            const img = p.picture ? `<img src="${p.picture}" class="p-img-large">` : '<div style="font-size:3rem;">?</div>';
-            const zapBtn = p.lud16 ? `<button class="act-btn zap-btn" style="border:1px solid #f1c40f; padding:5px 15px; font-size:1rem;" onclick="alert('Zap to ${p.lud16}')">ZAP ⚡</button>` : '';
-            document.getElementById('user-profile-header').innerHTML = `${img}<h2>${p.name || pubkey.substring(0,8)}</h2><p style="opacity:0.7;">${p.about || ''}</p>${zapBtn}`;
-            userEvents = []; document.getElementById('user-feed').innerHTML = '<div style="text-align:center; opacity:0.5;">fetching history...</div>';
+            document.getElementById('user-profile-header').innerHTML = `${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}<h2>${p.name||pubkey.substring(0,8)}</h2><p>${p.about||''}</p>`;
+            userEvents = []; document.getElementById('user-feed').innerHTML = "...scanning user history...";
             Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_user", { kinds:[1,6], authors:[pubkey], limit:20 }])));
         }
         function handleUserEvent(ev) {
@@ -330,7 +333,6 @@
             document.getElementById('user-feed').innerHTML = userEvents.map(generatePostHTML).join('');
         }
 
-        // AUTH & PROFILE EDITING
         async function signAndBroadcast(event) {
             if (authMode === 'extension') event = await window.nostr.signEvent(event);
             else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); }
@@ -361,8 +363,12 @@
             await signAndBroadcast(ev); alert("PUBLISHED"); location.reload();
         }
 
-        function toggleProfileEditor() { document.getElementById('profile-editor').classList.toggle('hidden'); const p = profiles[myPubKey] || {}; document.getElementById('p-name').value = p.name||''; document.getElementById('p-about').value = p.about||''; document.getElementById('p-picture').value = p.picture||''; document.getElementById('p-lud16').value = p.lud16||''; }
-        function loadMyHistory() { const p = profiles[myPubKey] || {}; document.getElementById('my-p-name').innerText = p.name || 'Unknown'; document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; myEvents = []; Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]))); }
+        function loadMyHistory() {
+            const p = profiles[myPubKey] || {};
+            document.getElementById('my-p-name').innerText = p.name || 'Unknown';
+            document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : '';
+            myEvents = []; Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }])));
+        }
         function handleMyEvent(ev) { if (myEvents.some(e => e.id === ev.id)) return; myEvents.unshift(ev); document.getElementById('my-feed').innerHTML = myEvents.map(generatePostHTML).join(''); }
         function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><span><span style="color:${isOpen?'#00FF41':'red'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
         function addRelay() { let url = document.getElementById('new-relay').value.trim(); if(url){ if(!url.startsWith('wss://')) url = 'wss://' + url; savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; } }
@@ -371,6 +377,15 @@
         function copyKey(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); alert("COPIED"); }
         function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
         function fetchProfile(pubkey) { Object.values(sockets).forEach(ws => ws.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]))); }
+
+        function toggleProfileEditor() {
+            document.getElementById('profile-editor').classList.toggle('hidden');
+            const p = profiles[myPubKey] || {};
+            document.getElementById('p-name').value = p.name || '';
+            document.getElementById('p-about').value = p.about || '';
+            document.getElementById('p-picture').value = p.picture || '';
+            document.getElementById('p-lud16').value = p.lud16 || '';
+        }
 
         if (myPubKey) {
             document.getElementById('login-form').classList.add('hidden');
