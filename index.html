@@ -65,75 +65,41 @@
         .hidden { display: none !important; }
         .warning-text { color: #ff4141; font-size: 0.8rem; margin-top: 5px; font-weight: bold; }
         
-        /* KEYS */
-        .key-container { margin-bottom: 15px; border: 1px solid #333; padding: 10px; }
-        .key-label { font-size: 0.7rem; opacity: 0.7; display: block; margin-bottom: 5px; }
-        .key-row { display: flex; gap: 5px; }
-        .key-input { flex-grow: 1; background: #000; color: #fff; font-size: 0.8rem; border: 1px solid #333; }
-        
-        /* FEED */
-        .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
-        .status-open { color: #00FF41; } .status-closed { color: red; }
+        /* FEED & POSTS */
         #feed-container { max-width: 600px; margin: 0 auto; position: relative; }
-        
-        #new-btn {
-            width: 100%; padding: 15px; background: #00FF41; color: black;
-            font-weight: bold; text-align: center; cursor: pointer;
-            margin-bottom: 20px; border: 2px solid #fff; animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-
-        .post {
-            border-left: 2px solid #333; padding-left: 15px; margin-bottom: 30px;
-            animation: fadeIn 0.5s;
-        }
-        .meta { 
-            font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: #ccffcc; 
-            display: flex; align-items: center;
-        }
-        .avatar {
-            width: 30px; height: 30px; border-radius: 50%; border: 1px solid #00FF41;
-            margin-right: 10px; object-fit: cover; background: #111; cursor: pointer;
-        }
+        .post { border-left: 2px solid #333; padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
+        .meta { font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: #ccffcc; display: flex; align-items: center; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #00FF41; margin-right: 10px; object-fit: cover; background: #111; cursor: pointer; }
         .username-link { font-weight: bold; color: #fff; cursor: pointer; text-decoration: underline; }
-        .username-link:hover { color: #00FF41; text-shadow: 0 0 5px #00FF41; }
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
         
-        .actions { 
-            margin-top: 15px; font-size: 0.8rem; 
-            display: flex; gap: 10px; border-top: 1px dotted #333; padding-top: 5px; flex-wrap: wrap;
+        /* MEDIA HANDLING */
+        .media-img { 
+            max-width: 100%; max-height: 500px; display: block; 
+            margin: 10px 0; border: 1px solid #333; border-radius: 2px;
+            transition: border-color 0.3s;
         }
-        .act-btn { 
-            background: transparent; color: #00FF41; border: none; padding: 2px 5px; cursor: pointer; font-family: inherit; font-size: 0.75rem;
-        }
+        .media-img:hover { border-color: #00FF41; }
+        
+        .hashtag { color: #00FF41; text-decoration: underline; cursor: pointer; }
+        .hashtag:hover { background: #00FF41; color: #000; }
+
+        .actions { margin-top: 15px; font-size: 0.8rem; display: flex; gap: 10px; border-top: 1px dotted #333; padding-top: 5px; flex-wrap: wrap; }
+        .act-btn { background: transparent; color: #00FF41; border: none; padding: 2px 5px; cursor: pointer; font-family: inherit; font-size: 0.75rem; }
         .act-btn:hover { background: #00FF41; color: black; }
-        .act-btn.active { background: #00FF41; color: black; } /* Liked state */
         .zap-btn { color: #f1c40f; } .zap-btn:hover { background: #f1c40f; color: black; }
 
         /* MODALS */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 100;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .modal-card {
-            background: black; border: 2px solid #00FF41; padding: 20px;
-            max-width: 90%; width: 400px; text-align: center;
-            box-shadow: 0 0 20px #00FF41; animation: popIn 0.3s;
-        }
-        .p-img-large {
-            width: 100px; height: 100px; border-radius: 50%;
-            border: 2px solid #00FF41; margin-bottom: 15px; object-fit: cover;
-        }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        .modal-card { background: black; border: 2px solid #00FF41; padding: 20px; max-width: 90%; width: 400px; text-align: center; box-shadow: 0 0 20px #00FF41; animation: popIn 0.3s; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
     <header>
         <h1>mBIT</h1>
         <div class="nav-bar">
-            <!-- NEW HOME BUTTON -->
             <span class="nav-item" onclick="goHome()">[ HOME ]</span>
             <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-relays')">[ NETWORK NODES ]</span>
@@ -144,19 +110,18 @@
         </div>
     </header>
 
-    <!-- 1. RELAY DROPDOWN -->
+    <!-- RELAYS PANEL -->
     <div id="panel-relays" class="dropdown-panel hidden">
-        <h3 style="margin-top:0">>> NETWORK NODES (RELAYS)</h3>
+        <h3 style="margin-top:0">>> NETWORK NODES</h3>
         <div id="relay-list"></div>
         <div style="margin-top: 10px; display:flex;">
             <input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0; width: 80%;">
             <button onclick="addRelay()" style="width: 18%; margin-left: 2%;">ADD</button>
         </div>
-        <br>
-        <button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
+        <br><button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
     </div>
 
-    <!-- 2. IDENTITY DROPDOWN -->
+    <!-- IDENTITY PANEL -->
     <div id="panel-identity" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> IDENTITY</h3>
         <div id="login-form">
@@ -164,82 +129,40 @@
             <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR LEGACY KEY ---</div>
             <input type="text" id="privkey-input" placeholder="paste private key">
             <button onclick="login()">Login</button>
-            <span style="margin: 0 10px">|</span>
             <button onclick="generateNewUser()">New Key</button>
         </div>
         <div id="user-info" class="hidden">
             <div class="key-container">
                 <span class="key-label">PUBLIC ID (NPUB)</span>
-                <div class="key-row">
-                    <input type="text" id="display-npub" class="key-input" readonly>
-                    <button class="small" onclick="copyKey('display-npub')">COPY</button>
-                </div>
+                <input type="text" id="display-npub" class="key-input" readonly>
             </div>
-            <div class="key-container" id="nsec-container">
-                <span class="key-label" style="color:#ff4141">SECRET KEY (NSEC)</span>
-                <div class="key-row">
-                    <input type="password" id="display-nsec" class="key-input" readonly value="">
-                    <button class="small secondary" onclick="toggleSecret()">SHOW</button>
-                    <button class="small danger" onclick="copyKey('display-nsec')">COPY</button>
-                </div>
-                <div class="warning-text">⚠️ WARNING: Secret Key. Do not share.</div>
-            </div>
-            <div style="margin-top: 15px;">
-                <button onclick="logout()" class="danger" style="width:100%">LOGOUT</button>
-            </div>
+            <button onclick="logout()" class="danger" style="width:100%; margin-top:10px;">LOGOUT</button>
         </div>
-        <br>
-        <button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
+        <br><button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
     </div>
 
-    <!-- 3. MY PROFILE DROPDOWN -->
+    <!-- MY PROFILE PANEL -->
     <div id="panel-my-profile" class="dropdown-panel hidden">
-        <div id="my-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;">
+        <div id="my-profile-header" style="text-align:center;">
             <div id="my-p-img"></div>
-            <h2 id="my-p-name">Unknown</h2>
-            <p id="my-p-about" style="opacity:0.7"></p>
-            <button onclick="toggleProfileEditor()" class="secondary" style="margin-top:10px;">EDIT PROFILE</button>
-            <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px; margin-top:15px; text-align:left;">
-                <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
-                <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
-                <label>Picture URL:</label> <input type="text" id="p-picture" placeholder="https://...">
-                <label style="color:#f1c40f">Zap Wallet:</label> <input type="text" id="p-lud16" placeholder="name@getalby.com" style="border-color:#f1c40f">
-                <button onclick="saveProfile()">PUBLISH UPDATE</button>
-                <button onclick="toggleProfileEditor()" class="small secondary" style="margin-top:5px;">CANCEL</button>
+            <h2 id="my-p-name"></h2>
+            <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
+            <div id="profile-editor" class="hidden">
+                <input type="text" id="p-name" placeholder="Name">
+                <input type="text" id="p-about" placeholder="Bio">
+                <input type="text" id="p-picture" placeholder="Picture URL">
+                <button onclick="saveProfile()">PUBLISH</button>
             </div>
         </div>
-        <h3 style="margin-top:0">>> MY SIGNAL HISTORY</h3>
-        <div id="my-feed">
-            <div style="text-align:center; opacity:0.5;">_fetching history_</div>
-        </div>
-        <br>
-        <button class="small secondary" onclick="togglePanel('panel-my-profile')">CLOSE</button>
+        <div id="my-feed"></div>
+        <br><button class="small secondary" onclick="togglePanel('panel-my-profile')">CLOSE</button>
     </div>
 
-    <!-- 4. PUBLIC PROFILE PANEL (UPDATED) -->
+    <!-- USER PROFILE PANEL -->
     <div id="panel-user-profile" class="dropdown-panel hidden">
-        <!-- BACK BUTTON -->
-        <button class="back-btn" onclick="togglePanel('panel-user-profile')">&lt; BACK TO FEED</button>
-        
-        <div id="user-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;">
-            <!-- Injected via JS -->
-        </div>
-        
-        <h3 style="margin-top:0">>> SIGNAL HISTORY</h3>
-        <div id="user-feed">
-            <div style="text-align:center; opacity:0.5;">_scanning user signals_</div>
-        </div>
-    </div>
-
-    <!-- REPLY MODAL -->
-    <div id="reply-modal" class="modal-overlay hidden" onclick="closeModals(event)">
-        <div class="modal-card" style="text-align: left;">
-            <h3 id="reply-title">>> REPLYING</h3>
-            <div id="reply-context" style="opacity: 0.5; font-size: 0.8rem; margin-bottom: 10px;"></div>
-            <textarea id="reply-input" rows="4" placeholder="enter transmission..."></textarea>
-            <button onclick="sendReplyOrQuote()">TRANSMIT</button>
-            <button class="secondary" onclick="closeModals(null)">CANCEL</button>
-        </div>
+        <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
+        <div id="user-profile-header" style="text-align:center;"></div>
+        <div id="user-feed"></div>
     </div>
 
     <!-- COMPOSER -->
@@ -258,261 +181,192 @@
         </div>
     </div>
 
+    <!-- MODAL -->
+    <div id="reply-modal" class="modal-overlay hidden" onclick="closeModals(event)">
+        <div class="modal-card">
+            <textarea id="reply-input" rows="4" placeholder="enter transmission..."></textarea>
+            <button onclick="sendReplyOrQuote()">TRANSMIT</button>
+        </div>
+    </div>
+
     <script>
-        // --- 1. SETUP ---
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+        // --- DATA & STATE ---
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
-        
-        // Data Stores
         let events = []; let pendingEvents = []; let myEvents = []; let userEvents = [];
+        let profiles = {}; let requestedProfiles = new Set();
         let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
+        let myPubKey = localStorage.getItem('nostr_pubkey');
+        let myPrivKey = localStorage.getItem('nostr_privkey');
+        let authMode = localStorage.getItem('nostr_mode') || 'none';
 
-        function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile'].forEach(p => { 
-                if(p !== id) document.getElementById(p).classList.add('hidden'); 
+        // --- CONTENT PARSER (IMAGES & HASHTAGS) ---
+        function parseContent(text) {
+            // Escape HTML
+            let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // Convert Image URLs to <img> tags
+            const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi;
+            content = content.replace(imgRegex, (url) => {
+                return `<a href="${url}" target="_blank"><img src="${url}" class="media-img" loading="lazy"></a>`;
             });
-            const panel = document.getElementById(id); 
-            if(panel && panel.classList.contains('hidden')) panel.classList.remove('hidden'); 
-            else if(panel) panel.classList.add('hidden');
-            
-            if(id === 'panel-my-profile' && panel && !panel.classList.contains('hidden')) loadMyHistory();
+
+            // Convert Hashtags to clickable spans
+            const hashtagRegex = /#(\w+)/g;
+            content = content.replace(hashtagRegex, (match, tag) => {
+                return `<span class="hashtag" onclick="filterByTag('${tag}')">#${tag}</span>`;
+            });
+
+            return content;
         }
 
-        // NEW GO HOME FUNCTION
+        function filterByTag(tag) {
+            alert("Searching for #" + tag + " (Search feature coming soon)");
+        }
+
+        // --- NAVIGATION ---
         function goHome() {
-            // Close all open panels
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile'].forEach(p => { 
-                document.getElementById(p).classList.add('hidden'); 
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile'].forEach(p => {
+                document.getElementById(p).classList.add('hidden');
             });
-            // Scroll to the top of the feed
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- 2. RELAYS ---
-        function renderRelays() {
-            document.getElementById('relay-list').innerHTML = savedRelays.map(url => {
-                const isOpen = sockets[url] && sockets[url].readyState === WebSocket.OPEN;
-                return `<div class="relay-item"><span><span class="relay-status ${isOpen?'status-open':'status-closed'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
-            }).join('');
-        }
-        function addRelay() {
-            let url = document.getElementById('new-relay').value.trim(); if(!url) return;
-            if(!url.startsWith('wss://')) url = 'wss://' + url;
-            if(!savedRelays.includes(url)) { savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; renderRelays(); }
-        }
-        function removeRelay(url) {
-            savedRelays = savedRelays.filter(r => r !== url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
-            if(sockets[url]) { sockets[url].close(); delete sockets[url]; } renderRelays();
-        }
-        function connectToRelay(url) {
-            if(sockets[url]) return;
-            try {
-                const ws = new WebSocket(url); sockets[url] = ws;
-                ws.onopen = () => { renderRelays(); ws.send(JSON.stringify(["REQ", "g", { kinds: [1, 6], limit: 20 }])); if(myPubKey) fetchProfile(myPubKey); };
-                ws.onmessage = (msg) => { 
-                    const data = JSON.parse(msg.data); 
-                    if (data[0] === 'EVENT') {
-                        if(data[1] === 'g') handleGlobalEvent(data[2]);
-                        if(data[1] === 'sub_me') handleMyEvent(data[2]);
-                        if(data[1] === 'sub_user') handleUserEvent(data[2]);
-                        if(data[1].startsWith('m_')) handleMetadata(data[2]);
-                    }
-                };
-                ws.onclose = () => renderRelays();
-            } catch(e) {}
-        }
-        savedRelays.forEach(connectToRelay);
-
-        // --- 3. AUTH ---
-        let myPrivKey = localStorage.getItem('nostr_privkey');
-        let myPubKey = localStorage.getItem('nostr_pubkey');
-        let authMode = localStorage.getItem('nostr_mode') || 'none';
-
-        async function checkAuth() {
-            if (authMode === 'extension' && myPubKey) initUserUI(myPubKey);
-            else if (myPrivKey) {
-                try {
-                    if(myPrivKey.startsWith('nsec')) myPrivKey = window.NostrTools.nip19.decode(myPrivKey).data;
-                    myPubKey = window.NostrTools.getPublicKey(myPrivKey);
-                    initUserUI(myPubKey);
-                } catch (e) { logout(); }
-            }
-        }
-        function initUserUI(pubkey) {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('user-info').classList.remove('hidden');
-            document.getElementById('composer-container').classList.remove('hidden');
-            try { 
-                document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(pubkey); 
-                if(myPrivKey && authMode === 'local') document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey);
-                else document.getElementById('nsec-container').style.display = 'none';
-            } catch(e){}
-            fetchProfile(pubkey);
-        }
-        function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
-        function copyKey(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); alert("Copied"); }
-        async function loginExtension() {
-            if (!window.nostr) return alert("No Extension");
-            try {
-                const pubkey = await window.nostr.getPublicKey();
-                localStorage.setItem('nostr_pubkey', pubkey); localStorage.setItem('nostr_mode', 'extension');
-                authMode = 'extension'; myPubKey = pubkey; checkAuth();
-            } catch(err) { alert("Denied"); }
-        }
-        function login() {
-            const input = document.getElementById('privkey-input').value.trim(); if(!input) return;
-            localStorage.setItem('nostr_privkey', input); localStorage.setItem('nostr_mode', 'local');
-            authMode = 'local'; myPrivKey = input; checkAuth();
-        }
-        function generateNewUser() {
-            const sk = window.NostrTools.generatePrivateKey();
-            localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_mode', 'local');
-            authMode = 'local'; myPrivKey = sk; checkAuth();
-            alert("NEW IDENTITY GENERATED.");
-        }
-        function logout() { localStorage.clear(); location.reload(); }
-
-        // --- 4. MY PROFILE ---
-        function loadMyHistory() {
-            if(!myPubKey) { document.getElementById('my-feed').innerHTML = "PLEASE LOGIN FIRST"; return; }
-            const p = profiles[myPubKey] || {};
-            document.getElementById('my-p-name').innerText = p.name || 'Unknown';
-            document.getElementById('my-p-about').innerText = p.about || '';
-            if(p.picture) document.getElementById('my-p-img').innerHTML = `<img src="${p.picture}" class="p-img-large">`;
-            myEvents = [];
-            document.getElementById('my-feed').innerHTML = '<div style="text-align:center;">_fetching history_</div>';
-            const msg = JSON.stringify(["REQ", "sub_me", { kinds: [1, 6], authors: [myPubKey], limit: 20 }]);
-            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
-        }
-        function handleMyEvent(event) {
-            if(myEvents.some(e => e.id === event.id)) return;
-            myEvents.push(event); myEvents.sort((a,b) => b.created_at - a.created_at);
-            document.getElementById('my-feed').innerHTML = myEvents.map(ev => generatePostHTML(ev)).join('');
-        }
-        function toggleProfileEditor() { 
-            document.getElementById('profile-editor').classList.toggle('hidden'); 
-            if(profiles[myPubKey]) {
-                const p = profiles[myPubKey];
-                document.getElementById('p-name').value = p.name||''; document.getElementById('p-about').value = p.about||'';
-                document.getElementById('p-picture').value = p.picture||''; document.getElementById('p-lud16').value = p.lud16||'';
-            }
-        }
-        async function saveProfile() {
-            const content = JSON.stringify({ name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value, lud16: document.getElementById('p-lud16').value });
-            const event = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
-            try { await signAndBroadcast(event); alert("Updated"); toggleProfileEditor(); profiles[myPubKey] = JSON.parse(content); loadMyHistory(); } catch(e) { alert("Error"); }
+        function togglePanel(id) {
+            const panel = document.getElementById(id);
+            const isHidden = panel.classList.contains('hidden');
+            goHome(); // close others
+            if (isHidden) panel.classList.remove('hidden');
+            if (id === 'panel-my-profile' && isHidden) loadMyHistory();
         }
 
-        // --- 5. USER PROFILE ---
-        function viewProfile(pubkey) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile'].forEach(p => document.getElementById(p).classList.add('hidden'));
-            document.getElementById('panel-user-profile').classList.remove('hidden');
-            const p = profiles[pubkey] || {};
-            let img = '<div style="font-size:3rem;">?</div>'; 
-            if (p.picture) img = `<img src="${p.picture}" class="p-img-large">`;
-            let zapBtn = "";
-            if(p.lud16) zapBtn = `<button class="act-btn zap-btn" style="font-size:1rem; border:1px solid #f1c40f; padding:5px 15px; margin-top:5px;" onclick="doZap('${pubkey}')">ZAP ⚡</button>`;
-            
-            const bio = p.about ? p.about.replace(/</g,"") : "No bio available";
-            
-            const html = `
-                ${img}
-                <h2 style="margin:10px 0;">${(p.name||'Unknown').replace(/</g,"")}</h2>
-                <div style="opacity:0.8; font-size:0.9rem; margin-bottom:15px; white-space: pre-wrap;">${bio}</div>
-                ${zapBtn}
-            `;
-            document.getElementById('user-profile-header').innerHTML = html;
-            
-            userEvents = [];
-            document.getElementById('user-feed').innerHTML = '<div style="text-align:center;">_fetching history_</div>';
-            if(!profiles[pubkey]) fetchProfile(pubkey);
-            const msg = JSON.stringify(["REQ", "sub_user", { kinds: [1, 6], authors: [pubkey], limit: 20 }]);
-            Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); });
-        }
-        function handleUserEvent(event) {
-            if(userEvents.some(e => e.id === event.id)) return;
-            userEvents.push(event); userEvents.sort((a,b) => b.created_at - a.created_at);
-            document.getElementById('user-feed').innerHTML = userEvents.map(ev => generatePostHTML(ev)).join('');
-        }
-
-        // --- 6. GLOBAL FEED ---
-        const processedIds = new Set();
-        const profiles = {};
-        const requestedProfiles = new Set();
-        
-        function handleGlobalEvent(event) {
-            if (processedIds.has(event.id)) return;
-            processedIds.add(event.id);
-            if (events.length >= 20) { pendingEvents.unshift(event); updateNewButton(); } 
-            else { events.unshift(event); events.sort((a, b) => b.created_at - a.created_at); fetchProfileIfNeeded(event.pubkey); renderGlobalFeed(); }
-        }
-        function handleMetadata(event) { try { profiles[event.pubkey] = JSON.parse(event.content); renderGlobalFeed(); } catch(e){} }
-        function updateNewButton() { const btn = document.getElementById('new-btn'); if (pendingEvents.length > 0) { btn.classList.remove('hidden'); btn.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; } else { btn.classList.add('hidden'); } }
-        function mergeQueue() { pendingEvents.forEach(e => { events.unshift(e); fetchProfileIfNeeded(e.pubkey); }); pendingEvents = []; events.sort((a, b) => b.created_at - a.created_at); if(events.length > 100) events = events.slice(0, 100); renderGlobalFeed(); updateNewButton(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-        function fetchProfileIfNeeded(pubkey) { if (!profiles[pubkey] && !requestedProfiles.has(pubkey)) fetchProfile(pubkey); }
-        function fetchProfile(pubkey) { requestedProfiles.add(pubkey); const msg = JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]); Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); }); }
-        function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(ev => generatePostHTML(ev)).join(''); }
-
-        // --- 7. SHARED RENDER ---
+        // --- FEED RENDERING ---
         function generatePostHTML(ev) {
-            let content = ev.content; let header = "";
-            if (ev.kind === 6) { 
+            let content = ev.content;
+            let header = "";
+            
+            if (ev.kind === 6) {
                 header = `<div style="font-size:0.7rem; color:#00FF41; margin-bottom:5px;">↻ REPOSTED</div>`;
-                try { const original = JSON.parse(ev.content); if(original.content) content = original.content; else content = "[Reposted Signal]"; } catch(e) { content = "[Reposted Signal]"; } 
+                try { const orig = JSON.parse(ev.content); content = orig.content || "[Signal]"; } catch(e){ content = "[Reposted Signal]"; }
             } else if (ev.kind === 1 && ev.tags.some(t => t[0] === 'e')) {
-                header = `<div style="font-size:0.7rem; color:#888; margin-bottom:5px;">↳ REPLYING</div>`;
+                header = `<div style="font-size:0.7rem; color:#888; margin-bottom:5px;">↳ REPLY</div>`;
             }
+
             const p = profiles[ev.pubkey] || {};
-            let name = p.name ? p.name.replace(/</g,"") : ev.pubkey.substring(0,6)+'...';
-            let avatar = ''; if(p.picture) avatar = `<img src="${p.picture}" class="avatar">`;
-            content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const name = p.name ? p.name.replace(/</g,"") : ev.pubkey.substring(0,6);
+            const avatar = p.picture ? `<img src="${p.picture}" class="avatar">` : `<div class="avatar" style="background:#222"></div>`;
+            
+            // Process images and hashtags
+            const processedContent = parseContent(content);
             const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
-            const evJson = JSON.stringify(ev).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-            const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
+
             return `
                 <div class="post" ${isMe}>
                     ${header}
-                    <div class="meta" onclick="viewProfile('${ev.pubkey}')" style="cursor:pointer">${avatar}<span class="username-link">${name}</span><span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span></div>
-                    <div class="content">${content}</div>
+                    <div class="meta" onclick="viewProfile('${ev.pubkey}')" style="cursor:pointer">
+                        ${avatar} <span class="username-link">${name}</span> 
+                        <span style="margin-left:5px; opacity:0.4;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span>
+                    </div>
+                    <div class="content">${processedContent}</div>
                     <div class="actions">
                         <button class="act-btn" onclick="openReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
-                        <button class="act-btn" onclick="openQuote('${ev.id}', '${ev.pubkey}')">[QUOTE]</button>
-                        <button class="act-btn" onclick="doRepost('${ev.id}', '${ev.pubkey}', '${evJson}')">[REPOST]</button>
-                        <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
+                        <button class="act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
                         <button class="act-btn zap-btn" onclick="doZap('${ev.pubkey}')">[ZAP ⚡]</button>
                     </div>
                 </div>
             `;
         }
 
-        // --- 8. ACTIONS ---
-        async function signAndBroadcast(event) {
-            if (authMode === 'extension') event = await window.nostr.signEvent(event);
-            else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); }
-            const msg = JSON.stringify(["EVENT", event]); Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); }); return event;
+        // --- NOSTR CORE ---
+        function connectToRelay(url) {
+            if(sockets[url]) return;
+            try {
+                const ws = new WebSocket(url); sockets[url] = ws;
+                ws.onopen = () => { ws.send(JSON.stringify(["REQ", "g", { kinds: [1, 6], limit: 30 }])); renderRelayList(); };
+                ws.onmessage = (msg) => {
+                    const data = JSON.parse(msg.data);
+                    if (data[0] === 'EVENT') {
+                        if(data[1] === 'g') handleGlobalEvent(data[2]);
+                        if(data[1].startsWith('m_')) handleMetadata(data[2]);
+                        if(data[1] === 'sub_user') handleUserEvent(data[2]);
+                    }
+                };
+            } catch(e) {}
         }
-        async function sendNote() { const content = document.getElementById('msg-input').value; if (!content || !myPubKey) return; const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey }; try { const s = await signAndBroadcast(event); document.getElementById('msg-input').value = ""; events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Error sending"); } }
-        async function doLike(id, pubkey) { 
-            if(!myPubKey) return alert("Login to Like"); 
-            const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; 
-            try { 
-                await signAndBroadcast(event); likedPosts.add(id); localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts])); 
-                renderGlobalFeed(); if(!document.getElementById('panel-my-profile').classList.contains('hidden')) renderMyFeed(); if(!document.getElementById('panel-user-profile').classList.contains('hidden')) renderUserFeed(); 
-            } catch(e) { alert("Failed"); } 
+
+        function handleGlobalEvent(ev) {
+            if (events.some(e => e.id === ev.id)) return;
+            if (events.length > 20) { pendingEvents.unshift(ev); updateNewBtn(); }
+            else { events.unshift(ev); events.sort((a,b)=>b.created_at - a.created_at); renderFeed(); }
+            fetchProfileIfNeeded(ev.pubkey);
         }
-        function renderMyFeed() { document.getElementById('my-feed').innerHTML = myEvents.map(ev => generatePostHTML(ev)).join(''); }
-        function renderUserFeed() { document.getElementById('user-feed').innerHTML = userEvents.map(ev => generatePostHTML(ev)).join(''); }
-        async function doRepost(id, pubkey, originalJSON) { if(!myPubKey) return alert("Login to Repost"); let contentToPost = originalJSON || ""; const event = { kind: 6, created_at: Math.floor(Date.now()/1000), tags: [['e', id, 'wss://relay.damus.io'], ['p', pubkey]], content: contentToPost, pubkey: myPubKey }; try { await signAndBroadcast(event); alert("Reposted!"); } catch(e) { alert("Failed"); } }
-        let activeAction = null; let targetNote = null;
-        function openReply(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'reply'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> REPLYING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
-        function openQuote(id, pubkey) { if(!myPubKey) return alert("Login first"); activeAction = 'quote'; targetNote = {id, pubkey}; document.getElementById('reply-title').innerText = ">> QUOTING"; document.getElementById('reply-context').innerText = "ID: " + id.substring(0,8); document.getElementById('reply-modal').classList.remove('hidden'); }
-        async function sendReplyOrQuote() { const content = document.getElementById('reply-input').value; if(!content) return; let event = { kind: 1, created_at: Math.floor(Date.now()/1000), content: content, pubkey: myPubKey, tags: [] }; if (activeAction === 'reply') event.tags = [['e', targetNote.id, '', 'root'], ['p', targetNote.pubkey]]; else if (activeAction === 'quote') { try { const nevent = window.NostrTools.nip19.neventEncode({id: targetNote.id}); event.content = content + "\n\nnostr:" + nevent; event.tags = [['e', targetNote.id, '', 'mention'], ['p', targetNote.pubkey]]; } catch(e) {} } try { const s = await signAndBroadcast(event); document.getElementById('reply-input').value = ""; closeModals(null); events.unshift(s); renderGlobalFeed(); } catch(e) { alert("Failed"); } }
-        async function doZap(pubkey) { if(!myPubKey) return alert("Login first"); const p = profiles[pubkey]; if(!p || !p.lud16) return alert("No Zap Address."); if (window.webln) { try { await window.webln.enable(); const amount = prompt("Sats?"); if(!amount) return; const parts = p.lud16.split('@'); const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`; const res = await fetch(url); const data = await res.json(); const invRes = await fetch(`${data.callback}?amount=${amount*1000}`); const invData = await invRes.json(); await window.webln.sendPayment(invData.pr); alert("Zapped"); } catch(e) { alert("Zap failed"); } } else { alert("Install Alby"); } }
-        function closeModals(e) { if(e && !e.target.classList.contains('modal-overlay') && e.target.tagName !== 'BUTTON') return; document.getElementById('reply-modal').classList.add('hidden'); }
-        
+
+        function fetchProfileIfNeeded(pk) {
+            if (profiles[pk] || requestedProfiles.has(pk)) return;
+            requestedProfiles.add(pk);
+            const msg = JSON.stringify(["REQ", "m_"+pk.substring(0,8), { kinds:[0], authors:[pk], limit:1 }]);
+            Object.values(sockets).forEach(s => { if(s.readyState === 1) s.send(msg); });
+        }
+
+        function handleMetadata(ev) { try { profiles[ev.pubkey] = JSON.parse(ev.content); renderFeed(); } catch(e){} }
+        function renderFeed() { document.getElementById('feed').innerHTML = events.map(e => generatePostHTML(e)).join(''); }
+        function updateNewBtn() { const b = document.getElementById('new-btn'); b.classList.toggle('hidden', pendingEvents.length === 0); b.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; }
+        function mergeQueue() { events = [...pendingEvents, ...events].slice(0, 100); pendingEvents = []; renderFeed(); updateNewBtn(); window.scrollTo(0,0); }
+
+        // --- AUTH & SETUP ---
+        async function checkAuth() {
+            if (myPubKey) {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('composer-container').classList.remove('hidden');
+                document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(myPubKey);
+                fetchProfileIfNeeded(myPubKey);
+            }
+        }
+
+        async function loginExtension() {
+            if (!window.nostr) return alert("Nostr extension not found");
+            const pk = await window.nostr.getPublicKey();
+            localStorage.setItem('nostr_pubkey', pk); localStorage.setItem('nostr_mode', 'extension');
+            location.reload();
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        async function sendNote() {
+            const content = document.getElementById('msg-input').value; if(!content) return;
+            let ev = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: [], content: content, pubkey: myPubKey };
+            if (authMode === 'extension') ev = await window.nostr.signEvent(ev);
+            else { ev.id = window.NostrTools.getEventHash(ev); ev.sig = window.NostrTools.signEvent(ev, myPrivKey); }
+            Object.values(sockets).forEach(s => s.send(JSON.stringify(["EVENT", ev])));
+            document.getElementById('msg-input').value = "";
+            events.unshift(ev); renderFeed();
+        }
+
+        // --- INITIALIZE ---
+        savedRelays.forEach(connectToRelay);
         checkAuth();
+
+        // Relay list helper
+        function renderRelayList() {
+            document.getElementById('relay-list').innerHTML = savedRelays.map(r => `<div>[ON] ${r}</div>`).join('');
+        }
+        
+        // Modal helpers
+        function openReply() { document.getElementById('reply-modal').classList.remove('hidden'); }
+        function closeModals() { document.getElementById('reply-modal').classList.add('hidden'); }
+        
+        function viewProfile(pk) {
+            togglePanel('panel-user-profile');
+            document.getElementById('user-profile-header').innerHTML = `<h3>Scanning: ${pk.substring(0,10)}...</h3>`;
+            const msg = JSON.stringify(["REQ", "sub_user", { kinds:[1], authors:[pk], limit:20 }]);
+            Object.values(sockets).forEach(s => { if(s.readyState === 1) s.send(msg); });
+        }
+        function handleUserEvent(ev) {
+            userEvents.unshift(ev);
+            document.getElementById('user-feed').innerHTML = userEvents.map(e => generatePostHTML(e)).join('');
+        }
     </script>
 </body>
 </html>
