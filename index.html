@@ -209,7 +209,7 @@
         }
         .fab-btn:hover { transform: scale(1.1); box-shadow: var(--glow); }
 
-        /* MODAL (UPDATED) */
+        /* MODAL */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85);
@@ -321,6 +321,13 @@
                 </div>
             </div>
             <h3 style="border-top:1px solid var(--post-border); margin-top:20px; padding-top:10px;">>> SIGNAL HISTORY</h3>
+            
+            <!-- MY PROFILE TABS -->
+            <div class="profile-tabs">
+                <button id="my-tab-notes" class="tab-btn active" onclick="switchMyTab('notes')">NOTES</button>
+                <button id="my-tab-replies" class="tab-btn" onclick="switchMyTab('replies')">NOTES & REPLIES</button>
+            </div>
+
             <div id="my-feed"></div>
         </div>
 
@@ -329,7 +336,7 @@
             <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
             <div id="user-profile-header" style="text-align:center; padding-bottom:15px;"></div>
             
-            <!-- NEW PROFILE TABS -->
+            <!-- USER PROFILE TABS -->
             <div class="profile-tabs">
                 <button id="tab-notes" class="tab-btn active" onclick="switchUserTab('notes')">NOTES</button>
                 <button id="tab-replies" class="tab-btn" onclick="switchUserTab('replies')">NOTES & REPLIES</button>
@@ -438,7 +445,10 @@
         
         let replyContext = null;
         let currentViewedProfile = null;
-        let currentUserTab = 'notes'; // 'notes' or 'replies'
+        
+        // Tab States
+        let currentUserTab = 'notes'; 
+        let currentMyTab = 'notes';
 
         // Init Theme
         function changeTheme(theme) {
@@ -558,9 +568,7 @@
             // Re-render active view
             if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
             if(!document.getElementById('panel-user-profile').classList.contains('hidden')) renderUserFeed();
-            if(!document.getElementById('panel-my-profile').classList.contains('hidden')) {
-                document.getElementById('my-feed').innerHTML = myEvents.map(generatePostHTML).join('');
-            }
+            if(!document.getElementById('panel-my-profile').classList.contains('hidden')) renderMyFeed();
 
             const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
             await signAndBroadcast(event);
@@ -809,6 +817,14 @@
             document.getElementById('tab-replies').className = tab === 'replies' ? 'tab-btn active' : 'tab-btn';
             renderUserFeed();
         }
+        
+        // --- NEW MY PROFILE TAB LOGIC ---
+        function switchMyTab(tab) {
+            currentMyTab = tab;
+            document.getElementById('my-tab-notes').className = tab === 'notes' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('my-tab-replies').className = tab === 'replies' ? 'tab-btn active' : 'tab-btn';
+            renderMyFeed();
+        }
 
         function renderUserProfileHeader(pubkey) {
             const p = profiles[pubkey] || {};
@@ -857,10 +873,8 @@
         function renderUserFeed() { 
             let list = userEvents;
             if (currentUserTab === 'notes') {
-                // Filter out likely replies (events with 'e' tags), keeping reposts (kind 6)
                 list = userEvents.filter(ev => {
                     if (ev.kind === 6) return true;
-                    // Simplistic check: if it has 'e' tags, it's likely a reply
                     return !ev.tags.some(t => t[0] === 'e');
                 });
             }
@@ -932,11 +946,31 @@
             const zapEl = document.getElementById('my-p-lud16');
             if(p.lud16) { zapEl.innerText = p.lud16; document.getElementById('my-p-lud16-container').classList.remove('hidden'); } else { document.getElementById('my-p-lud16-container').classList.add('hidden'); }
 
+            // Reset My Tab
+            switchMyTab('notes');
+
             myEvents = []; 
             Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]))); 
         }
 
-        function handleMyEvent(ev) { if (myEvents.some(e => e.id === ev.id)) return; myEvents.unshift(ev); document.getElementById('my-feed').innerHTML = myEvents.map(generatePostHTML).join(''); }
+        function handleMyEvent(ev) { 
+            if (myEvents.some(e => e.id === ev.id)) return; 
+            myEvents.unshift(ev); 
+            myEvents.sort((a,b)=>b.created_at - a.created_at);
+            renderMyFeed(); 
+        }
+
+        function renderMyFeed() {
+            let list = myEvents;
+            if (currentMyTab === 'notes') {
+                list = myEvents.filter(ev => {
+                    if (ev.kind === 6) return true;
+                    return !ev.tags.some(t => t[0] === 'e');
+                });
+            }
+            document.getElementById('my-feed').innerHTML = list.map(generatePostHTML).join('');
+        }
+
         function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><span><span style="color:${isOpen?'#00FF41':'red'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
         function addRelay() { let url = document.getElementById('new-relay').value.trim(); if(url){ if(!url.startsWith('wss://')) url = 'wss://' + url; savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; } }
         function removeRelay(url) { savedRelays = savedRelays.filter(r => r !== url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); if(sockets[url]) sockets[url].close(); renderRelays(); }
