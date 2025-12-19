@@ -20,6 +20,7 @@
             --post-border: #333;
             --glow: 0 0 0px transparent;
             --reply-indicator: #222;
+            --footer-bg: #000000;
         }
 
         [data-theme="matrix"] {
@@ -30,6 +31,7 @@
             --meta-color: #ccffcc;
             --glow: 0 0 5px #00FF41;
             --reply-indicator: #002200;
+            --footer-bg: #001100;
         }
 
         [data-theme="light"] {
@@ -43,6 +45,7 @@
             --meta-color: #444444;
             --post-border: #cccccc;
             --reply-indicator: #e0e0e0;
+            --footer-bg: #eeeeee;
         }
 
         /* GLOBAL STYLES */
@@ -52,7 +55,10 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: "Courier New", Courier, monospace;
-            padding: 20px; margin: 0; min-height: 100vh;
+            padding: 20px; 
+            padding-bottom: 80px; /* Space for footer */
+            margin: 0; 
+            min-height: 100vh;
         }
 
         header { text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px; }
@@ -120,12 +126,36 @@
             border-left: 3px solid var(--text-color);
         }
 
-        /* PROFILE DETAILS STYLE */
         .profile-detail-box {
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px dotted var(--post-border);
+            margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
+        }
+
+        /* STICKY FOOTER */
+        .sticky-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--footer-bg);
+            border-top: 2px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+        }
+        .footer-icon {
+            font-size: 1.5rem;
+            cursor: pointer;
             text-align: center;
+            transition: 0.2s;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        .footer-icon:hover { opacity: 0.7; transform: scale(1.1); text-shadow: var(--glow); }
+
+        .notif-item {
+            padding: 10px; border-bottom: 1px solid var(--post-border); font-size: 0.9rem;
         }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -135,13 +165,13 @@
     <header>
         <h1>mBIT</h1>
         <div class="nav-bar">
-            <span class="nav-item" onclick="goHome()">[ HOME ]</span>
-            <span>|</span>
-            <span class="nav-item" onclick="togglePanel('panel-relays')">[ RELAYS ]</span>
+            <span class="nav-item" onclick="goHome()">[ FEED ]</span>
             <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-identity')">[ KEYS ]</span>
             <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-my-profile')">[ MY PROFILE ]</span>
+            <span>|</span>
+            <span class="nav-item" onclick="togglePanel('panel-relays')">[ RELAYS ]</span>
             <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-settings')">[ SETTINGS ]</span>
         </div>
@@ -189,7 +219,6 @@
                 <div id="my-p-img"></div>
                 <h2 id="my-p-name">Unknown</h2>
                 
-                <!-- VISIBLE PROFILE DETAILS -->
                 <div class="profile-detail-box">
                     <p id="my-p-about" style="opacity:0.8; font-style:italic; margin: 5px 0;">(No bio)</p>
                     <a id="my-p-website" href="" target="_blank" class="hidden" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;"></a>
@@ -232,9 +261,23 @@
             <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
+        <!-- 6. SEARCH PANEL -->
+        <div id="panel-search" class="dropdown-panel hidden">
+            <h3>>> SEARCH</h3>
+            <input type="text" id="search-input" placeholder="Search notes, #tags, or npub...">
+            <button onclick="handleSearch()">SEARCH</button>
+            <div id="search-results" style="margin-top:20px;"></div>
+        </div>
+
+        <!-- 7. NOTIFICATIONS PANEL -->
+        <div id="panel-notifications" class="dropdown-panel hidden">
+            <h3>>> NOTIFICATIONS</h3>
+            <button class="small secondary" onclick="refreshNotifications()" style="margin-bottom:10px;">REFRESH</button>
+            <div id="notifications-feed">Loading...</div>
+        </div>
+
         <!-- MAIN FEED STUFF -->
         <div id="composer-container" class="hidden" style="border: 1px dashed var(--border-color); padding: 15px; margin-bottom:20px;">
-            <!-- REPLY INDICATOR -->
             <div id="reply-context-bar" class="hidden">
                 <span id="reply-text">Replying to...</span>
                 <button class="small danger" onclick="cancelReply()">CANCEL</button>
@@ -249,17 +292,23 @@
         </div>
     </div>
 
+    <!-- STICKY FOOTER -->
+    <div class="sticky-footer">
+        <div class="footer-icon" onclick="goHome()" title="Home">🏠</div>
+        <div class="footer-icon" onclick="openSearch()" title="Search">🔍</div>
+        <div class="footer-icon" onclick="openNotifications()" title="Notifications">🔔</div>
+    </div>
+
     <script>
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
         
-        // BUFFERS for Slow Mode
         let events = []; // Main display list
         let incomingBuffer = []; // High speed buffer
         let pendingEvents = []; // "Load New" queue
         
-        let myEvents = [], userEvents = [];
+        let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [];
         let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
@@ -275,19 +324,25 @@
         document.getElementById('theme-selector').value = localStorage.getItem('mbit_theme') || 'dark';
 
         function goHome() {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('feed-container').classList.remove('hidden');
             if (myPubKey) document.getElementById('composer-container').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'feed-container', 'composer-container'].forEach(p => {
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container', 'composer-container'].forEach(p => {
                 const el = document.getElementById(p); if(el) el.classList.add('hidden');
             });
             document.getElementById(id).classList.remove('hidden');
             if (id === 'panel-my-profile') loadMyHistory();
             if (id === 'panel-relays') renderRelays();
+        }
+
+        function openSearch() { togglePanel('panel-search'); }
+        function openNotifications() { 
+            togglePanel('panel-notifications'); 
+            refreshNotifications(); 
         }
 
         function parseContent(text) {
@@ -320,27 +375,142 @@
                     <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
                     <button class="act-btn" onclick="initQuote('${ev.id}')">[QUOTE]</button>
                     <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
-                    <button class="act-btn zap-btn" onclick="alert('Zap to: ${p.lud16||'no address'}')">[ZAP ⚡]</button>
+                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
                 </div>
             </div>`;
         }
 
-        /* --- LOGIC UPDATES --- */
+        /* --- ZAP LOGIC --- */
+        async function handleZap(lud16, pubkey) {
+            if(!lud16) return alert("User has no Lightning address set.");
+            
+            // 1. Parse address (user@domain.com)
+            const parts = lud16.split('@');
+            if(parts.length !== 2) return window.open(`lightning:${lud16}`); // Fallback
+            
+            // 2. Try LNURL fetch
+            const amount = prompt(`Zap ${lud16} (sats):`, "21");
+            if(!amount) return;
 
+            try {
+                // Construct LNURL-Pay URL
+                const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if(data.callback) {
+                    const millisats = parseInt(amount) * 1000;
+                    if(millisats < data.minSendable || millisats > data.maxSendable) {
+                        return alert(`Amount out of range (${data.minSendable/1000} - ${data.maxSendable/1000} sats)`);
+                    }
+                    
+                    const cbUrl = `${data.callback}?amount=${millisats}`;
+                    const cbRes = await fetch(cbUrl);
+                    const cbData = await cbRes.json();
+                    
+                    if(cbData.pr) {
+                        window.location.href = `lightning:${cbData.pr}`;
+                    } else {
+                        throw new Error("No invoice returned");
+                    }
+                } else {
+                    throw new Error("Invalid LNURL response");
+                }
+            } catch(e) {
+                console.error(e);
+                // Fallback for CORS errors or simplified setups
+                if(confirm(`Could not fetch invoice automatically (CORS/Error). Open default wallet with address: ${lud16}?`)) {
+                    window.location.href = `lightning:${lud16}`;
+                }
+            }
+        }
+
+        /* --- SEARCH LOGIC --- */
+        function handleSearch() {
+            const q = document.getElementById('search-input').value.trim();
+            if(!q) return;
+            
+            document.getElementById('search-results').innerHTML = "Searching relays...";
+            searchEvents = [];
+            
+            let filter = { kinds: [1], limit: 20 };
+            
+            if(q.startsWith('npub')) {
+                // Profile Search
+                try {
+                    const decoded = window.NostrTools.nip19.decode(q).data;
+                    viewProfile(decoded);
+                    return;
+                } catch(e) { alert("Invalid npub"); return; }
+            } else if (q.startsWith('#')) {
+                // Hashtag Search
+                filter['#t'] = [q.substring(1)];
+            } else {
+                // Text Search (NIP-50)
+                filter['search'] = q;
+            }
+
+            // Send to relays
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter]));
+            });
+        }
+
+        /* --- NOTIFICATIONS LOGIC --- */
+        function refreshNotifications() {
+            if(!myPubKey) return document.getElementById('notifications-feed').innerHTML = "Login required.";
+            notifEvents = [];
+            document.getElementById('notifications-feed').innerHTML = "Loading...";
+            
+            // Subscribe to Replies (1) and Likes (7) pointing to me
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === 1) {
+                    ws.send(JSON.stringify(["REQ", "notif_sub", { 
+                        kinds: [1, 7], 
+                        '#p': [myPubKey], 
+                        limit: 50 
+                    }]));
+                }
+            });
+        }
+
+        function handleNotifEvent(ev) {
+            if(notifEvents.some(e => e.id === ev.id)) return;
+            notifEvents.push(ev);
+            notifEvents.sort((a,b) => b.created_at - a.created_at);
+            
+            renderNotifications();
+            fetchProfileIfNeeded(ev.pubkey);
+        }
+
+        function renderNotifications() {
+            const html = notifEvents.map(ev => {
+                const p = profiles[ev.pubkey] || {};
+                const name = p.name || ev.pubkey.substring(0,6);
+                const type = ev.kind === 7 ? "❤️ Liked" : "↩️ Replied";
+                const content = ev.kind === 7 ? "your note" : parseContent(ev.content);
+                
+                return `<div class="notif-item" onclick="viewProfile('${ev.pubkey}')">
+                    <b>${name}</b> ${type}:<br>
+                    <span style="opacity:0.8">${content}</span>
+                </div>`;
+            }).join('');
+            document.getElementById('notifications-feed').innerHTML = html || "No notifications yet.";
+        }
+
+        /* --- EXISTING LOGIC --- */
         async function loginExtension() {
-            if (!window.nostr) return alert("No Nostr extension found (Alby, nos2x, etc).");
+            if (!window.nostr) return alert("No Nostr extension found.");
             try {
                 const pubkey = await window.nostr.getPublicKey();
                 localStorage.setItem('nostr_pubkey', pubkey);
                 localStorage.setItem('nostr_mode', 'extension');
                 location.reload();
-            } catch (err) {
-                alert("Login failed: " + err);
-            }
+            } catch (err) { alert("Login failed: " + err); }
         }
 
         function initReply(eventId, pubkey) {
-            if(!myPubKey) return alert("Login required to reply.");
+            if(!myPubKey) return alert("Login required.");
             goHome(); 
             const p = profiles[pubkey] || {name: pubkey.substring(0,8)};
             replyContext = { id: eventId, pubkey: pubkey };
@@ -355,15 +525,14 @@
         }
 
         function initQuote(eventId) {
-            if(!myPubKey) return alert("Login required to quote.");
+            if(!myPubKey) return alert("Login required.");
             goHome();
             try {
                 const noteId = window.NostrTools.nip19.noteEncode(eventId);
-                const quoteStr = `\nnostr:${noteId}\n`;
                 const input = document.getElementById('msg-input');
-                input.value += quoteStr;
+                input.value += `\nnostr:${noteId}\n`;
                 input.focus();
-            } catch(e) { console.error(e); alert("Error creating quote link"); }
+            } catch(e) {}
         }
 
         async function doLike(id, pubkey) {
@@ -371,8 +540,6 @@
             likedPosts.add(id);
             localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
             renderGlobalFeed();
-            if(!document.getElementById('panel-my-profile').classList.contains('hidden')) loadMyHistory();
-            if(!document.getElementById('panel-user-profile').classList.contains('hidden')) renderUserFeed();
             const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
             await signAndBroadcast(event);
         }
@@ -387,39 +554,39 @@
                         if (data[1] === 'g') handleGlobalEvent(data[2]);
                         if (data[1] === 'sub_me') handleMyEvent(data[2]);
                         if (data[1] === 'sub_user') handleUserEvent(data[2]);
-                        if (data[1].startsWith('m_')) { profiles[data[2].pubkey] = JSON.parse(data[2].content); }
+                        if (data[1] === 'search_sub') handleSearchEvent(data[2]);
+                        if (data[1] === 'notif_sub') handleNotifEvent(data[2]);
+                        if (data[1].startsWith('m_')) { profiles[data[2].pubkey] = JSON.parse(data[2].content); renderNotifications(); }
                     }
                 };
             } catch(e) {}
         }
 
-        // --- NEW SLOW FEED LOGIC ---
         function handleGlobalEvent(ev) {
-            if (processedIds.has(ev.id)) return; 
-            processedIds.add(ev.id);
+            if (processedIds.has(ev.id)) return; processedIds.add(ev.id);
             fetchProfileIfNeeded(ev.pubkey);
-            incomingBuffer.push(ev); // Don't render yet, push to buffer
+            incomingBuffer.push(ev);
         }
 
-        // Process buffer every 1.5 seconds to stop UI freezing
+        function handleSearchEvent(ev) {
+            if(searchEvents.some(e => e.id === ev.id)) return;
+            searchEvents.push(ev);
+            document.getElementById('search-results').innerHTML = searchEvents.map(generatePostHTML).join('');
+            fetchProfileIfNeeded(ev.pubkey);
+        }
+
         setInterval(() => {
             if (incomingBuffer.length === 0) return;
-
-            // Sort incoming by newness
             incomingBuffer.sort((a,b) => b.created_at - a.created_at);
-
-            // If we already have a full feed, push to "Load New" queue
             if (events.length >= 25) {
                 pendingEvents = [...incomingBuffer, ...pendingEvents];
-                // pendingEvents.sort((a,b) => b.created_at - a.created_at);
                 updateNewButton();
             } else {
-                // Initial fill
                 events = [...incomingBuffer, ...events];
                 events.sort((a,b) => b.created_at - a.created_at);
                 renderGlobalFeed();
             }
-            incomingBuffer = []; // Clear buffer
+            incomingBuffer = []; 
         }, 1500);
 
         function fetchProfileIfNeeded(pubkey) {
@@ -434,6 +601,7 @@
         function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
 
         function viewProfile(pubkey) {
+            ['panel-search', 'panel-notifications'].forEach(p => document.getElementById(p).classList.add('hidden'));
             togglePanel('panel-user-profile');
             const p = profiles[pubkey] || {};
             document.getElementById('user-profile-header').innerHTML = `${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}<h2>${p.name||pubkey.substring(0,8)}</h2><p>${p.about||''}</p>`;
@@ -461,13 +629,7 @@
                 tags.push(['e', replyContext.id, '', 'reply']); 
                 tags.push(['p', replyContext.pubkey]); 
             }
-            const event = { 
-                kind: 1, 
-                created_at: Math.floor(Date.now()/1000), 
-                tags: tags, 
-                content: content, 
-                pubkey: myPubKey 
-            };
+            const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: tags, content: content, pubkey: myPubKey };
             await signAndBroadcast(event); 
             document.getElementById('msg-input').value = "";
             cancelReply();
@@ -512,24 +674,11 @@
             document.getElementById('my-p-about').innerText = p.about || '(No bio set)'; 
             document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; 
             
-            // Website
             const webEl = document.getElementById('my-p-website');
-            if(p.website) {
-                webEl.href = p.website;
-                webEl.innerText = p.website;
-                webEl.classList.remove('hidden');
-            } else {
-                webEl.classList.add('hidden');
-            }
+            if(p.website) { webEl.href = p.website; webEl.innerText = p.website; webEl.classList.remove('hidden'); } else { webEl.classList.add('hidden'); }
 
-            // Zap Address (LUD16)
             const zapEl = document.getElementById('my-p-lud16');
-            if(p.lud16) {
-                zapEl.innerText = p.lud16;
-                document.getElementById('my-p-lud16-container').classList.remove('hidden');
-            } else {
-                document.getElementById('my-p-lud16-container').classList.add('hidden');
-            }
+            if(p.lud16) { zapEl.innerText = p.lud16; document.getElementById('my-p-lud16-container').classList.remove('hidden'); } else { document.getElementById('my-p-lud16-container').classList.add('hidden'); }
 
             myEvents = []; 
             Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]))); 
