@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
-        /* THEME VARIABLES - DEFAULT WHITE ON BLACK */
+        /* THEME VARIABLES - DEFAULT (WHITE ON BLACK) */
         :root {
             --bg-color: #000000;
             --text-color: #ffffff;
@@ -18,6 +18,17 @@
             --btn-text: #000000;
             --meta-color: #bbbbbb;
             --post-border: #333;
+            --glow: 0 0 0px transparent;
+        }
+
+        /* MATRIX GREEN THEME OVERRIDES */
+        [data-theme="matrix"] {
+            --text-color: #00FF41;
+            --border-color: #00FF41;
+            --input-bg: #001100;
+            --btn-bg: #00FF41;
+            --meta-color: #ccffcc;
+            --glow: 0 0 5px #00FF41;
         }
 
         /* LIGHT THEME OVERRIDES (BLACK ON WHITE) */
@@ -51,12 +62,12 @@
             padding-bottom: 20px;
             margin-bottom: 20px;
         }
-        h1 { font-size: 2.5rem; margin: 0; text-shadow: 0 0 5px var(--text-color); text-transform: lowercase; }
+        h1 { font-size: 2.5rem; margin: 0; text-shadow: var(--glow); text-transform: lowercase; }
         
         /* NAV BAR */
         .nav-bar { margin-top: 10px; font-size: 0.9rem; user-select: none; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
-        .nav-item:hover { opacity: 1; text-shadow: 0 0 5px var(--text-color); text-decoration: underline; }
+        .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
         
         /* PANELS */
         .dropdown-panel {
@@ -76,11 +87,10 @@
             background: var(--btn-bg); color: var(--btn-text); border: none; padding: 10px 20px;
             font-family: inherit; font-weight: bold; cursor: pointer; text-transform: uppercase;
         }
-        button:hover { opacity: 0.8; }
+        button:hover { opacity: 0.8; box-shadow: var(--glow); }
         button.small { padding: 5px 10px; font-size: 0.8rem; margin-left: 10px; }
         button.danger { background: #ff4141; color: white; }
-        button.secondary { background: #333; color: #fff; border: 1px solid #fff; }
-        [data-theme="light"] button.secondary { background: #eee; color: #000; border: 1px solid #000; }
+        button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
         
         button.extension { background: #9b59b6; color: white; border: 1px solid #8e44ad; width: 100%; margin-bottom: 10px; }
         
@@ -102,13 +112,12 @@
         
         /* FEED */
         .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
-        .status-open { color: #00FF41; } .status-closed { color: red; }
         #feed-container { max-width: 600px; margin: 0 auto; position: relative; }
         
         #new-btn {
             width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
             font-weight: bold; text-align: center; cursor: pointer;
-            margin-bottom: 20px; border: 2px solid var(--text-color); animation: pulse 2s infinite;
+            margin-bottom: 20px; border: 2px solid var(--border-color); animation: pulse 2s infinite;
         }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
@@ -125,7 +134,7 @@
             margin-right: 10px; object-fit: cover; background: #111; cursor: pointer;
         }
         .username-link { font-weight: bold; color: var(--text-color); cursor: pointer; text-decoration: underline; }
-        .username-link:hover { text-shadow: 0 0 5px var(--text-color); }
+        .username-link:hover { text-shadow: var(--glow); }
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
         
         /* MEDIA */
@@ -180,7 +189,7 @@
         </div>
     </header>
 
-    <!-- RELAYS DROPDOWN -->
+    <!-- 1. RELAYS DROPDOWN -->
     <div id="panel-relays" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> RELAYS</h3>
         <div id="relay-list"></div>
@@ -192,7 +201,7 @@
         <button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
     </div>
 
-    <!-- KEYS DROPDOWN -->
+    <!-- 2. KEYS DROPDOWN -->
     <div id="panel-identity" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> KEYS</h3>
         <div id="login-form">
@@ -228,7 +237,7 @@
         <button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
     </div>
 
-    <!-- MY PROFILE DROPDOWN -->
+    <!-- 3. MY PROFILE DROPDOWN -->
     <div id="panel-my-profile" class="dropdown-panel hidden">
         <div id="my-profile-header" style="text-align:center; border-bottom:1px solid var(--post-border); padding-bottom:15px; margin-bottom:15px;">
             <div id="my-p-img"></div>
@@ -252,14 +261,15 @@
         <button class="small secondary" onclick="togglePanel('panel-my-profile')">CLOSE</button>
     </div>
 
-    <!-- SETTINGS PANEL -->
+    <!-- 4. SETTINGS PANEL -->
     <div id="panel-settings" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> SETTINGS</h3>
         <div style="text-align:left; margin-bottom: 15px;">
-            <label style="font-size:0.8rem; display:block; margin-bottom:5px;">INTERFACE THEME:</label>
+            <label style="font-size:0.8rem; display:block; margin-bottom:5px;">SYSTEM THEME:</label>
             <select id="theme-selector" onchange="changeTheme(this.value)">
                 <option value="dark">White on Black (Default)</option>
-                <option value="light">Black on White (Light Theme)</option>
+                <option value="matrix">Matrix Green</option>
+                <option value="light">Black on White (Light)</option>
             </select>
         </div>
         <div style="text-align:left; opacity:0.8; font-size:0.8rem;">
@@ -270,7 +280,7 @@
         <button class="small secondary" onclick="togglePanel('panel-settings')">CLOSE</button>
     </div>
 
-    <!-- PUBLIC PROFILE PANEL -->
+    <!-- 5. PUBLIC PROFILE PANEL -->
     <div id="panel-user-profile" class="dropdown-panel hidden">
         <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
         <div id="user-profile-header" style="text-align:center; border-bottom:1px solid var(--post-border); padding-bottom:15px; margin-bottom:15px;"></div>
@@ -322,10 +332,9 @@
 
         // --- THEME LOGIC ---
         function changeTheme(theme) {
-            if (theme === 'light') {
-                document.documentElement.setAttribute('data-theme', 'light');
-            } else {
-                document.documentElement.removeAttribute('data-theme');
+            document.documentElement.removeAttribute('data-theme');
+            if (theme !== 'dark') {
+                document.documentElement.setAttribute('data-theme', theme);
             }
             localStorage.setItem('mbit_theme', theme);
         }
@@ -367,7 +376,7 @@
         function renderRelays() {
             document.getElementById('relay-list').innerHTML = savedRelays.map(url => {
                 const isOpen = sockets[url] && sockets[url].readyState === WebSocket.OPEN;
-                return `<div class="relay-item"><span><span class="relay-status ${isOpen?'status-open':'status-closed'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
+                return `<div class="relay-item"><span><span class="relay-status" style="color:${isOpen?'#00FF41':'red'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
             }).join('');
         }
         function addRelay() {
@@ -502,7 +511,7 @@
             `;
         }
 
-        // --- HISTORY & PROFILES ---
+        // --- HISTORY LOGIC ---
         function loadMyHistory() {
             if(!myPubKey) { document.getElementById('my-feed').innerHTML = "PLEASE LOGIN FIRST"; return; }
             const p = profiles[myPubKey] || {};
