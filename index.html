@@ -7,69 +7,98 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
     <style>
+        /* THEME VARIABLES - DEFAULT MATRIX */
+        :root {
+            --bg-color: #000000;
+            --text-color: #00FF41;
+            --panel-bg: #050505;
+            --border-color: #00FF41;
+            --input-bg: #001100;
+            --btn-bg: #00FF41;
+            --btn-text: #000000;
+            --meta-color: #ccffcc;
+            --post-border: #333;
+        }
+
+        /* WHITE THEME OVERRIDES */
+        [data-theme="white"] {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --panel-bg: #f5f5f5;
+            --border-color: #000000;
+            --input-bg: #ffffff;
+            --btn-bg: #000000;
+            --btn-text: #ffffff;
+            --meta-color: #444444;
+            --post-border: #cccccc;
+        }
+
         /* GLOBAL RESET */
         * { box-sizing: border-box; }
 
         body {
-            background-color: #000000;
-            color: #00FF41;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             font-family: "Courier New", Courier, monospace;
             padding: 20px;
             margin: 0;
             min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
         }
         header {
             text-align: center;
-            border-bottom: 1px solid #00FF41;
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 20px;
             margin-bottom: 20px;
         }
-        h1 { font-size: 2.5rem; margin: 0; text-shadow: 0 0 5px #00FF41; text-transform: lowercase; }
+        h1 { font-size: 2.5rem; margin: 0; text-shadow: 0 0 5px var(--text-color); text-transform: lowercase; }
         
         /* NAV BAR */
         .nav-bar { margin-top: 10px; font-size: 0.9rem; user-select: none; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-        .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; }
-        .nav-item:hover { opacity: 1; text-shadow: 0 0 5px #00FF41; text-decoration: underline; }
+        .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
+        .nav-item:hover { opacity: 1; text-shadow: 0 0 5px var(--text-color); text-decoration: underline; }
         
         /* PANELS */
         .dropdown-panel {
             max-width: 600px; margin: 0 auto 20px auto;
-            border: 1px dashed #00FF41; padding: 15px;
-            background: #050505;
+            border: 1px dashed var(--border-color); padding: 15px;
+            background: var(--panel-bg);
             animation: slideDown 0.3s;
         }
         @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         /* INPUTS & BUTTONS */
-        input, textarea {
-            background: #001100; border: 1px solid #00FF41; color: #00FF41;
+        input, textarea, select {
+            background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color);
             font-family: inherit; padding: 10px; width: 100%; margin-bottom: 10px; display: block;
         }
         button {
-            background: #00FF41; color: black; border: none; padding: 10px 20px;
+            background: var(--btn-bg); color: var(--btn-text); border: none; padding: 10px 20px;
             font-family: inherit; font-weight: bold; cursor: pointer; text-transform: uppercase;
         }
-        button:hover { background: #fff; }
+        button:hover { opacity: 0.8; }
         button.small { padding: 5px 10px; font-size: 0.8rem; margin-left: 10px; }
-        button.danger { background: #ff4141; }
+        button.danger { background: #ff4141; color: white; }
         button.secondary { background: #333; color: #00FF41; border: 1px solid #00FF41; }
+        [data-theme="white"] button.secondary { background: #eee; color: #000; border: 1px solid #000; }
+        
         button.extension { background: #9b59b6; color: white; border: 1px solid #8e44ad; width: 100%; margin-bottom: 10px; }
         
         /* BACK BUTTON STYLE */
         .back-btn {
-            background: transparent; color: #00FF41; border: none; padding: 0; 
+            background: transparent; color: var(--text-color); border: none; padding: 0; 
             margin-bottom: 15px; cursor: pointer; font-size: 0.9rem;
         }
-        .back-btn:hover { text-decoration: underline; background: transparent; color: #fff; }
+        .back-btn:hover { text-decoration: underline; background: transparent; }
 
         .hidden { display: none !important; }
         .warning-text { color: #ff4141; font-size: 0.8rem; margin-top: 5px; font-weight: bold; }
         
         /* KEYS */
-        .key-container { margin-bottom: 15px; border: 1px solid #333; padding: 10px; }
+        .key-container { margin-bottom: 15px; border: 1px solid var(--post-border); padding: 10px; }
         .key-label { font-size: 0.7rem; opacity: 0.7; display: block; margin-bottom: 5px; }
         .key-row { display: flex; gap: 5px; }
-        .key-input { flex-grow: 1; background: #000; color: #fff; font-size: 0.8rem; border: 1px solid #333; }
+        .key-input { flex-grow: 1; background: var(--bg-color); color: var(--text-color); font-size: 0.8rem; border: 1px solid var(--post-border); }
         
         /* FEED */
         .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; }
@@ -77,49 +106,42 @@
         #feed-container { max-width: 600px; margin: 0 auto; position: relative; }
         
         #new-btn {
-            width: 100%; padding: 15px; background: #00FF41; color: black;
+            width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
             font-weight: bold; text-align: center; cursor: pointer;
-            margin-bottom: 20px; border: 2px solid #fff; animation: pulse 2s infinite;
+            margin-bottom: 20px; border: 2px solid var(--text-color); animation: pulse 2s infinite;
         }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         .post {
-            border-left: 2px solid #333; padding-left: 15px; margin-bottom: 30px;
+            border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px;
             animation: fadeIn 0.5s;
         }
         .meta { 
-            font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: #ccffcc; 
+            font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); 
             display: flex; align-items: center;
         }
         .avatar {
-            width: 30px; height: 30px; border-radius: 50%; border: 1px solid #00FF41;
+            width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color);
             margin-right: 10px; object-fit: cover; background: #111; cursor: pointer;
         }
-        .username-link { font-weight: bold; color: #fff; cursor: pointer; text-decoration: underline; }
-        .username-link:hover { color: #00FF41; text-shadow: 0 0 5px #00FF41; }
+        .username-link { font-weight: bold; color: var(--text-color); cursor: pointer; text-decoration: underline; }
+        .username-link:hover { text-shadow: 0 0 5px var(--text-color); }
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
         
-        /* IMAGES - FIT CONTAINER */
-        .media-img { 
-            max-width: 100%; 
-            height: auto; 
-            display: block; 
-            margin: 10px 0; 
-            border: 1px solid #333; 
-        }
-        
-        .hashtag { color: #00FF41; text-decoration: underline; cursor: pointer; }
-        .hashtag:hover { background: #00FF41; color: #000; }
+        /* MEDIA */
+        .media-img { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
+        .hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
+        .hashtag:hover { background: var(--text-color); color: var(--bg-color); }
 
         .actions { 
             margin-top: 15px; font-size: 0.8rem; 
-            display: flex; gap: 10px; border-top: 1px dotted #333; padding-top: 5px; flex-wrap: wrap;
+            display: flex; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 5px; flex-wrap: wrap;
         }
         .act-btn { 
-            background: transparent; color: #00FF41; border: none; padding: 2px 5px; cursor: pointer; font-family: inherit; font-size: 0.75rem;
+            background: transparent; color: var(--text-color); border: none; padding: 2px 5px; cursor: pointer; font-family: inherit; font-size: 0.75rem;
         }
-        .act-btn:hover { background: #00FF41; color: black; }
-        .act-btn.active { background: #00FF41; color: black; } 
+        .act-btn:hover { background: var(--text-color); color: var(--bg-color); }
+        .act-btn.active { background: var(--text-color); color: var(--bg-color); } 
         .zap-btn { color: #f1c40f; } .zap-btn:hover { background: #f1c40f; color: black; }
 
         /* MODALS */
@@ -129,13 +151,13 @@
             display: flex; align-items: center; justify-content: center;
         }
         .modal-card {
-            background: black; border: 2px solid #00FF41; padding: 20px;
+            background: var(--bg-color); border: 2px solid var(--border-color); padding: 20px;
             max-width: 90%; width: 400px; text-align: center;
-            box-shadow: 0 0 20px #00FF41; animation: popIn 0.3s;
+            box-shadow: 0 0 20px var(--border-color); animation: popIn 0.3s;
         }
         .p-img-large {
             width: 100px; height: 100px; border-radius: 50%;
-            border: 2px solid #00FF41; margin-bottom: 15px; object-fit: cover;
+            border: 2px solid var(--border-color); margin-bottom: 15px; object-fit: cover;
         }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -170,7 +192,7 @@
         <button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
     </div>
 
-    <!-- 2. KEYS (IDENTITY) DROPDOWN -->
+    <!-- 2. KEYS DROPDOWN -->
     <div id="panel-identity" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> KEYS</h3>
         <div id="login-form">
@@ -208,12 +230,12 @@
 
     <!-- 3. MY PROFILE DROPDOWN -->
     <div id="panel-my-profile" class="dropdown-panel hidden">
-        <div id="my-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;">
+        <div id="my-profile-header" style="text-align:center; border-bottom:1px solid var(--post-border); padding-bottom:15px; margin-bottom:15px;">
             <div id="my-p-img"></div>
             <h2 id="my-p-name">Unknown</h2>
             <p id="my-p-about" style="opacity:0.7"></p>
             <button onclick="toggleProfileEditor()" class="secondary" style="margin-top:10px;">EDIT PROFILE</button>
-            <div id="profile-editor" class="hidden" style="border-top: 1px dotted #00FF41; padding-top:10px; margin-top:15px; text-align:left;">
+            <div id="profile-editor" class="hidden" style="border-top: 1px dotted var(--border-color); padding-top:10px; margin-top:15px; text-align:left;">
                 <label>Name:</label> <input type="text" id="p-name" placeholder="Neo">
                 <label>Bio:</label> <input type="text" id="p-about" placeholder="The One">
                 <label>Picture URL:</label> <input type="text" id="p-picture" placeholder="https://...">
@@ -233,11 +255,16 @@
     <!-- 4. SETTINGS PANEL -->
     <div id="panel-settings" class="dropdown-panel hidden">
         <h3 style="margin-top:0">>> SETTINGS</h3>
-        <p style="opacity:0.7">_system preferences_</p>
-        <div style="text-align:left;">
+        <div style="text-align:left; margin-bottom: 15px;">
+            <label style="font-size:0.8rem; display:block; margin-bottom:5px;">INTERFACE THEME:</label>
+            <select id="theme-selector" onchange="changeTheme(this.value)">
+                <option value="matrix">Matrix Green (Default)</option>
+                <option value="white">White Theme</option>
+            </select>
+        </div>
+        <div style="text-align:left; opacity:0.8; font-size:0.8rem;">
             <p>[ ] Auto-load new signals</p>
             <p>[x] Render media content</p>
-            <p>[x] Matrix Green theme</p>
         </div>
         <br>
         <button class="small secondary" onclick="togglePanel('panel-settings')">CLOSE</button>
@@ -246,7 +273,7 @@
     <!-- 5. PUBLIC PROFILE PANEL -->
     <div id="panel-user-profile" class="dropdown-panel hidden">
         <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
-        <div id="user-profile-header" style="text-align:center; border-bottom:1px solid #333; padding-bottom:15px; margin-bottom:15px;"></div>
+        <div id="user-profile-header" style="text-align:center; border-bottom:1px solid var(--post-border); padding-bottom:15px; margin-bottom:15px;"></div>
         <h3 style="margin-top:0">>> SIGNAL HISTORY</h3>
         <div id="user-feed">
             <div style="text-align:center; opacity:0.5;">_scanning user signals_</div>
@@ -266,7 +293,7 @@
 
     <!-- COMPOSER -->
     <div id="composer-container" style="max-width:600px; margin:0 auto;" class="hidden">
-        <div style="border: 1px dashed #00FF41; padding: 15px; margin-bottom:20px;">
+        <div style="border: 1px dashed var(--border-color); padding: 15px; margin-bottom:20px;">
             <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
             <button onclick="sendNote()">SEND SIGNAL</button>
         </div>
@@ -293,11 +320,35 @@
         const profiles = {};
         const requestedProfiles = new Set();
 
+        // --- THEME LOGIC ---
+        function changeTheme(theme) {
+            if (theme === 'white') {
+                document.documentElement.setAttribute('data-theme', 'white');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            localStorage.setItem('mbit_theme', theme);
+        }
+        // Load saved theme
+        const savedTheme = localStorage.getItem('mbit_theme') || 'matrix';
+        changeTheme(savedTheme);
+        document.getElementById('theme-selector').value = savedTheme;
+
+        // --- NAVIGATION ---
         function goHome() {
             ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings'].forEach(p => { 
                 document.getElementById(p).classList.add('hidden'); 
             });
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function togglePanel(id) {
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings'].forEach(p => { 
+                if(p !== id) document.getElementById(p).classList.add('hidden'); 
+            });
+            const panel = document.getElementById(id); 
+            if(panel.classList.contains('hidden')) panel.classList.remove('hidden'); else panel.classList.add('hidden');
+            if(id === 'panel-my-profile' && !panel.classList.contains('hidden')) loadMyHistory();
         }
 
         function parseContent(text) {
@@ -311,15 +362,6 @@
                 return `<span class="hashtag" onclick="alert('Filtering by #${tag} coming soon')">#${tag}</span>`;
             });
             return content;
-        }
-
-        function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings'].forEach(p => { 
-                if(p !== id) document.getElementById(p).classList.add('hidden'); 
-            });
-            const panel = document.getElementById(id); 
-            if(panel.classList.contains('hidden')) panel.classList.remove('hidden'); else panel.classList.add('hidden');
-            if(id === 'panel-my-profile' && !panel.classList.contains('hidden')) loadMyHistory();
         }
 
         // --- RELAYS ---
@@ -441,7 +483,7 @@
             let avatar = p.picture ? `<img src="${p.picture}" class="avatar">` : '';
             
             const processedContent = parseContent(content);
-            const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: #00FF41"' : '';
+            const isMe = ev.pubkey === myPubKey ? 'style="border-left-color: var(--border-color)"' : '';
             const evJson = JSON.stringify(ev).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
             
@@ -461,7 +503,7 @@
             `;
         }
 
-        // --- PROFILE LOGIC ---
+        // --- HISTORY & PROFILES ---
         function loadMyHistory() {
             if(!myPubKey) { document.getElementById('my-feed').innerHTML = "PLEASE LOGIN FIRST"; return; }
             const p = profiles[myPubKey] || {};
