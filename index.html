@@ -120,6 +120,14 @@
             border-left: 3px solid var(--text-color);
         }
 
+        /* PROFILE DETAILS STYLE */
+        .profile-detail-box {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px dotted var(--post-border);
+            text-align: center;
+        }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -181,13 +189,14 @@
                 <div id="my-p-img"></div>
                 <h2 id="my-p-name">Unknown</h2>
                 
-                <!-- NEW VISIBLE FIELDS -->
-                <a id="my-p-website" href="" target="_blank" class="hidden" style="display:block; margin-bottom:5px; color:var(--text-color); text-decoration:underline;"></a>
-                <div id="my-p-lud16-container" class="hidden" style="font-size:0.85rem; color:#f1c40f; margin-bottom:10px; font-weight:bold;">
-                    ⚡ <span id="my-p-lud16"></span>
+                <!-- VISIBLE PROFILE DETAILS -->
+                <div class="profile-detail-box">
+                    <p id="my-p-about" style="opacity:0.8; font-style:italic; margin: 5px 0;">(No bio)</p>
+                    <a id="my-p-website" href="" target="_blank" class="hidden" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;"></a>
+                    <div id="my-p-lud16-container" class="hidden" style="font-size:0.9rem; color:#f1c40f; margin-top:5px; font-weight:bold;">
+                        ⚡ <span id="my-p-lud16"></span>
+                    </div>
                 </div>
-                <p id="my-p-about" style="opacity:0.7"></p>
-                <!-- END NEW FIELDS -->
 
                 <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
                 
@@ -195,7 +204,6 @@
                     <label>Name:</label><input type="text" id="p-name">
                     <label>Bio:</label><input type="text" id="p-about">
                     <label>Picture URL:</label><input type="text" id="p-picture">
-                    <!-- NEW WEBSITE INPUT -->
                     <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
                     <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
                     <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
@@ -245,7 +253,13 @@
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
-        let events = [], pendingEvents = [], myEvents = [], userEvents = [];
+        
+        // BUFFERS for Slow Mode
+        let events = []; // Main display list
+        let incomingBuffer = []; // High speed buffer
+        let pendingEvents = []; // "Load New" queue
+        
+        let myEvents = [], userEvents = [];
         let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
@@ -277,10 +291,9 @@
         }
 
         function parseContent(text) {
+            if(!text) return "";
             let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            
             content = content.replace(/nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g, '<a href="#" class="hashtag">[$1]</a>');
-
             const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi;
             content = content.replace(videoRegex, (url) => `<video controls class="media-video"><source src="${url}"></video>`);
             const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi;
@@ -312,15 +325,25 @@
             </div>`;
         }
 
-        /* --- REPLY AND QUOTE FUNCTIONS --- */
+        /* --- LOGIC UPDATES --- */
+
+        async function loginExtension() {
+            if (!window.nostr) return alert("No Nostr extension found (Alby, nos2x, etc).");
+            try {
+                const pubkey = await window.nostr.getPublicKey();
+                localStorage.setItem('nostr_pubkey', pubkey);
+                localStorage.setItem('nostr_mode', 'extension');
+                location.reload();
+            } catch (err) {
+                alert("Login failed: " + err);
+            }
+        }
 
         function initReply(eventId, pubkey) {
             if(!myPubKey) return alert("Login required to reply.");
             goHome(); 
-            
             const p = profiles[pubkey] || {name: pubkey.substring(0,8)};
             replyContext = { id: eventId, pubkey: pubkey };
-            
             document.getElementById('reply-context-bar').classList.remove('hidden');
             document.getElementById('reply-text').innerHTML = `Replying to: <b>${p.name}</b>`;
             document.getElementById('msg-input').focus();
@@ -343,8 +366,6 @@
             } catch(e) { console.error(e); alert("Error creating quote link"); }
         }
 
-        /* -------------------------------- */
-
         async function doLike(id, pubkey) {
             if(!myPubKey) return alert("Login first");
             likedPosts.add(id);
@@ -366,18 +387,40 @@
                         if (data[1] === 'g') handleGlobalEvent(data[2]);
                         if (data[1] === 'sub_me') handleMyEvent(data[2]);
                         if (data[1] === 'sub_user') handleUserEvent(data[2]);
-                        if (data[1].startsWith('m_')) { profiles[data[2].pubkey] = JSON.parse(data[2].content); renderGlobalFeed(); }
+                        if (data[1].startsWith('m_')) { profiles[data[2].pubkey] = JSON.parse(data[2].content); }
                     }
                 };
             } catch(e) {}
         }
 
+        // --- NEW SLOW FEED LOGIC ---
         function handleGlobalEvent(ev) {
-            if (processedIds.has(ev.id)) return; processedIds.add(ev.id);
-            if (events.length >= 25) { pendingEvents.unshift(ev); updateNewButton(); }
-            else { events.unshift(ev); events.sort((a,b)=>b.created_at - a.created_at); renderGlobalFeed(); }
+            if (processedIds.has(ev.id)) return; 
+            processedIds.add(ev.id);
             fetchProfileIfNeeded(ev.pubkey);
+            incomingBuffer.push(ev); // Don't render yet, push to buffer
         }
+
+        // Process buffer every 1.5 seconds to stop UI freezing
+        setInterval(() => {
+            if (incomingBuffer.length === 0) return;
+
+            // Sort incoming by newness
+            incomingBuffer.sort((a,b) => b.created_at - a.created_at);
+
+            // If we already have a full feed, push to "Load New" queue
+            if (events.length >= 25) {
+                pendingEvents = [...incomingBuffer, ...pendingEvents];
+                // pendingEvents.sort((a,b) => b.created_at - a.created_at);
+                updateNewButton();
+            } else {
+                // Initial fill
+                events = [...incomingBuffer, ...events];
+                events.sort((a,b) => b.created_at - a.created_at);
+                renderGlobalFeed();
+            }
+            incomingBuffer = []; // Clear buffer
+        }, 1500);
 
         function fetchProfileIfNeeded(pubkey) {
             if (!profiles[pubkey] && !requestedProfiles.has(pubkey)) {
@@ -466,10 +509,10 @@
         function loadMyHistory() { 
             const p = profiles[myPubKey] || {}; 
             document.getElementById('my-p-name').innerText = p.name || 'Unknown'; 
-            document.getElementById('my-p-about').innerText = p.about || ''; 
+            document.getElementById('my-p-about').innerText = p.about || '(No bio set)'; 
             document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; 
             
-            // Handle Website Display
+            // Website
             const webEl = document.getElementById('my-p-website');
             if(p.website) {
                 webEl.href = p.website;
@@ -479,7 +522,7 @@
                 webEl.classList.add('hidden');
             }
 
-            // Handle Lud16 Display
+            // Zap Address (LUD16)
             const zapEl = document.getElementById('my-p-lud16');
             if(p.lud16) {
                 zapEl.innerText = p.lud16;
