@@ -49,45 +49,20 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: "Courier New", Courier, monospace;
-            padding: 20px;
-            margin: 0;
-            min-height: 100vh;
+            padding: 20px; margin: 0; min-height: 100vh;
         }
 
-        header {
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-
+        header { text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px; }
         h1 { font-size: 2.5rem; margin: 0; text-shadow: var(--glow); text-transform: lowercase; }
 
         .nav-bar { margin-top: 10px; font-size: 0.9rem; user-select: none; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
-        /* CENTERED BOX FOR DESKTOP (600px) */
-        #main-container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
+        /* DESKTOP BOX SIZE (MATCHING SCREENSHOT 2) */
+        #main-container { max-width: 600px; margin: 0 auto; }
 
-        .dropdown-panel {
-            border: 1px dashed var(--border-color);
-            padding: 15px;
-            background: var(--panel-bg);
-            margin-bottom: 20px;
-            animation: slideDown 0.3s;
-        }
-        @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        /* COMPOSER */
-        #composer-container {
-            border: 1px dashed var(--border-color);
-            padding: 15px;
-            margin-bottom: 20px;
-        }
+        .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
 
         input, textarea, select {
             background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color);
@@ -103,37 +78,22 @@
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
 
-        .relay-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; align-items: center; }
-
-        .key-container { margin-bottom: 15px; border: 1px solid var(--post-border); padding: 10px; }
-        .key-label { font-size: 0.7rem; opacity: 0.7; display: block; margin-bottom: 5px; }
-        .key-row { display: flex; gap: 5px; }
-        .key-input { flex-grow: 1; background: var(--bg-color); color: var(--text-color); font-size: 0.8rem; border: 1px solid var(--post-border); padding: 5px; }
-        .warning-text { color: #ff4141; font-size: 0.8rem; margin-top: 5px; font-weight: bold; }
-
         /* POSTS */
-        .post {
-            border-left: 2px solid var(--post-border);
-            padding-left: 15px;
-            margin-bottom: 30px;
-            animation: fadeIn 0.5s;
-        }
-        .meta { font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; }
-        .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; cursor: pointer; }
-        .username-link { font-weight: bold; color: var(--text-color); cursor: pointer; text-decoration: underline; }
+        .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
+        .meta { font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; }
+        .username-link { font-weight: bold; color: var(--text-color); text-decoration: underline; }
         .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
 
         .media-img, .media-video { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
         .hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
 
-        .actions { 
-            margin-top: 10px; font-size: 0.75rem; display: flex; gap: 15px; 
-            border-top: 1px dotted var(--post-border); padding-top: 8px; 
-        }
+        .actions { margin-top: 10px; font-size: 0.75rem; display: flex; gap: 15px; border-top: 1px dotted var(--post-border); padding-top: 8px; }
         .act-btn { background: transparent; color: var(--text-color); border: none; padding: 0; cursor: pointer; font-family: inherit; }
         .act-btn:hover { text-decoration: underline; }
         .zap-btn { color: #f1c40f; font-weight: bold; }
 
+        /* PULSING LOAD BUTTON */
         #new-btn {
             width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
             font-weight: bold; text-align: center; cursor: pointer;
@@ -141,6 +101,7 @@
         }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
+        .p-img-large { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border-color); margin-bottom: 15px; object-fit: cover; }
         .hidden { display: none !important; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -170,7 +131,7 @@
                 <input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0; width: 80%;">
                 <button onclick="addRelay()" style="width: 18%; margin-left: 2%;">ADD</button>
             </div>
-            <br><button class="small secondary" onclick="togglePanel('panel-relays')">CLOSE</button>
+            <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
         <!-- 2. KEYS PANEL -->
@@ -178,17 +139,23 @@
             <h3>>> KEYS</h3>
             <div id="login-form">
                 <button onclick="loginExtension()" style="width:100%; background:#9b59b6; color:white; margin-bottom:10px;">⚡ LOGIN WITH EXTENSION</button>
-                <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR ---</div>
-                <input type="text" id="privkey-input" placeholder="paste private key">
+                <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR LEGACY KEY ---</div>
+                <input type="text" id="privkey-input" placeholder="paste private key (hex or nsec)">
                 <button onclick="login()" style="width:100%;">Login</button>
                 <button onclick="generateNewUser()" class="secondary" style="width:100%; margin-top:10px;">New Key</button>
             </div>
             <div id="user-info" class="hidden">
-                <div class="key-container"><span class="key-label">PUBLIC ID (NPUB)</span><div class="key-row"><input type="text" id="display-npub" class="key-input" readonly><button class="small" onclick="copyKey('display-npub')">COPY</button></div></div>
-                <div class="key-container" id="nsec-container"><span class="key-label" style="color:#ff4141">SECRET KEY (NSEC)</span><div class="key-row"><input type="password" id="display-nsec" class="key-input" readonly><button class="small secondary" onclick="toggleSecret()">SHOW</button><button class="small danger" onclick="copyKey('display-nsec')">COPY</button></div></div>
-                <button onclick="logout()" class="danger" style="width:100%; margin-top:10px;">LOGOUT</button>
+                <div style="margin-bottom:15px; border:1px solid var(--post-border); padding:10px;">
+                    <span style="font-size:0.7rem; opacity:0.7;">PUBLIC ID (NPUB)</span>
+                    <div style="display:flex; gap:5px;"><input type="text" id="display-npub" readonly style="flex-grow:1; font-size:0.8rem;"><button class="small" onclick="copyKey('display-npub')">COPY</button></div>
+                </div>
+                <div id="nsec-display-container" style="margin-bottom:15px; border:1px solid var(--post-border); padding:10px;">
+                    <span style="font-size:0.7rem; color:#ff4141;">SECRET KEY (NSEC)</span>
+                    <div style="display:flex; gap:5px;"><input type="password" id="display-nsec" readonly style="flex-grow:1; font-size:0.8rem;"><button class="small secondary" onclick="toggleSecret()">SHOW</button><button class="small danger" onclick="copyKey('display-nsec')">COPY</button></div>
+                </div>
+                <button onclick="logout()" class="danger" style="width:100%">LOGOUT</button>
             </div>
-            <br><button class="small secondary" onclick="togglePanel('panel-identity')">CLOSE</button>
+            <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
         <!-- 3. MY PROFILE PANEL -->
@@ -207,28 +174,34 @@
             </div>
             <h3 style="border-top:1px solid var(--post-border); margin-top:20px; padding-top:10px;">>> SIGNAL HISTORY</h3>
             <div id="my-feed"></div>
-            <br><button class="small secondary" onclick="togglePanel('panel-my-profile')">CLOSE</button>
         </div>
 
-        <!-- 4. SETTINGS PANEL -->
+        <!-- 4. USER PROFILE PANEL (Public) -->
+        <div id="panel-user-profile" class="dropdown-panel hidden">
+            <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
+            <div id="user-profile-header" style="text-align:center; padding-bottom:15px; border-bottom:1px solid var(--post-border);"></div>
+            <h3>>> HISTORY</h3>
+            <div id="user-feed"></div>
+        </div>
+
+        <!-- 5. SETTINGS PANEL -->
         <div id="panel-settings" class="dropdown-panel hidden">
             <h3>>> SETTINGS</h3>
             <label>SYSTEM THEME:</label>
             <select id="theme-selector" onchange="changeTheme(this.value)">
                 <option value="dark">White on Black (Default)</option>
                 <option value="matrix">Matrix Green</option>
-                <option value="light">Black on White (Light)</option>
+                <option value="light">Black on White</option>
             </select>
-            <br><button class="small secondary" onclick="togglePanel('panel-settings')">CLOSE</button>
+            <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
-        <!-- COMPOSER -->
-        <div id="composer-container" class="hidden">
+        <!-- MAIN FEED / COMPOSER -->
+        <div id="composer-container" class="hidden" style="border: 1px dashed var(--border-color); padding: 15px; margin-bottom:20px;">
             <textarea id="msg-input" rows="3" placeholder="broadcast signal..."></textarea>
             <button onclick="sendNote()" style="width:100%;">SEND SIGNAL</button>
         </div>
 
-        <!-- FEED -->
         <div id="feed-container">
             <div id="new-btn" class="hidden" onclick="mergeQueue()">>> LOAD NEW SIGNALS <<</div>
             <div id="feed"></div>
@@ -239,7 +212,7 @@
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         const sockets = {};
-        let events = [], pendingEvents = [], myEvents = [];
+        let events = [], pendingEvents = [], myEvents = [], userEvents = [];
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
 
@@ -252,7 +225,7 @@
         document.getElementById('theme-selector').value = localStorage.getItem('mbit_theme') || 'dark';
 
         function goHome() {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-settings'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('feed-container').classList.remove('hidden');
             if (myPubKey) document.getElementById('composer-container').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -261,32 +234,15 @@
         function togglePanel(id) {
             const panel = document.getElementById(id);
             const isClosing = !panel.classList.contains('hidden');
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-settings'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'feed-container', 'composer-container'].forEach(p => {
+                const el = document.getElementById(p); if(el) el.classList.add('hidden');
+            });
             if (isClosing) goHome();
             else {
                 panel.classList.remove('hidden');
-                document.getElementById('feed-container').classList.add('hidden');
-                document.getElementById('composer-container').classList.add('hidden');
                 if (id === 'panel-my-profile') loadMyHistory();
                 if (id === 'panel-relays') renderRelays();
             }
-        }
-
-        function renderRelays() {
-            document.getElementById('relay-list').innerHTML = savedRelays.map(url => {
-                const isOpen = sockets[url] && sockets[url].readyState === WebSocket.OPEN;
-                return `<div class="relay-item"><span><span style="color:${isOpen?'#00FF41':'red'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`;
-            }).join('');
-        }
-        function addRelay() {
-            let url = document.getElementById('new-relay').value.trim();
-            if(!url) return;
-            if(!url.startsWith('wss://')) url = 'wss://' + url;
-            if(!savedRelays.includes(url)) { savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; renderRelays(); }
-        }
-        function removeRelay(url) {
-            savedRelays = savedRelays.filter(r => r !== url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
-            if(sockets[url]) { sockets[url].close(); delete sockets[url]; } renderRelays();
         }
 
         function parseContent(text) {
@@ -296,7 +252,7 @@
             const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi;
             content = content.replace(imgRegex, (url) => `<a href="${url}" target="_blank"><img src="${url}" class="media-img" loading="lazy"></a>`);
             const hashtagRegex = /#(\w+)/g;
-            content = content.replace(hashtagRegex, (match, tag) => `<span class="hashtag">#${tag}</span>`);
+            content = content.replace(hashtagRegex, (match, tag) => `<span class="hashtag" onclick="alert('Tag: #${tag}')">#${tag}</span>`);
             return content;
         }
 
@@ -304,7 +260,10 @@
             const p = profiles[ev.pubkey] || {};
             let content = ev.content;
             let header = "";
-            if (ev.kind === 6) { header = `<div style="font-size:0.75rem; color:var(--text-color); margin-bottom:5px;">↻ REPOST</div>`; try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } }
+            if (ev.kind === 6) {
+                header = `<div style="font-size:0.75rem; opacity:0.6; margin-bottom:5px;">↻ REPOSTED</div>`;
+                try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; }
+            }
             return `<div class="post">
                 ${header}
                 <div class="meta" onclick="viewProfile('${ev.pubkey}')">
@@ -314,15 +273,12 @@
                 </div>
                 <div class="content">${parseContent(content)}</div>
                 <div class="actions">
-                    <span class="act-btn">[REPLY]</span>
-                    <span class="act-btn">[QUOTE]</span>
-                    <span class="act-btn">[REPOST]</span>
-                    <span class="act-btn">[LIKE]</span>
-                    <span class="act-btn zap-btn">[ZAP ⚡]</span>
+                    <span class="act-btn">[REPLY]</span><span class="act-btn">[QUOTE]</span><span class="act-btn">[LIKE]</span><span class="act-btn zap-btn">[ZAP ⚡]</span>
                 </div>
             </div>`;
         }
 
+        // NOSTR CORE
         function connectToRelay(url) {
             try {
                 const ws = new WebSocket(url); sockets[url] = ws;
@@ -332,16 +288,15 @@
                     if (data[0] === 'EVENT') {
                         if (data[1] === 'g') handleGlobalEvent(data[2]);
                         if (data[1] === 'sub_me') handleMyEvent(data[2]);
+                        if (data[1] === 'sub_user') handleUserEvent(data[2]);
                         if (data[1].startsWith('m_')) { profiles[data[2].pubkey] = JSON.parse(data[2].content); renderGlobalFeed(); }
                     }
                 };
-                ws.onclose = () => renderRelays();
             } catch(e) {}
         }
 
         function handleGlobalEvent(ev) {
-            if (processedIds.has(ev.id)) return;
-            processedIds.add(ev.id);
+            if (processedIds.has(ev.id)) return; processedIds.add(ev.id);
             if (events.length >= 25) { pendingEvents.unshift(ev); updateNewButton(); }
             else { events.unshift(ev); events.sort((a,b)=>b.created_at - a.created_at); renderGlobalFeed(); }
             fetchProfileIfNeeded(ev.pubkey);
@@ -358,6 +313,24 @@
         function mergeQueue() { events = [...pendingEvents, ...events].slice(0, 100); pendingEvents = []; renderGlobalFeed(); updateNewButton(); window.scrollTo(0,0); }
         function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
 
+        // USER VIEW
+        function viewProfile(pubkey) {
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-settings', 'feed-container', 'composer-container'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            document.getElementById('panel-user-profile').classList.remove('hidden');
+            const p = profiles[pubkey] || {};
+            const img = p.picture ? `<img src="${p.picture}" class="p-img-large">` : '<div style="font-size:3rem;">?</div>';
+            const zapBtn = p.lud16 ? `<button class="act-btn zap-btn" style="border:1px solid #f1c40f; padding:5px 15px; font-size:1rem;" onclick="alert('Zap to ${p.lud16}')">ZAP ⚡</button>` : '';
+            document.getElementById('user-profile-header').innerHTML = `${img}<h2>${p.name || pubkey.substring(0,8)}</h2><p style="opacity:0.7;">${p.about || ''}</p>${zapBtn}`;
+            userEvents = []; document.getElementById('user-feed').innerHTML = '<div style="text-align:center; opacity:0.5;">fetching history...</div>';
+            Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_user", { kinds:[1,6], authors:[pubkey], limit:20 }])));
+        }
+        function handleUserEvent(ev) {
+            if (userEvents.some(e => e.id === ev.id)) return;
+            userEvents.unshift(ev); userEvents.sort((a,b)=>b.created_at - a.created_at);
+            document.getElementById('user-feed').innerHTML = userEvents.map(generatePostHTML).join('');
+        }
+
+        // AUTH & PROFILE EDITING
         async function signAndBroadcast(event) {
             if (authMode === 'extension') event = await window.nostr.signEvent(event);
             else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); }
@@ -371,47 +344,33 @@
             await signAndBroadcast(event); document.getElementById('msg-input').value = "";
         }
 
-        async function loginExtension() { const pk = await window.nostr.getPublicKey(); localStorage.setItem('nostr_pubkey', pk); localStorage.setItem('nostr_mode', 'extension'); location.reload(); }
         function login() {
-            let k = document.getElementById('privkey-input').value.trim();
+            let k = document.getElementById('privkey-input').value.trim(); if (!k) return;
             if (k.startsWith('nsec')) k = window.NostrTools.nip19.decode(k).data;
             localStorage.setItem('nostr_privkey', k); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(k)); localStorage.setItem('nostr_mode', 'local'); location.reload();
         }
+
         function generateNewUser() {
             const sk = window.NostrTools.generatePrivateKey();
             localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(sk)); localStorage.setItem('nostr_mode', 'local'); location.reload();
         }
-        function logout() { localStorage.clear(); location.reload(); }
-        function copyKey(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); alert("COPIED"); }
-        function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
 
-        function loadMyHistory() {
-            const p = profiles[myPubKey] || {};
-            document.getElementById('my-p-name').innerText = p.name || 'Unknown';
-            document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : '';
-            myEvents = [];
-            Object.values(sockets).forEach(s => { if(s.readyState === 1) s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }])); });
-        }
-        function handleMyEvent(ev) {
-            if (myEvents.some(e => e.id === ev.id)) return;
-            myEvents.unshift(ev); myEvents.sort((a,b)=>b.created_at - a.created_at);
-            document.getElementById('my-feed').innerHTML = myEvents.map(generatePostHTML).join('');
-        }
-        function toggleProfileEditor() {
-            document.getElementById('profile-editor').classList.toggle('hidden');
-            const p = profiles[myPubKey] || {};
-            document.getElementById('p-name').value = p.name || '';
-            document.getElementById('p-about').value = p.about || '';
-            document.getElementById('p-picture').value = p.picture || '';
-            document.getElementById('p-lud16').value = p.lud16 || '';
-        }
         async function saveProfile() {
-            const content = JSON.stringify({ name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value, lud16: document.getElementById('p-lud16').value });
-            let ev = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content, pubkey: myPubKey };
+            const data = { name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value, lud16: document.getElementById('p-lud16').value };
+            let ev = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: JSON.stringify(data), pubkey: myPubKey };
             await signAndBroadcast(ev); alert("PUBLISHED"); location.reload();
         }
 
-        function fetchProfile(pubkey) { requestedProfiles.add(pubkey); const msg = JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]); Object.values(sockets).forEach(ws => { if(ws.readyState === WebSocket.OPEN) ws.send(msg); }); }
+        function toggleProfileEditor() { document.getElementById('profile-editor').classList.toggle('hidden'); const p = profiles[myPubKey] || {}; document.getElementById('p-name').value = p.name||''; document.getElementById('p-about').value = p.about||''; document.getElementById('p-picture').value = p.picture||''; document.getElementById('p-lud16').value = p.lud16||''; }
+        function loadMyHistory() { const p = profiles[myPubKey] || {}; document.getElementById('my-p-name').innerText = p.name || 'Unknown'; document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; myEvents = []; Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]))); }
+        function handleMyEvent(ev) { if (myEvents.some(e => e.id === ev.id)) return; myEvents.unshift(ev); document.getElementById('my-feed').innerHTML = myEvents.map(generatePostHTML).join(''); }
+        function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><span><span style="color:${isOpen?'#00FF41':'red'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
+        function addRelay() { let url = document.getElementById('new-relay').value.trim(); if(url){ if(!url.startsWith('wss://')) url = 'wss://' + url; savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; } }
+        function removeRelay(url) { savedRelays = savedRelays.filter(r => r !== url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); if(sockets[url]) sockets[url].close(); renderRelays(); }
+        function logout() { localStorage.clear(); location.reload(); }
+        function copyKey(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); alert("COPIED"); }
+        function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
+        function fetchProfile(pubkey) { Object.values(sockets).forEach(ws => ws.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]))); }
 
         if (myPubKey) {
             document.getElementById('login-form').classList.add('hidden');
@@ -419,7 +378,7 @@
             document.getElementById('composer-container').classList.remove('hidden');
             document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(myPubKey);
             if (myPrivKey) document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey);
-            else document.getElementById('nsec-container').classList.add('hidden');
+            else document.getElementById('nsec-display-container').classList.add('hidden');
         }
 
         savedRelays.forEach(connectToRelay);
