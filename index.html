@@ -86,7 +86,7 @@
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
-        /* FIXED BOX SIZE FOR DESKTOP - UPDATED TO 800PX */
+        /* FIXED BOX SIZE FOR DESKTOP - 800PX */
         #main-container { max-width: 800px; margin: 0 auto; }
 
         .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
@@ -155,7 +155,7 @@
         }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
-        /* ACTION BUTTONS: STYLED LIKE IMAGE */
+        /* ACTION BUTTONS */
         .actions { 
             margin-top: 15px; 
             font-size: 0.8em; 
@@ -170,37 +170,28 @@
         .act-btn { 
             background: transparent; 
             color: var(--text-color); 
-            border: 1.5px solid var(--text-color); /* Thicker, solid border */
+            border: 1.5px solid var(--text-color); 
             padding: 6px 12px; 
             cursor: pointer; 
             font-family: inherit; 
             font-size: 0.9em; 
             font-weight: bold;
             text-transform: uppercase;
-            border-radius: 0; /* Sharp corners */
+            border-radius: 0;
             transition: 0.2s;
             white-space: nowrap;
         }
         
-        .act-btn:hover {
-            background: var(--text-color);
-            color: var(--bg-color);
-        }
+        .act-btn:hover { background: var(--text-color); color: var(--bg-color); }
+        .act-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; }
         
-        .act-btn.active { 
-            background: var(--text-color) !important; 
-            color: var(--bg-color) !important; 
-        }
-
-        .zap-btn { 
-            color: #f1c40f; 
-            border-color: #f1c40f; 
-        }
+        .zap-btn { color: #f1c40f; border-color: #f1c40f; }
+        .zap-btn:hover { background: #f1c40f; color: #000; }
         
-        .zap-btn:hover {
-            background: #f1c40f;
-            color: #000;
-        }
+        /* BOOKMARK BUTTON */
+        .bookmark-btn { color: #9b59b6; border-color: #9b59b6; }
+        .bookmark-btn:hover { background: #9b59b6; color: #fff; }
+        .bookmark-btn.active { background: #9b59b6 !important; color: #fff !important; }
 
         #new-btn {
             width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
@@ -511,6 +502,13 @@
             <h4>Replies:</h4>
             <div id="thread-replies-container">Loading replies...</div>
         </div>
+        
+        <!-- 9. BOOKMARKS PANEL -->
+        <div id="panel-bookmarks" class="dropdown-panel hidden">
+            <h3>>> SAVED BOOKMARKS</h3>
+            <button class="small secondary" onclick="openBookmarks()" style="margin-bottom:10px;">REFRESH LIST</button>
+            <div id="bookmarks-feed">Loading...</div>
+        </div>
 
         <!-- MAIN FEED STUFF -->
         <div id="feed-container">
@@ -543,6 +541,8 @@
         <span style="color:var(--border-color)">|</span>
         <div class="footer-item" onclick="openSearch()">[ SEARCH ]</div>
         <span style="color:var(--border-color)">|</span>
+        <div class="footer-item" onclick="openBookmarks()">[ BOOKMARKS ]</div>
+        <span style="color:var(--border-color)">|</span>
         <div class="footer-item" onclick="openNotifications()">[ NOTIFICATIONS ]</div>
     </div>
 
@@ -555,10 +555,14 @@
         
         let events = [], incomingBuffer = [], pendingEvents = []; 
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [];
-        let threadEvents = []; 
+        let threadEvents = [], bookmarkEvents = [];
         let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
+        let bookmarks = new Set(JSON.parse(localStorage.getItem('mbit_bookmarks')) || []);
         let myContacts = new Set(); 
         
+        // Counter Store: { eventId: { reply: 0, repost: 0, like: 0, zap: 0 } }
+        let eventStats = {};
+
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
         
@@ -594,7 +598,7 @@
         renderFilterList();
 
         function goHome() {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'panel-thread'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'panel-thread', 'panel-bookmarks'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('feed-container').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
             currentViewedProfile = null;
@@ -602,7 +606,7 @@
         }
 
         function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container', 'panel-thread'].forEach(p => {
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container', 'panel-thread', 'panel-bookmarks'].forEach(p => {
                 const el = document.getElementById(p); if(el) el.classList.add('hidden');
             });
             document.getElementById(id).classList.remove('hidden');
@@ -666,17 +670,59 @@
             return false;
         }
 
+        /* --- BOOKMARKS LOGIC --- */
+        function doBookmark(id) {
+            if(bookmarks.has(id)) {
+                bookmarks.delete(id);
+                alert("Bookmark Removed");
+            } else {
+                bookmarks.add(id);
+                alert("Saved to Bookmarks");
+            }
+            localStorage.setItem('mbit_bookmarks', JSON.stringify([...bookmarks]));
+            
+            // Refresh views if open
+            if(!document.getElementById('panel-bookmarks').classList.contains('hidden')) openBookmarks();
+            // Re-render feed to show active state
+            if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
+        }
+
+        function openBookmarks() {
+            togglePanel('panel-bookmarks');
+            const ids = [...bookmarks];
+            if(ids.length === 0) {
+                document.getElementById('bookmarks-feed').innerHTML = "No bookmarks yet.";
+                return;
+            }
+            document.getElementById('bookmarks-feed').innerHTML = "Loading saved posts...";
+            bookmarkEvents = [];
+            // Request the specific IDs
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "bookmarks_sub", { kinds: [1], ids: ids }]));
+            });
+        }
+
+        function handleBookmarkEvent(ev) {
+            if(bookmarkEvents.some(e => e.id === ev.id)) return;
+            bookmarkEvents.push(ev);
+            // Sort by saved time isn't tracked, so sort by event time
+            bookmarkEvents.sort((a,b) => b.created_at - a.created_at);
+            document.getElementById('bookmarks-feed').innerHTML = bookmarkEvents.map(generatePostHTML).join('');
+            fetchProfileIfNeeded(ev.pubkey);
+        }
+
         /* --- THREAD VIEW LOGIC --- */
         function viewThread(eventId) {
             let ev = events.find(e => e.id === eventId) || 
                      myEvents.find(e => e.id === eventId) || 
                      userEvents.find(e => e.id === eventId) ||
                      searchEvents.find(e => e.id === eventId) ||
-                     notifEvents.find(e => e.id === eventId);
+                     notifEvents.find(e => e.id === eventId) || 
+                     bookmarkEvents.find(e => e.id === eventId);
 
             if(!ev) return alert("Note not found in memory.");
 
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container', 'panel-bookmarks'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('panel-thread').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -687,6 +733,10 @@
             const p = profiles[ev.pubkey] || {};
             let content = ev.content; 
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
+            const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn';
+            
+            // Get stats
+            const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 };
 
             const html = `
             <div class="thread-parent">
@@ -697,9 +747,11 @@
                 <div class="content" style="font-size: 1.2em;">${parseContent(content)}</div>
                 <div style="font-size:0.8em; opacity:0.6; margin-top:5px;">${new Date(ev.created_at*1000).toLocaleString()}</div>
                 <div class="actions">
-                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
-                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
-                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
+                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY ${s.reply}]</button>
+                    <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE ${s.repost}]</button>
+                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE ${s.like}]</button>
+                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ ${s.zap}]</button>
+                    <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button>
                 </div>
             </div>`;
             document.getElementById('thread-parent-container').innerHTML = html;
@@ -734,7 +786,11 @@
             let content = ev.content;
             if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; }
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
+            const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn';
             
+            // Counts
+            const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 };
+
             return `<div class="post">
                 <div class="meta" onclick="viewProfile('${ev.pubkey}')">
                     ${p.picture?`<img src="${p.picture}" class="avatar">`:''}
@@ -743,12 +799,41 @@
                 </div>
                 <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div>
                 <div class="actions">
-                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
-                    <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE]</button>
-                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
-                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
+                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button>
+                    <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button>
+                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button>
+                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button>
+                    <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button>
                 </div>
             </div>`;
+        }
+
+        /* --- STATS PROCESSING --- */
+        function processEventStats(ev) {
+            // Check tags for 'e' to see if this event interacts with another
+            const eTags = ev.tags.filter(t => t[0] === 'e');
+            eTags.forEach(t => {
+                const targetId = t[1];
+                if (!eventStats[targetId]) eventStats[targetId] = { reply:0, repost:0, like:0, zap:0 };
+                
+                if (ev.kind === 1) eventStats[targetId].reply++;
+                if (ev.kind === 6) eventStats[targetId].repost++;
+                if (ev.kind === 7) eventStats[targetId].like++;
+                if (ev.kind === 9735) eventStats[targetId].zap++;
+
+                // Update DOM if element exists
+                updateCountDOM(targetId, 'reply');
+                updateCountDOM(targetId, 'repost');
+                updateCountDOM(targetId, 'like');
+                updateCountDOM(targetId, 'zap');
+            });
+        }
+
+        function updateCountDOM(id, type) {
+            const el = document.getElementById(`s-${type}-${id}`);
+            if (el && eventStats[id]) {
+                el.innerText = eventStats[id][type];
+            }
         }
 
         /* --- LIKE & REPOST LOGIC --- */
@@ -756,6 +841,10 @@
             if(!myPubKey) return alert("Login first");
             likedPosts.add(id);
             localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
+            
+            // Optimistic update
+            if(!eventStats[id]) eventStats[id] = { reply:0, repost:0, like:0, zap:0 };
+            eventStats[id].like++;
             
             if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
             if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); 
@@ -962,7 +1051,6 @@
                 
                 const time = new Date(ev.created_at * 1000).toLocaleString();
                 
-                // CLICK ACTION: If text/repost -> Go to Thread. If like/zap -> Go to Profile.
                 let clickAction = `viewProfile('${senderPub}')`;
                 if (ev.kind === 1 || ev.kind === 6) {
                     clickAction = `viewThread('${ev.id}')`;
@@ -1040,12 +1128,16 @@
                 ws.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
                     if (data[0] === 'EVENT') {
+                        // Count every event seen
+                        processEventStats(data[2]);
+
                         if (data[1] === 'g') handleGlobalEvent(data[2]);
                         if (data[1] === 'sub_me') handleMyEvent(data[2]);
                         if (data[1] === 'sub_user') handleUserEvent(data[2]);
                         if (data[1] === 'search_sub') handleSearchEvent(data[2]);
                         if (data[1] === 'notif_sub') handleNotifEvent(data[2]);
                         if (data[1] === 'thread_sub') handleThreadEvent(data[2]);
+                        if (data[1] === 'bookmarks_sub') handleBookmarkEvent(data[2]);
                         if (data[1] === 'my_contacts') handleContacts(data[2]);
                         if (data[1].startsWith('m_')) { 
                             profiles[data[2].pubkey] = JSON.parse(data[2].content); 
@@ -1097,7 +1189,7 @@
         function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
 
         function viewProfile(pubkey) {
-            ['panel-search', 'panel-notifications', 'panel-thread'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            ['panel-search', 'panel-notifications', 'panel-thread', 'panel-bookmarks'].forEach(p => document.getElementById(p).classList.add('hidden'));
             togglePanel('panel-user-profile');
             currentViewedProfile = pubkey;
             renderUserProfileHeader(pubkey);
