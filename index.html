@@ -142,6 +142,8 @@
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
         .thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
+        .thread-ancestor { border-left: 2px dotted var(--meta-color); opacity: 0.8; padding-left: 15px; margin-bottom: 10px; font-size: 0.9em; }
+        
         .meta { font-size: 0.75em; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
         .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; }
         .username-link { font-weight: bold; color: var(--text-color); text-decoration: underline; }
@@ -153,17 +155,10 @@
         .quote-card { border: 1px solid var(--post-border); background: var(--quote-bg); padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 0.9em; }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
-        /* PROFILE CARD FOR SEARCH RESULTS */
+        /* PROFILE CARD */
         .profile-card {
-            border: 1px solid var(--text-color);
-            background: var(--input-bg);
-            padding: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            cursor: pointer;
-            transition: 0.2s;
+            border: 1px solid var(--text-color); background: var(--input-bg); padding: 15px; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s;
         }
         .profile-card:hover { transform: scale(1.02); box-shadow: var(--glow); }
         .profile-card img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
@@ -444,7 +439,7 @@
         
         let events = [], incomingBuffer = [], pendingEvents = []; 
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [], threadEvents = [], bookmarkEvents = [];
-        let isSearching = false; // Flag for Search Tab state
+        let isSearching = false; 
         
         let likedPosts = new Set();
         try { likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []); } catch(e){}
@@ -459,6 +454,7 @@
         let replyContext = null;
         let currentViewedProfile = null;
         let currentThreadId = null;
+        let currentThreadRootId = null; // Track actual root
         let currentUserTab = 'notes'; 
         let currentMyTab = 'notes';
         let currentNotifTab = 'all';
@@ -503,10 +499,111 @@
             currentThreadId = null;
         }
 
+        /* --- THREAD & REPLY LOGIC UPDATED --- */
+        function viewThread(id) {
+            currentThreadId = id;
+            togglePanel('panel-thread');
+            
+            // Initial UI State
+            document.getElementById('thread-parent-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading context...</div>';
+            document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading replies...</div>';
+            threadEvents = [];
+            
+            // Check if note is in cache to display immediately
+            const cached = events.find(e => e.id === id) || notifEvents.find(e => e.id === id) || myEvents.find(e => e.id === id) || userEvents.find(e => e.id === id);
+            
+            if (cached) {
+                threadEvents.push(cached);
+                // Check if this note is a reply itself (has 'e' tags)
+                const parentTag = cached.tags.find(t => t[0] === 'e');
+                if (parentTag) {
+                    currentThreadRootId = parentTag[1]; // Set parent as root to fetch
+                } else {
+                    currentThreadRootId = id; // This is the root
+                }
+                renderThreadView(); 
+            } else {
+                currentThreadRootId = id; // Assume this is root until fetched
+            }
+
+            // Fetch Note + Ancestors + Replies
+            Object.values(sockets).forEach(ws => {
+                if (ws.readyState === 1) {
+                    // 1. Fetch the note itself
+                    ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], ids: [id] }]));
+                    
+                    // 2. Fetch replies to this note
+                    ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], '#e': [id], limit: 50 }]));
+                    
+                    // 3. If we identified a parent from cache, fetch that too
+                    if (currentThreadRootId && currentThreadRootId !== id) {
+                         ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], ids: [currentThreadRootId] }]));
+                    }
+                }
+            });
+        }
+
+        function handleThreadEvent(ev) {
+            if (threadEvents.some(e => e.id === ev.id)) return;
+            threadEvents.push(ev);
+            fetchProfileIfNeeded(ev.pubkey);
+            
+            // If the fetched note is the one we clicked, check if it has a parent we didn't know about
+            if (ev.id === currentThreadId) {
+                const parentTag = ev.tags.find(t => t[0] === 'e');
+                if (parentTag && parentTag[1] !== currentThreadRootId) {
+                    currentThreadRootId = parentTag[1];
+                    // Fetch this newly discovered parent
+                    Object.values(sockets).forEach(ws => {
+                        if (ws.readyState === 1) ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], ids: [currentThreadRootId] }]));
+                    });
+                }
+            }
+            
+            renderThreadView();
+        }
+
+        function renderThreadView() {
+            // 1. Identify the clicked note
+            const mainNote = threadEvents.find(e => e.id === currentThreadId);
+            
+            // 2. Identify if there is a parent (ancestor) available
+            let parentHtml = '';
+            if (mainNote) {
+                const parentTag = mainNote.tags.find(t => t[0] === 'e');
+                if (parentTag) {
+                    const parentNote = threadEvents.find(e => e.id === parentTag[1]);
+                    if (parentNote) {
+                        parentHtml = `<div class="thread-ancestor">
+                            <div style="font-size:0.8em; margin-bottom:5px; opacity:0.7;">Replying to:</div>
+                            ${generatePostHTML(parentNote)}
+                        </div>`;
+                    } else {
+                        parentHtml = `<div style="padding:10px; opacity:0.6; border-left: 2px dotted var(--meta-color); margin-bottom:10px;">Loading original post...</div>`;
+                    }
+                }
+            }
+
+            // 3. Render Main Note
+            if (mainNote) {
+                document.getElementById('thread-parent-container').innerHTML = parentHtml + `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
+            }
+
+            // 4. Render Replies
+            const replies = threadEvents.filter(e => e.tags.some(t => t[0] === 'e' && t[1] === currentThreadId));
+            replies.sort((a,b) => a.created_at - b.created_at);
+            
+            if (replies.length > 0) {
+                document.getElementById('thread-replies-container').innerHTML = replies.map(generatePostHTML).join('');
+            } else {
+                document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:10px;">No replies yet.</div>';
+            }
+        }
+        /* --- END THREAD LOGIC --- */
+
         /* --- SEARCH LOGIC --- */
         function openSearch() { 
             togglePanel('panel-search'); 
-            // If we are NOT currently holding a search result, show universal feed
             if (!isSearching) {
                 document.getElementById('search-status').innerText = 'UNIVERSAL FEED (LIVE):';
                 renderDiscoveryFeed();
@@ -521,7 +618,6 @@
         }
 
         function renderDiscoveryFeed() {
-            // Render the global 'events' array into the search-results div
             document.getElementById('search-results').innerHTML = events.map(generatePostHTML).join('');
         }
         
@@ -529,12 +625,11 @@
             const term = document.getElementById('search-input').value.trim();
             if (!term) return;
             
-            isSearching = true; // Set flag to stop auto-updating with global feed
+            isSearching = true; 
             document.getElementById('search-status').innerText = 'SEARCH RESULTS:';
             document.getElementById('search-results').innerHTML = '<div style="padding:10px;text-align:center;opacity:0.6;">Searching decentralized network...</div>';
             searchEvents = []; 
             
-            // 1. Check if NPUB
             if (term.startsWith('npub1')) {
                 try {
                     const decoded = window.NostrTools.nip19.decode(term);
@@ -551,7 +646,6 @@
                 } catch(e) { console.error("Invalid NPUB", e); }
             }
 
-            // 2. Generic Search
             const filters = [];
             if (term.startsWith('#')) {
                 filters.push({ kinds: [1], '#t': [term.substring(1)], limit: 50 });
@@ -573,7 +667,6 @@
             if (searchEvents.some(e => e.id === ev.id)) return;
             searchEvents.push(ev);
             
-            // Sort Profiles first, then recent notes
             searchEvents.sort((a,b) => {
                 if(a.kind === 0 && b.kind !== 0) return -1;
                 if(b.kind === 0 && a.kind !== 0) return 1;
@@ -605,7 +698,6 @@
                 <button class="small act-btn">VIEW</button>
             </div>`;
         }
-        /* --- END SEARCH LOGIC --- */
 
         function openNotifications() {
             togglePanel('panel-notifications');
@@ -679,6 +771,7 @@
                         </div>
                      </div>`;
                 }
+                // Force clearer display for replies in notifications
                 return generatePostHTML(ev);
             }).join('');
         }
@@ -688,36 +781,6 @@
             ['ntab-all', 'ntab-zaps', 'ntab-mentions'].forEach(id => document.getElementById(id).classList.remove('active'));
             document.getElementById('ntab-'+tab).classList.add('active');
             renderNotifications();
-        }
-
-        function viewThread(id) {
-            currentThreadId = id;
-            togglePanel('panel-thread');
-            document.getElementById('thread-parent-container').innerHTML = "Loading parent...";
-            document.getElementById('thread-replies-container').innerHTML = "Loading replies...";
-            threadEvents = [];
-            
-            Object.values(sockets).forEach(ws => {
-                if (ws.readyState === 1) {
-                    ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], ids: [id] }]));
-                    ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], '#e': [id], limit: 100 }]));
-                }
-            });
-        }
-
-        function handleThreadEvent(ev) {
-            if (threadEvents.some(e => e.id === ev.id)) return;
-            threadEvents.push(ev);
-            fetchProfileIfNeeded(ev.pubkey);
-            
-            const parent = threadEvents.find(e => e.id === currentThreadId);
-            const replies = threadEvents.filter(e => e.tags.some(t => t[0] === 'e' && t[1] === currentThreadId));
-            
-            if(parent) {
-                document.getElementById('thread-parent-container').innerHTML = `<div class="thread-parent">${generatePostHTML(parent)}</div>`;
-            }
-            replies.sort((a,b) => a.created_at - b.created_at);
-            document.getElementById('thread-replies-container').innerHTML = replies.map(generatePostHTML).join('');
         }
 
         function initReply(id, pubkey) {
@@ -992,7 +1055,6 @@
         function handleContacts(ev) { if(ev.kind===3) { const pTags = ev.tags.filter(t=>t[0]==='p').map(t=>t[1]); myContacts = new Set(pTags); if(currentViewedProfile) renderUserProfileHeader(currentViewedProfile); } }
         function handleGlobalEvent(ev) { if(processedIds.has(ev.id)) return; processedIds.add(ev.id); fetchProfileIfNeeded(ev.pubkey); incomingBuffer.push(ev); }
         
-        // BUFFER PROCESSOR & LIVE FEED UPDATER
         setInterval(() => { 
             if(incomingBuffer.length===0) return; 
             incomingBuffer.sort((a,b)=>b.created_at-a.created_at); 
@@ -1003,8 +1065,6 @@
                 events=[...incomingBuffer,...events]; 
                 events.sort((a,b)=>b.created_at-a.created_at); 
                 renderGlobalFeed(); 
-                
-                // ALSO UPDATE SEARCH TAB IF LIVE
                 if (!document.getElementById('panel-search').classList.contains('hidden') && !isSearching) {
                     renderDiscoveryFeed();
                 }
@@ -1019,7 +1079,6 @@
             events = [...pendingEvents, ...events].slice(0, 100); 
             pendingEvents = []; 
             renderGlobalFeed(); 
-            // Also update search tab if open and live
             if (!document.getElementById('panel-search').classList.contains('hidden') && !isSearching) {
                 renderDiscoveryFeed();
             }
