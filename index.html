@@ -140,20 +140,20 @@
             border: 1px solid var(--post-border);
             padding: 8px;
             margin-bottom: 5px;
-            gap: 10px; /* Space between text and button */
+            gap: 10px;
         }
         .relay-content {
             display: flex;
             align-items: center;
-            overflow: hidden; /* Vital for truncation */
+            overflow: hidden; 
             white-space: nowrap;
             flex-grow: 1;
         }
         .relay-url {
-            font-size: 0.7em; /* Smaller text as requested */
+            font-size: 0.7em; 
             margin-left: 10px;
             overflow: hidden;
-            text-overflow: ellipsis; /* ... if too long */
+            text-overflow: ellipsis;
             opacity: 0.9;
         }
         
@@ -641,8 +641,21 @@
 
     <script>
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
-        let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
-        let filterSettings = JSON.parse(localStorage.getItem('mbit_filters')) || { hideNsfw: false, blockedTags: [] };
+        
+        // SAFE LOADING OF LOCAL STORAGE
+        let savedRelays;
+        try {
+            savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
+        } catch(e) {
+            savedRelays = defaultRelays;
+        }
+
+        let filterSettings;
+        try {
+            filterSettings = JSON.parse(localStorage.getItem('mbit_filters')) || { hideNsfw: false, blockedTags: [] };
+        } catch(e) {
+            filterSettings = { hideNsfw: false, blockedTags: [] };
+        }
         
         // Define Onion Relays Data
         const onionRelayData = [
@@ -675,8 +688,12 @@
         let events = [], incomingBuffer = [], pendingEvents = []; 
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [];
         let threadEvents = [], bookmarkEvents = [];
-        let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
-        let bookmarks = new Set(JSON.parse(localStorage.getItem('mbit_bookmarks')) || []);
+        let likedPosts = new Set();
+        try { likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []); } catch(e){}
+        
+        let bookmarks = new Set();
+        try { bookmarks = new Set(JSON.parse(localStorage.getItem('mbit_bookmarks')) || []); } catch(e){}
+        
         let myContacts = new Set(); 
         
         // Counter Store
@@ -784,6 +801,7 @@
         }
 
         function isBlocked(ev) {
+            if (!ev.tags) return false;
             const evTags = ev.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase());
             if (filterSettings.hideNsfw && evTags.includes('nsfw')) return true;
             for (let blocked of filterSettings.blockedTags) {
@@ -926,6 +944,7 @@
 
         /* --- STATS PROCESSING --- */
         function processEventStats(ev) {
+            if (!ev || !ev.tags) return;
             const eTags = ev.tags.filter(t => t[0] === 'e');
             eTags.forEach(t => {
                 const targetId = t[1];
@@ -959,6 +978,7 @@
             // Optimistic update
             if(!eventStats[id]) eventStats[id] = { reply:0, repost:0, like:0, zap:0 };
             eventStats[id].like++;
+            updateCountDOM(id, 'like');
             
             if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
             if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); 
