@@ -72,7 +72,7 @@
             font-family: "Courier New", Courier, monospace;
             font-size: var(--base-font-size);
             padding: 20px; 
-            padding-bottom: 90px; /* Increased for footer space */
+            padding-bottom: 80px;
             margin: 0; 
             min-height: 100vh;
             transition: font-size 0.2s ease;
@@ -144,11 +144,11 @@
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
         
-        /* RELAY ITEM STYLING */
+        /* RELAY ITEM STYLING - RIGHT SIDE BUTTON */
         .relay-item {
             display: flex;
             align-items: center;
-            justify-content: space-between; 
+            justify-content: space-between; /* Push items to ends */
             background: var(--input-bg);
             border: 1px solid var(--post-border);
             padding: 8px;
@@ -318,7 +318,7 @@
             color: var(--bg-color);
         }
 
-        /* NPUB COPY BOX STYLE */
+        /* NPUB COPY BOX STYLE - FIXED TRUNCATION */
         .npub-wrapper {
             background: var(--input-bg);
             border: 1px solid var(--post-border);
@@ -387,44 +387,31 @@
             margin-bottom: 15px;
         }
 
-        /* FIXED STICKY FOOTER WITH ICONS */
         .sticky-footer {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 60px; /* Fixed height for consistent hit area */
             background-color: var(--footer-bg);
             border-top: 1px solid var(--border-color);
             display: flex;
-            justify-content: space-around; /* Equal spacing */
-            align-items: center;
-            padding: 0;
+            justify-content: center;
+            gap: 15px;
+            padding: 15px 0;
             z-index: 1000;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+            font-family: inherit;
         }
         .footer-item {
-            flex: 1; /* Each item takes equal width */
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 0.9em;
             cursor: pointer;
+            text-align: center;
+            transition: 0.3s;
             color: var(--text-color);
+            text-decoration: none;
             opacity: 0.7;
-            transition: 0.2s;
         }
-        .footer-item:hover { 
-            opacity: 1; 
-            background: rgba(255,255,255,0.05); /* Subtle highlight */
-        }
-        
-        .footer-icon-svg {
-            width: 30px; /* Larger Icon */
-            height: 30px;
-            fill: currentColor;
-            pointer-events: none; /* Clicks pass to container */
-        }
+        .footer-item:hover { opacity: 1; text-decoration: underline; text-shadow: var(--glow); }
 
         .notif-item { 
             padding: 12px; 
@@ -506,6 +493,7 @@
             <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-my-profile')">[ MY PROFILE ]</span>
             <span>|</span>
+            <!-- Relays removed from here -->
             <span class="nav-item" onclick="togglePanel('panel-settings')">[ SETTINGS ]</span>
         </div>
     </header>
@@ -555,7 +543,8 @@
             
             <!-- HIDDEN EDITOR (NOW ABOVE TABS) -->
             <div id="profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
-                <label>Name:</label><input type="text" id="p-display-name" placeholder="Display Name">
+                <!-- Removing Username input as requested -->
+                <label>Name:</label><input type="text" id="p-display-name" placeholder="e.g. Satoshi Nakamoto">
                 <label>Bio:</label><textarea id="p-about" rows="3"></textarea>
                 <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
                 <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
@@ -565,12 +554,8 @@
                 <button class="small secondary" onclick="toggleProfileEditor()" style="width:100%; margin-top:5px; margin-left:0;">CANCEL</button>
             </div>
 
-            <!-- STATIC TABS FOR MY PROFILE -->
-            <div class="profile-subnav">
-                <button id="my-tab-notes" class="subnav-btn active" onclick="switchMyTab('notes')">NOTES</button>
-                <button id="my-tab-replies" class="subnav-btn" onclick="switchMyTab('replies')">NOTES & REPLIES</button>
-            </div>
-
+            <!-- TABS GENERATED DYNAMICALLY BY JS -->
+            <!-- Removing static tabs here to prevent duplication -->
             <div id="my-feed"></div>
         </div>
 
@@ -702,22 +687,13 @@
 
     <!-- STICKY FOOTER -->
     <div class="sticky-footer">
-        <div class="footer-item" onclick="goHome()">
-            <!-- HOME ICON -->
-            <svg class="footer-icon-svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        </div>
-        <div class="footer-item" onclick="openSearch()">
-            <!-- SEARCH ICON -->
-            <svg class="footer-icon-svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        </div>
-        <div class="footer-item" onclick="openBookmarks()">
-            <!-- BOOKMARK ICON -->
-            <svg class="footer-icon-svg" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
-        </div>
-        <div class="footer-item" onclick="openNotifications()">
-            <!-- BELL ICON -->
-            <svg class="footer-icon-svg" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
-        </div>
+        <div class="footer-item" onclick="goHome()">[ HOME ]</div>
+        <span style="color:var(--border-color)">|</span>
+        <div class="footer-item" onclick="openSearch()">[ SEARCH ]</div>
+        <span style="color:var(--border-color)">|</span>
+        <div class="footer-item" onclick="openBookmarks()">[ BOOKMARKS ]</div>
+        <span style="color:var(--border-color)">|</span>
+        <div class="footer-item" onclick="openNotifications()">[ NOTIFICATIONS ]</div>
     </div>
 
     <script>
@@ -808,36 +784,6 @@
             if (id === 'panel-relays') renderRelays();
             currentViewedProfile = null;
             currentThreadId = null;
-        }
-
-        // WRAPPERS FOR FOOTER ACTIONS TO ENSURE PANEL OPENS
-        function openSearch() {
-            togglePanel('panel-search');
-            // Re-init search defaults if needed
-            document.getElementById('search-input').value = "";
-            document.getElementById('search-status').innerText = "UNIVERSAL FEED (LIVE):";
-            document.getElementById('search-results').innerHTML = "Loading global stream...";
-            searchEvents = [];
-            Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", { kinds: [1], limit: 20 }])); });
-        }
-
-        function openNotifications() {
-            togglePanel('panel-notifications');
-            refreshNotifications();
-        }
-
-        function openBookmarks() {
-            togglePanel('panel-bookmarks');
-            const ids = [...bookmarks];
-            if(ids.length === 0) {
-                document.getElementById('bookmarks-feed').innerHTML = "No bookmarks yet.";
-                return;
-            }
-            document.getElementById('bookmarks-feed').innerHTML = "Loading saved posts...";
-            bookmarkEvents = [];
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "bookmarks_sub", { kinds: [1], ids: ids }]));
-            });
         }
 
         // --- PROFILE LOGIC ---
@@ -1273,7 +1219,7 @@
             if (typeof window.nostr === 'undefined') {
                 // Wait briefly in case injection is slow
                 await new Promise(r => setTimeout(r, 500));
-                if (typeof window.nostr === 'undefined') return alert("No Nostr extension found (Alby, etc).");
+                if (typeof window.nostr === 'undefined') return alert("No Nostr extension found (Alby, nos2x, etc).");
             }
             try {
                 const pubkey = await window.nostr.getPublicKey();
@@ -1281,71 +1227,22 @@
                 localStorage.setItem('nostr_mode', 'extension');
                 location.reload();
             } catch (err) { 
-                // Silently fail or alert
+                alert("Login failed or cancelled."); 
             }
         }
 
-        // WRAPPERS FOR FOOTER ACTIONS TO ENSURE PANEL OPENS
-        function handleSearch() {
-            const q = document.getElementById('search-input').value.trim();
-            if(!q) return openSearch();
-            document.getElementById('search-status').innerText = `RESULTS FOR: "${q}"`;
-            document.getElementById('search-results').innerHTML = "Searching...";
-            searchEvents = [];
-            let filter = { kinds: [1], limit: 20 };
-            if(q.startsWith('npub')) {
-                try {
-                    const decoded = window.NostrTools.nip19.decode(q).data;
-                    viewProfile(decoded);
-                    return;
-                } catch(e) { alert("Invalid npub"); return; }
-            } else if (q.startsWith('#')) {
-                filter['#t'] = [q.substring(1)];
-            } else {
-                filter['search'] = q;
-            }
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter]));
-            });
-        }
-        function handleSearchEvent(ev) {
-            if(searchEvents.some(e => e.id === ev.id)) return;
-            searchEvents.push(ev);
-            searchEvents.sort((a,b) => b.created_at - a.created_at);
-            document.getElementById('search-results').innerHTML = searchEvents.map(generatePostHTML).join('');
-            fetchProfileIfNeeded(ev.pubkey);
-        }
-        function openSearch() {
-            togglePanel('panel-search');
-            document.getElementById('search-input').value = "";
-            document.getElementById('search-status').innerText = "UNIVERSAL FEED (LIVE):";
-            document.getElementById('search-results').innerHTML = "Loading global stream...";
-            searchEvents = [];
-            Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", { kinds: [1], limit: 20 }])); });
-        }
-
-        function openNotifications() {
-            togglePanel('panel-notifications');
-            refreshNotifications();
-        }
-
-        function openBookmarks() {
-            togglePanel('panel-bookmarks');
-            const ids = [...bookmarks];
-            if(ids.length === 0) {
-                document.getElementById('bookmarks-feed').innerHTML = "No bookmarks yet.";
-                return;
-            }
-            document.getElementById('bookmarks-feed').innerHTML = "Loading saved posts...";
-            bookmarkEvents = [];
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "bookmarks_sub", { kinds: [1], ids: ids }]));
-            });
-        }
-        function handleBookmarkEvent(ev) { if(bookmarkEvents.some(e => e.id === ev.id)) return; bookmarkEvents.push(ev); bookmarkEvents.sort((a,b) => b.created_at - a.created_at); document.getElementById('bookmarks-feed').innerHTML = bookmarkEvents.map(generatePostHTML).join(''); fetchProfileIfNeeded(ev.pubkey); }
-
-        function doBookmark(id) { if(bookmarks.has(id)) { bookmarks.delete(id); alert("Bookmark Removed"); } else { bookmarks.add(id); alert("Saved to Bookmarks"); } localStorage.setItem('mbit_bookmarks', JSON.stringify([...bookmarks])); if(!document.getElementById('panel-bookmarks').classList.contains('hidden')) openBookmarks(); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); }
+        function openComposer() { if(!myPubKey) return alert("Please Login First"); document.getElementById('composer-modal').classList.remove('hidden'); document.getElementById('msg-input').focus(); }
+        function closeComposer() { document.getElementById('composer-modal').classList.add('hidden'); cancelReply(); }
+        function toggleNsfw() { filterSettings.hideNsfw = document.getElementById('nsfw-toggle').checked; saveFilters(); }
+        function addFilterTag() { const val = document.getElementById('filter-input').value.trim().toLowerCase(); if(val && !filterSettings.blockedTags.includes(val)) { filterSettings.blockedTags.push(val); document.getElementById('filter-input').value = ""; saveFilters(); renderFilterList(); } }
+        function removeFilterTag(tag) { filterSettings.blockedTags = filterSettings.blockedTags.filter(t => t !== tag); saveFilters(); renderFilterList(); }
+        function saveFilters() { localStorage.setItem('mbit_filters', JSON.stringify(filterSettings)); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); }
+        function renderFilterList() { document.getElementById('filter-list').innerHTML = filterSettings.blockedTags.map(tag => `<span class="filter-tag">#${tag} <span class="remove-tag" onclick="removeFilterTag('${tag}')">x</span></span>`).join(''); }
+        function isBlocked(ev) { if (!ev.tags) return false; const evTags = ev.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase()); if (filterSettings.hideNsfw && evTags.includes('nsfw')) return true; for (let blocked of filterSettings.blockedTags) { if (evTags.includes(blocked)) return true; } return false; }
         
+        function doBookmark(id) { if(bookmarks.has(id)) { bookmarks.delete(id); alert("Bookmark Removed"); } else { bookmarks.add(id); alert("Saved to Bookmarks"); } localStorage.setItem('mbit_bookmarks', JSON.stringify([...bookmarks])); if(!document.getElementById('panel-bookmarks').classList.contains('hidden')) openBookmarks(); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); }
+        function openBookmarks() { togglePanel('panel-bookmarks'); const ids = [...bookmarks]; if(ids.length === 0) { document.getElementById('bookmarks-feed').innerHTML = "No bookmarks yet."; return; } document.getElementById('bookmarks-feed').innerHTML = "Loading saved posts..."; bookmarkEvents = []; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "bookmarks_sub", { kinds: [1], ids: ids }])); }); }
+        function handleBookmarkEvent(ev) { if(bookmarkEvents.some(e => e.id === ev.id)) return; bookmarkEvents.push(ev); bookmarkEvents.sort((a,b) => b.created_at - a.created_at); document.getElementById('bookmarks-feed').innerHTML = bookmarkEvents.map(generatePostHTML).join(''); fetchProfileIfNeeded(ev.pubkey); }
         async function handleZap(lud16, pubkey) { if(!lud16) return alert("User has no Lightning address set."); const parts = lud16.split('@'); if(parts.length !== 2) return window.open(`lightning:${lud16}`); const amount = prompt(`Zap ${lud16} (sats):`, "21"); if(!amount) return; try { const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`; const res = await fetch(url); const data = await res.json(); if(data.callback) { const millisats = parseInt(amount) * 1000; if(millisats < data.minSendable || millisats > data.maxSendable) return alert(`Amount out of range.`); const cbUrl = `${data.callback}?amount=${millisats}`; const cbRes = await fetch(cbUrl); const cbData = await cbRes.json(); if(cbData.pr) window.location.href = `lightning:${cbData.pr}`; } } catch(e) { if(confirm(`Auto-zap failed. Open wallet manually?`)) window.location.href = `lightning:${lud16}`; } }
 
         function processEventStats(ev) { if (!ev || !ev.tags) return; const eTags = ev.tags.filter(t => t[0] === 'e'); eTags.forEach(t => { const targetId = t[1]; if (!eventStats[targetId]) eventStats[targetId] = { reply:0, repost:0, like:0, zap:0 }; if (ev.kind === 1) eventStats[targetId].reply++; if (ev.kind === 6) eventStats[targetId].repost++; if (ev.kind === 7) eventStats[targetId].like++; if (ev.kind === 9735) eventStats[targetId].zap++; updateCountDOM(targetId, 'reply'); updateCountDOM(targetId, 'repost'); updateCountDOM(targetId, 'like'); updateCountDOM(targetId, 'zap'); }); }
