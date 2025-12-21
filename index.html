@@ -275,7 +275,7 @@
         .profile-actions-row {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px; /* Space below button */
+            margin: 15px 0;
             width: 100%;
         }
         .profile-actions-row button {
@@ -424,6 +424,15 @@
             animation: zoomIn 0.2s;
         }
 
+        .npub-display {
+            font-size: 0.8em;
+            opacity: 0.5;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
         @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         #reply-context-bar {
@@ -495,25 +504,6 @@
             <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
             <div id="my-profile-header" style="text-align:center;"></div>
             
-            <!-- HIDDEN EDITOR (NOW ABOVE TABS) -->
-            <div id="profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
-                <!-- Removing Username input as requested -->
-                <label>Name:</label><input type="text" id="p-display-name" placeholder="e.g. Satoshi Nakamoto">
-                <label>Bio:</label><textarea id="p-about" rows="3"></textarea>
-                <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
-                <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
-                <label style="color:#3498db">Verified Address (NIP-05):</label><input type="text" id="p-nip05" placeholder="name@domain.com">
-                <label>Picture URL:</label><input type="text" id="p-picture">
-                <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
-                <button class="small secondary" onclick="toggleProfileEditor()" style="width:100%; margin-top:5px; margin-left:0;">CANCEL</button>
-            </div>
-
-            <!-- STATIC TABS FOR MY PROFILE -->
-            <div class="profile-subnav">
-                <button id="my-tab-notes" class="subnav-btn active" onclick="switchMyTab('notes')">NOTES</button>
-                <button id="my-tab-replies" class="subnav-btn" onclick="switchMyTab('replies')">NOTES & REPLIES</button>
-            </div>
-
             <div id="my-feed"></div>
         </div>
 
@@ -781,13 +771,15 @@
         function updateMyProfileHeader() {
             initProfileData(myPubKey);
             const p = profiles[myPubKey].meta || {}; 
-            
-            // Build header - 1. Name/Pic, 2. Bio/Zap, 3. Actions, 4. Stats
+            const npub = window.NostrTools.nip19.npubEncode(myPubKey);
+
+            // Build header - 1. Name/Pic, 2. Bio/Zap, 3. Actions, 4. Editor (Hidden), 5. Stats
             const headerHtml = `
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || myPubKey.substring(0,8)}</h2>
                 ${p.nip05 ? `<div style="font-size:0.8em; color:#3498db; margin-bottom:5px;">✓ ${p.nip05}</div>` : ''}
-                
+                <div class="npub-display" onclick="copyToClipboard('${npub}')">${npub.substring(0,12)}...${npub.substring(npub.length-4)}</div>
+
                 <div class="profile-detail-box">
                     <p style="opacity:0.8; font-style:italic; margin: 5px 0;">${p.about || '(No bio)'}</p>
                     ${p.website ? `<a href="${p.website}" target="_blank" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;">${p.website}</a>` : ''}
@@ -796,6 +788,18 @@
                  
                 <div class="profile-actions-row">
                     <button class="secondary" onclick="toggleProfileEditor()">[ EDIT PROFILE ]</button>
+                </div>
+
+                <!-- DYNAMIC EDITOR LOCATION -->
+                <div id="dynamic-profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
+                    <label>Name:</label><input type="text" id="p-display-name" placeholder="Display Name">
+                    <label>Bio:</label><textarea id="p-about" rows="3"></textarea>
+                    <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
+                    <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
+                    <label style="color:#3498db">Verified Address (NIP-05):</label><input type="text" id="p-nip05" placeholder="name@domain.com">
+                    <label>Picture URL:</label><input type="text" id="p-picture">
+                    <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
+                    <button class="small secondary" onclick="toggleProfileEditor()" style="width:100%; margin-top:5px; margin-left:0;">CANCEL</button>
                 </div>
 
                 <div class="profile-stats-row">
@@ -811,7 +815,7 @@
             `;
             document.getElementById('my-profile-header').innerHTML = headerHtml;
             // Pre-fill editor inputs
-            document.getElementById('p-display-name').value = p.display_name || '';
+            document.getElementById('p-display-name').value = p.display_name || p.name || '';
             document.getElementById('p-about').value = p.about || ''; 
             document.getElementById('p-picture').value = p.picture || ''; 
             document.getElementById('p-website').value = p.website || ''; 
@@ -847,6 +851,7 @@
             const p = profiles[pubkey].meta || {};
             const isFollowing = myContacts.has(pubkey);
             const isMe = pubkey === myPubKey;
+            const npub = window.NostrTools.nip19.npubEncode(pubkey);
             
             let followBtn = '';
             if (!isMe && myPubKey) {
@@ -865,8 +870,8 @@
             const html = `
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || pubkey.substring(0,8)}</h2>
-                ${p.name ? `<div style="opacity:0.6; font-size:0.9em; margin-top:-5px; margin-bottom:10px;">@${p.name}</div>` : ''}
                 ${p.nip05 ? `<div style="font-size:0.8em; color:#3498db; margin-bottom:5px;">✓ ${p.nip05}</div>` : ''}
+                <div class="npub-display" onclick="copyToClipboard('${npub}')">${npub.substring(0,12)}...${npub.substring(npub.length-4)}</div>
 
                 <div class="profile-detail-box">
                     <p style="opacity:0.8; font-style:italic; margin: 5px 0;">${p.about || ''}</p>
@@ -1129,15 +1134,8 @@
         }
 
         function toggleProfileEditor() { 
-            document.getElementById('profile-editor').classList.toggle('hidden'); 
-            const p = (profiles[myPubKey] && profiles[myPubKey].meta) ? profiles[myPubKey].meta : {}; 
-            // document.getElementById('p-username').value = p.name || ''; // Removed
-            document.getElementById('p-display-name').value = p.display_name || '';
-            document.getElementById('p-about').value = p.about || ''; 
-            document.getElementById('p-picture').value = p.picture || ''; 
-            document.getElementById('p-website').value = p.website || ''; 
-            document.getElementById('p-lud16').value = p.lud16 || ''; 
-            document.getElementById('p-nip05').value = p.nip05 || '';
+            const editor = document.getElementById('dynamic-profile-editor');
+            if (editor) editor.classList.toggle('hidden');
         }
 
         function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><div class="relay-content"><span style="color:${isOpen?'#00FF41':'red'}; font-weight:bold; margin-right:5px;">[${isOpen?'ON':'OFF'}]</span><span class="relay-url" title="${url}">${url}</span></div><button class="small danger" style="width: 30px; flex-shrink: 0;" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
@@ -1145,6 +1143,7 @@
         function removeRelay(url) { savedRelays = savedRelays.filter(r => r !== url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); if(sockets[url]) sockets[url].close(); renderRelays(); }
         function logout() { localStorage.clear(); location.reload(); }
         function copyKey(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); alert("COPIED"); }
+        function copyToClipboard(text) { navigator.clipboard.writeText(text); alert("COPIED"); }
         function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
         function fetchProfile(pubkey) { Object.values(sockets).forEach(ws => ws.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]))); }
 
@@ -1183,7 +1182,7 @@
         function updateCountDOM(id, type) { const el = document.getElementById(`s-${type}-${id}`); if (el && eventStats[id]) { el.innerText = eventStats[id][type]; } }
         async function doLike(id, pubkey) { if(!myPubKey) return alert("Login first"); likedPosts.add(id); localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts])); if(!eventStats[id]) eventStats[id] = { reply:0, repost:0, like:0, zap:0 }; eventStats[id].like++; updateCountDOM(id, 'like'); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; await signAndBroadcast(event); }
 
-        function generatePostHTML(ev) { if (isBlocked(ev)) return ''; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)}; let content = ev.content; if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.name||ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button> <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button> </div> </div>`; }
+        function generatePostHTML(ev) { if (isBlocked(ev)) return ''; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)}; let content = ev.content; if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.display_name || p.name || ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button> <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button> </div> </div>`; }
         function parseContent(text) { if(!text) return ""; let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); const nostrRegex = /nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g; content = content.replace(nostrRegex, (match, id) => { let decodedId = id; try { const decoded = window.NostrTools.nip19.decode(id); decodedId = decoded.data.id || decoded.data; } catch(e){} const cached = events.find(e => e.id === decodedId) || myEvents.find(e => e.id === decodedId); if(cached) { const p = (profiles[cached.pubkey] && profiles[cached.pubkey].meta) ? profiles[cached.pubkey].meta : {name:cached.pubkey.substring(0,6)}; return `<div class="quote-card"><div class="meta"><b>${p.name}</b></div><div>${parseContent(cached.content)}</div></div>`; } else { return `<a href="#" class="hashtag">[ Quoted Note: ${id.substring(0,10)}... ]</a>`; } }); const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi; content = content.replace(videoRegex, (url) => `<video controls class="media-video"><source src="${url}"></video>`); const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi; content = content.replace(imgRegex, (url) => `<a href="${url}" target="_blank"><img src="${url}" class="media-img" loading="lazy"></a>`); const hashtagRegex = /#(\w+)/g; content = content.replace(hashtagRegex, (match, tag) => `<span class="hashtag" onclick="alert('Tag: #${tag}')">#${tag}</span>`); return content; }
 
         if (myPubKey) { document.getElementById('login-form').classList.add('hidden'); document.getElementById('user-info').classList.remove('hidden'); document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(myPubKey); if (myPrivKey) document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey); else document.getElementById('nsec-display-container').classList.add('hidden'); }
