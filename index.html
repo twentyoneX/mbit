@@ -192,7 +192,7 @@
         
         /* ZAP BUTTON MODS - BITCOIN ORANGE */
         .zap-btn { 
-            color: #F7931A; /* Bitcoin Orange */
+            color: #F7931A; 
             border-color: var(--text-color) !important; 
         }
         .zap-btn:hover { 
@@ -376,6 +376,13 @@
                 <input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0; width: 80%;">
                 <button onclick="addRelay()" style="width: 18%; margin-left: 2%;">ADD</button>
             </div>
+            
+            <!-- NEW ONION SECTION -->
+            <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
+            <h3 style="font-size: 1rem;">>> ONION RELAYS (TOR ONLY)</h3>
+            <p style="font-size: 0.7em; opacity: 0.6; margin-bottom: 10px;">Requires Tor Browser or SOCKS proxy.</p>
+            <div id="onion-list"></div>
+
             <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
@@ -586,6 +593,14 @@
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         let filterSettings = JSON.parse(localStorage.getItem('mbit_filters')) || { hideNsfw: false, blockedTags: [] };
         
+        // Define Onion Relays
+        const onionRelaysList = [
+            'ws://oxtrdevav64z64yb7x6rjg4muzqqegwkxuvikDlmeAmngretmhZF.onion',
+            'ws://2js67e55k53slm77qbz7q2q7rzf5ms2c5hjg5z4cvx66g45v24k24jyd.onion',
+            'ws://5222222224mm72432222222222222222222222222222222222222222.onion',
+            'ws://33333333324mm724322222222222222222222222222222222222222.onion'
+        ];
+
         const sockets = {};
         
         let events = [], incomingBuffer = [], pendingEvents = []; 
@@ -746,7 +761,7 @@
         function viewThread(eventId) {
             let ev = events.find(e => e.id === eventId) || 
                      myEvents.find(e => e.id === eventId) || 
-                     userEvents.find(e => e.id === eventId) || 
+                     userEvents.find(e => e.id === eventId) ||
                      searchEvents.find(e => e.id === eventId) ||
                      notifEvents.find(e => e.id === eventId) || 
                      bookmarkEvents.find(e => e.id === eventId);
