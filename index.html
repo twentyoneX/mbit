@@ -155,23 +155,22 @@
         }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
-        /* ACTION BUTTONS - FIXED TO BE HORIZONTAL */
+        /* ACTION BUTTONS */
         .actions { 
             margin-top: 15px; 
             font-size: 0.8em; 
             display: flex; 
             flex-direction: row; 
-            flex-wrap: wrap; /* Wrap if screen is too narrow */
+            flex-wrap: wrap; 
             gap: 10px; 
             border-top: 1px dotted var(--post-border); 
             padding-top: 12px; 
         }
 
         .act-btn { 
-            /* IMPORTANT: Override the global button width */
             width: auto !important; 
             margin-bottom: 0 !important;
-            flex-grow: 1; /* Makes them stretch evenly */
+            flex-grow: 1;
             
             background: transparent; 
             color: var(--text-color); 
@@ -191,13 +190,32 @@
         .act-btn:hover { background: var(--text-color); color: var(--bg-color); }
         .act-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; }
         
-        .zap-btn { color: #f1c40f; border-color: #f1c40f; }
-        .zap-btn:hover { background: #f1c40f; color: #000; }
+        /* ZAP BUTTON MODS */
+        .zap-btn { 
+            color: #f1c40f; 
+            border-color: var(--text-color) !important; /* Theme Border */
+        }
+        .zap-btn:hover { 
+            background: #f1c40f; 
+            color: #000; 
+            border-color: #f1c40f !important;
+        }
         
-        /* BOOKMARK BUTTON */
-        .bookmark-btn { color: #9b59b6; border-color: #9b59b6; }
-        .bookmark-btn:hover { background: #9b59b6; color: #fff; }
-        .bookmark-btn.active { background: #9b59b6 !important; color: #fff !important; }
+        /* BOOKMARK BUTTON MODS */
+        .bookmark-btn { 
+            color: #CE2B37; /* Italian Red */
+            border-color: var(--text-color) !important; /* Theme Border */
+        }
+        .bookmark-btn:hover { 
+            background: #CE2B37; 
+            color: #fff; 
+            border-color: #CE2B37 !important;
+        }
+        .bookmark-btn.active { 
+            background: #CE2B37 !important; 
+            color: #fff !important; 
+            border-color: #CE2B37 !important;
+        }
 
         #new-btn {
             width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
@@ -587,7 +605,6 @@
             if (theme !== 'dark') document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('mbit_theme', theme);
         }
-        // DEFAULT THEME CHANGED TO MATRIX
         changeTheme(localStorage.getItem('mbit_theme') || 'matrix');
         document.getElementById('theme-selector').value = localStorage.getItem('mbit_theme') || 'matrix';
 
