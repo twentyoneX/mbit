@@ -1201,7 +1201,20 @@
                 ws.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
                     if (data[0] === 'EVENT') {
-                        processEventStats(data[2]); // Capture stats
+                        processEventStats(data[2]); 
+                        
+                        // Handle generic profiles and my specific profile update
+                        if (data[1].startsWith('m_')) { 
+                            profiles[data[2].pubkey] = JSON.parse(data[2].content); 
+                            renderNotifications(); 
+                            if(currentViewedProfile === data[2].pubkey) renderUserProfileHeader(data[2].pubkey);
+                            // Real-time update for my profile
+                            if(myPubKey === data[2].pubkey) updateMyProfileHeader();
+                        } else if (data[1] === 'my_meta') {
+                            // Specific response for my metadata
+                            profiles[data[2].pubkey] = JSON.parse(data[2].content);
+                            updateMyProfileHeader();
+                        }
 
                         if (data[1] === 'g') handleGlobalEvent(data[2]);
                         if (data[1] === 'sub_me') handleMyEvent(data[2]);
@@ -1211,12 +1224,6 @@
                         if (data[1] === 'thread_sub') handleThreadEvent(data[2]);
                         if (data[1] === 'bookmarks_sub') handleBookmarkEvent(data[2]);
                         if (data[1] === 'my_contacts') handleContacts(data[2]);
-                        if (data[1].startsWith('m_')) { 
-                            profiles[data[2].pubkey] = JSON.parse(data[2].content); 
-                            renderNotifications(); 
-                            if(currentViewedProfile === data[2].pubkey) renderUserProfileHeader(data[2].pubkey);
-                            if(myPubKey === data[2].pubkey) renderUserProfileHeader(data[2].pubkey); // Update my profile UI if metadata arrives
-                        }
                     }
                 };
             } catch(e) {}
@@ -1260,6 +1267,56 @@
         function updateNewButton() { const b = document.getElementById('new-btn'); b.classList.toggle('hidden', pendingEvents.length === 0); b.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; }
         function mergeQueue() { events = [...pendingEvents, ...events].slice(0, 100); pendingEvents = []; renderGlobalFeed(); updateNewButton(); window.scrollTo(0,0); }
         function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
+
+        function loadMyHistory() { 
+            if (!myPubKey) return alert("Please login first.");
+            
+            // Force fetch my metadata
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "my_meta", { kinds: [0], authors: [myPubKey], limit: 1 }]));
+            });
+
+            updateMyProfileHeader();
+            switchMyTab('notes');
+
+            myEvents = []; 
+            Object.values(sockets).forEach(s => {
+                if(s.readyState === 1) s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]));
+            }); 
+        }
+
+        // Dedicated function to update "My Profile" UI elements
+        function updateMyProfileHeader() {
+            const p = profiles[myPubKey] || {}; 
+            document.getElementById('my-p-name').innerText = p.name || 'Unknown'; 
+            document.getElementById('my-p-about').innerText = p.about || '(No bio set)'; 
+            document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; 
+            
+            const webEl = document.getElementById('my-p-website');
+            if(p.website) { webEl.href = p.website; webEl.innerText = p.website; webEl.classList.remove('hidden'); } else { webEl.classList.add('hidden'); }
+
+            const zapEl = document.getElementById('my-p-lud16');
+            if(p.lud16) { zapEl.innerText = p.lud16; document.getElementById('my-p-lud16-container').classList.remove('hidden'); } else { document.getElementById('my-p-lud16-container').classList.add('hidden'); }
+        }
+
+        function handleMyEvent(ev) { 
+            if (myEvents.some(e => e.id === ev.id)) return; 
+            myEvents.unshift(ev); 
+            myEvents.sort((a,b)=>b.created_at - a.created_at);
+            renderMyFeed(); 
+        }
+
+        function renderMyFeed() {
+            let list = myEvents;
+            if (currentMyTab === 'notes') {
+                list = myEvents.filter(ev => {
+                    if (ev.kind === 6) return true;
+                    // Safely check tags
+                    return !ev.tags || !ev.tags.some(t => t[0] === 'e');
+                });
+            }
+            document.getElementById('my-feed').innerHTML = list.map(generatePostHTML).join('');
+        }
 
         function renderRelays() { 
             document.getElementById('relay-list').innerHTML = savedRelays.map(url => { 
