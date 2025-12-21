@@ -131,6 +131,31 @@
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
         
+        /* ONION TABLE STYLES */
+        .onion-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+        .onion-table th {
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding: 5px;
+            opacity: 0.7;
+        }
+        .onion-table td {
+            border-bottom: 1px dotted var(--post-border);
+            padding: 8px 5px;
+            vertical-align: middle;
+        }
+        .onion-url {
+            font-size: 0.8em;
+            opacity: 0.7;
+            word-break: break-all;
+            font-family: monospace;
+        }
+
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
         
@@ -381,7 +406,7 @@
             <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
             <h3 style="font-size: 1rem;">>> ONION RELAYS (TOR ONLY)</h3>
             <p style="font-size: 0.7em; opacity: 0.6; margin-bottom: 10px;">Requires Tor Browser or SOCKS proxy.</p>
-            <div id="onion-list"></div>
+            <div id="onion-list-container"></div>
 
             <br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
@@ -593,12 +618,30 @@
         let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
         let filterSettings = JSON.parse(localStorage.getItem('mbit_filters')) || { hideNsfw: false, blockedTags: [] };
         
-        // Define Onion Relays
-        const onionRelaysList = [
-            'ws://oxtrdevav64z64yb7x6rjg4muzqqegwkxuvikDlmeAmngretmhZF.onion',
-            'ws://2js67e55k53slm77qbz7q2q7rzf5ms2c5hjg5z4cvx66g45v24k24jyd.onion',
-            'ws://5222222224mm72432222222222222222222222222222222222222222.onion',
-            'ws://33333333324mm724322222222222222222222222222222222222222.onion'
+        // Define Onion Relays Data
+        const onionRelayData = [
+            { name: "nostr.oxtr.dev", url: "ws://oxtrdevav64z64yb7x6rjg4muzqqegwkxuvikDlmeAmngretmhZF.onion" },
+            { name: "relay.snort.social", url: "wss://skzzn6cimfdv5e2phjc4yr5v7ikbxtn5f7dkwn5c7v47tduzlbosqmqd.onion" },
+            { name: "nostr.thesamecat.io", url: "ws://2jsnlhfnelig5acq6iacydmzdbdmg7xwunm4xl6qwbvzacw4lwrjmlyd.onion" },
+            { name: "nostr.land", url: "ws://nostrland2gdw7g3y77ctftovvil76vquipymo7tsctlxpiwknevzfid.onion" },
+            { name: "bitcoiner.social", url: "ws://bitcoinr6de5lkvx4tpwdmzrdfdpla5sya2afwpcabjup2xpi5dulbad.onion" },
+            { name: "relay.westernbtc.com", url: "ws://westbtcebhgi4ilxxziefho6bqu5lqwa5ncfjefnfebbhx2cwqx5knyd.onion" },
+            { name: "freelay.sovbit.host", url: "ws://sovbitm2enxfr5ot6qscwy5ermdffbqscy66wirkbsigvcshumyzbbqd.onion" },
+            { name: "nostr.sovbit.host", url: "ws://sovbitgz5uqyh7jwcsudq4sspxlj4kbnurvd3xarkkx2use3k6rlibqd.onion" },
+            { name: "nostr.wine", url: "ws://nostrwinemdptvqukjttinajfeedhf46hfd5bz2aj2q5uwp7zros3nad.onion" },
+            { name: "inbox.nostr.wine", url: "ws://wineinboxkayswlofkugkjwhoyi744qvlzdxlmdvwe7cei2xxy4gc6ad.onion" },
+            { name: "filter.nostr.wine", url: "ws://winefiltermhqixxzmnzxhrmaufpnfq3rmjcl6ei45iy4aidrngpsyid.onion" },
+            { name: "nfrelay.app", url: "ws://nfrelay6saohkmipikquvrn6d64dzxivhmcdcj4d5i7wxis47xwsriyd.onion" },
+            { name: "relay.nostr.net", url: "ws://nostrnetl6yd5whkldj3vqsxyyaq3tkuspy23a3qgx7cdepb4564qgqd.onion" },
+            { name: "nerostrator", url: "ws://nerostrrgb5fhj6dnzhjbgmnkpy2berdlczh6tuh2jsqrjok3j4zoxid.onion" },
+            { name: "nostr.girino.org", url: "ws://gnostr2jnapk72mnagq3cuykfon73temzp77hcbncn4silgt77boruid.onion" },
+            { name: "wot.girino.org", url: "ws://girwot2koy3kvj6fk7oseoqazp5vwbeaWocb3m27jcqtah65f2fkl3yd.onion" },
+            { name: "haven.girino.org", url: "ws://ghaven2hi3qn2riitw7ymaztdpztrvmm337e2pgkacfh3rnscaoxjoad.onion" },
+            { name: "relay.nostpy.lol", url: "ws://pemgkkqjqjde7y2emc2hpxocexugbixp42o4zymznil6zfegx5nfp4id.onion" },
+            { name: "Poster.place", url: "ws://dmw5wbawyovz7fcahvguwkw4sknsqsalffwctioeoqkvvy7ygjbcuoad.onion" },
+            { name: "Azzamo Relay", url: "ws://q6a7m5qkyonzb5fk5yv4jyu3ar44hqedn7wjopg737lit2ckkhx2nyid.onion" },
+            { name: "Azzamo Inbox", url: "ws://gp5kiwqfw7t2fwb3rfts2aekoph4x7pj5pv65re2y6hzaujsxewanbqd.onion" },
+            { name: "Noderunners", url: "ws://35vr3xigzjv2xyzfyif6o2gksmkioppy4rmwag7d4bqmwuccs2u4jaid.onion" }
         ];
 
         const sockets = {};
@@ -661,7 +704,10 @@
             });
             document.getElementById(id).classList.remove('hidden');
             if (id === 'panel-my-profile') loadMyHistory();
-            if (id === 'panel-relays') renderRelays();
+            if (id === 'panel-relays') {
+                renderRelays();
+                renderOnionList();
+            }
             currentViewedProfile = null;
             currentThreadId = null;
         }
@@ -1410,6 +1456,44 @@
         function copyKey(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); alert("COPIED"); }
         function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
         function fetchProfile(pubkey) { Object.values(sockets).forEach(ws => ws.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]))); }
+
+        // Render Onion List Helper
+        function renderOnionList() {
+            const container = document.getElementById('onion-list-container');
+            let html = `<table class="onion-table"><thead><tr><th>NAME</th><th style="text-align:right">ACTION</th></tr></thead><tbody>`;
+            
+            onionRelayData.forEach(r => {
+                html += `<tr>
+                    <td>
+                        <div style="font-weight:bold">${r.name}</div>
+                        <div class="onion-url">${r.url}</div>
+                    </td>
+                    <td style="text-align:right; white-space:nowrap;">
+                        <button class="small" onclick="copyToClipboard('${r.url}')">COPY</button>
+                        <button class="small secondary" onclick="addOnionRelay('${r.url}')">ADD</button>
+                    </td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            alert("COPIED");
+        }
+
+        function addOnionRelay(url) {
+            if(!savedRelays.includes(url)) {
+                savedRelays.push(url);
+                localStorage.setItem('mbit_relays', JSON.stringify(savedRelays));
+                connectToRelay(url);
+                renderRelays();
+                alert("ADDED RELAY");
+            } else {
+                alert("ALREADY ADDED");
+            }
+        }
 
         if (myPubKey) {
             document.getElementById('login-form').classList.add('hidden');
