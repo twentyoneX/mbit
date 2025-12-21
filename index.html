@@ -275,7 +275,7 @@
         .profile-actions-row {
             display: flex;
             gap: 10px;
-            margin: 15px 0;
+            margin-bottom: 20px; /* Space below button */
             width: 100%;
         }
         .profile-actions-row button {
@@ -331,6 +331,13 @@
         .subnav-btn.active {
             color: var(--text-color);
             border-bottom: 3px solid var(--text-color);
+        }
+
+        /* NOTIFICATION TABS */
+        .notif-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--post-border);
+            margin-bottom: 15px;
         }
 
         .sticky-footer {
@@ -490,8 +497,8 @@
             
             <!-- HIDDEN EDITOR (NOW ABOVE TABS) -->
             <div id="profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
-                <label>Username (@handle):</label><input type="text" id="p-username" placeholder="e.g. satoshi">
-                <label>Display Name:</label><input type="text" id="p-display-name" placeholder="e.g. Satoshi Nakamoto">
+                <!-- Removing Username input as requested -->
+                <label>Name:</label><input type="text" id="p-display-name" placeholder="e.g. Satoshi Nakamoto">
                 <label>Bio:</label><textarea id="p-about" rows="3"></textarea>
                 <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
                 <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
@@ -580,7 +587,7 @@
             <h3>>> NOTIFICATIONS</h3>
             
             <!-- NOTIFICATION TABS -->
-            <div class="profile-tabs" style="justify-content: space-around;">
+            <div class="notif-tabs" style="justify-content: space-around;">
                 <button id="ntab-all" class="tab-btn active" onclick="switchNotifTab('all')">ALL</button>
                 <button id="ntab-zaps" class="tab-btn" onclick="switchNotifTab('zaps')">ZAPS</button>
                 <button id="ntab-mentions" class="tab-btn" onclick="switchNotifTab('mentions')">MENTIONS</button>
@@ -775,11 +782,10 @@
             initProfileData(myPubKey);
             const p = profiles[myPubKey].meta || {}; 
             
-            // Build header - 1. Name/Pic, 2. Bio/Zap, 3. Stats, 4. Actions
+            // Build header - 1. Name/Pic, 2. Bio/Zap, 3. Actions, 4. Stats
             const headerHtml = `
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || myPubKey.substring(0,8)}</h2>
-                ${p.name ? `<div style="opacity:0.6; font-size:0.9em; margin-top:-5px; margin-bottom:10px;">@${p.name}</div>` : ''}
                 ${p.nip05 ? `<div style="font-size:0.8em; color:#3498db; margin-bottom:5px;">✓ ${p.nip05}</div>` : ''}
                 
                 <div class="profile-detail-box">
@@ -787,24 +793,30 @@
                     ${p.website ? `<a href="${p.website}" target="_blank" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;">${p.website}</a>` : ''}
                     ${p.lud16 ? `<div style="font-size:0.9em; color:#f1c40f; margin-top:5px; font-weight:bold;">⚡ ${p.lud16}</div>` : ''}
                 </div>
-                 <div class="profile-stats-row">
+                 
+                <div class="profile-actions-row">
+                    <button class="secondary" onclick="toggleProfileEditor()">[ EDIT PROFILE ]</button>
+                </div>
+
+                <div class="profile-stats-row">
                     <div id="my-tab-following" class="stat-box" onclick="switchMyTab('following')">[ FOLLOWING <span id="my-cnt-following">${profiles[myPubKey].following.size}</span> ]</div>
                     <div id="my-tab-followers" class="stat-box" onclick="switchMyTab('followers')">[ FOLLOWERS <span id="my-cnt-followers">${profiles[myPubKey].followers.size}</span> ]</div>
                     <div id="my-tab-relays" class="stat-box" onclick="switchMyTab('relays')">[ RELAYS <span id="my-cnt-relays">${profiles[myPubKey].relays.length}</span> ]</div>
                 </div>
-                <div class="profile-actions-row">
-                    <button class="secondary" onclick="toggleProfileEditor()">[ EDIT PROFILE ]</button>
+                
+                <div class="profile-subnav">
+                    <button id="my-tab-notes" class="subnav-btn active" onclick="switchMyTab('notes')">NOTES</button>
+                    <button id="my-tab-replies" class="subnav-btn" onclick="switchMyTab('replies')">NOTES & REPLIES</button>
                 </div>
             `;
             document.getElementById('my-profile-header').innerHTML = headerHtml;
             // Pre-fill editor inputs
-            document.getElementById('p-username').value = p.name || '';
             document.getElementById('p-display-name').value = p.display_name || '';
-            document.getElementById('p-about').value = p.about || '';
-            document.getElementById('p-website').value = p.website || '';
-            document.getElementById('p-lud16').value = p.lud16 || '';
+            document.getElementById('p-about').value = p.about || ''; 
+            document.getElementById('p-picture').value = p.picture || ''; 
+            document.getElementById('p-website').value = p.website || ''; 
+            document.getElementById('p-lud16').value = p.lud16 || ''; 
             document.getElementById('p-nip05').value = p.nip05 || '';
-            document.getElementById('p-picture').value = p.picture || '';
         }
 
         function viewProfile(pubkey) {
@@ -861,14 +873,14 @@
                     ${p.website ? `<a href="${p.website}" target="_blank" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;">${p.website}</a>` : ''}
                     ${p.lud16 ? `<div style="font-size:0.9em; color:#f1c40f; margin-top:5px; font-weight:bold;">⚡ ${p.lud16}</div>` : ''}
                 </div>
+                <div class="profile-actions-row">
+                    ${followBtn}
+                    ${zapBtn}
+                </div>
                  <div class="profile-stats-row">
                     <div id="tab-following" class="stat-box" onclick="switchUserTab('following')">[ FOLLOWING <span id="u-cnt-following">${profiles[pubkey].following.size}</span> ]</div>
                     <div id="tab-followers" class="stat-box" onclick="switchUserTab('followers')">[ FOLLOWERS <span id="u-cnt-followers">${profiles[pubkey].followers.size}</span> ]</div>
                     <div id="tab-relays" class="stat-box" onclick="switchUserTab('relays')">[ RELAYS <span id="u-cnt-relays">${profiles[pubkey].relays.length}</span> ]</div>
-                </div>
-                <div class="profile-actions-row">
-                    ${followBtn}
-                    ${zapBtn}
                 </div>
                 <div class="profile-subnav">
                     <button id="tab-notes" class="subnav-btn active" onclick="switchUserTab('notes')">NOTES</button>
@@ -1098,10 +1110,11 @@
         function login() { let k = document.getElementById('privkey-input').value.trim(); if (!k) return; if (k.startsWith('nsec')) k = window.NostrTools.nip19.decode(k).data; localStorage.setItem('nostr_privkey', k); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(k)); localStorage.setItem('nostr_mode', 'local'); location.reload(); }
         function generateNewUser() { const sk = window.NostrTools.generatePrivateKey(); localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(sk)); localStorage.setItem('nostr_mode', 'local'); location.reload(); }
         
-        // SAVE PROFILE WITH NEW FIELDS
+        // SAVE PROFILE - USE PRESERVED NAME
         async function saveProfile() { 
+            const existing = (profiles[myPubKey] && profiles[myPubKey].meta) ? profiles[myPubKey].meta : {};
             const data = { 
-                name: document.getElementById('p-username').value, 
+                name: existing.name || '', // Preserve existing handle
                 display_name: document.getElementById('p-display-name').value,
                 about: document.getElementById('p-about').value, 
                 picture: document.getElementById('p-picture').value, 
@@ -1118,7 +1131,7 @@
         function toggleProfileEditor() { 
             document.getElementById('profile-editor').classList.toggle('hidden'); 
             const p = (profiles[myPubKey] && profiles[myPubKey].meta) ? profiles[myPubKey].meta : {}; 
-            document.getElementById('p-username').value = p.name || '';
+            // document.getElementById('p-username').value = p.name || ''; // Removed
             document.getElementById('p-display-name').value = p.display_name || '';
             document.getElementById('p-about').value = p.about || ''; 
             document.getElementById('p-picture').value = p.picture || ''; 
@@ -1170,7 +1183,7 @@
         function updateCountDOM(id, type) { const el = document.getElementById(`s-${type}-${id}`); if (el && eventStats[id]) { el.innerText = eventStats[id][type]; } }
         async function doLike(id, pubkey) { if(!myPubKey) return alert("Login first"); likedPosts.add(id); localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts])); if(!eventStats[id]) eventStats[id] = { reply:0, repost:0, like:0, zap:0 }; eventStats[id].like++; updateCountDOM(id, 'like'); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; await signAndBroadcast(event); }
 
-        function generatePostHTML(ev) { if (isBlocked(ev)) return ''; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)}; let content = ev.content; if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.display_name || p.name || ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button> <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button> </div> </div>`; }
+        function generatePostHTML(ev) { if (isBlocked(ev)) return ''; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)}; let content = ev.content; if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.name||ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button> <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button> </div> </div>`; }
         function parseContent(text) { if(!text) return ""; let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); const nostrRegex = /nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g; content = content.replace(nostrRegex, (match, id) => { let decodedId = id; try { const decoded = window.NostrTools.nip19.decode(id); decodedId = decoded.data.id || decoded.data; } catch(e){} const cached = events.find(e => e.id === decodedId) || myEvents.find(e => e.id === decodedId); if(cached) { const p = (profiles[cached.pubkey] && profiles[cached.pubkey].meta) ? profiles[cached.pubkey].meta : {name:cached.pubkey.substring(0,6)}; return `<div class="quote-card"><div class="meta"><b>${p.name}</b></div><div>${parseContent(cached.content)}</div></div>`; } else { return `<a href="#" class="hashtag">[ Quoted Note: ${id.substring(0,10)}... ]</a>`; } }); const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi; content = content.replace(videoRegex, (url) => `<video controls class="media-video"><source src="${url}"></video>`); const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi; content = content.replace(imgRegex, (url) => `<a href="${url}" target="_blank"><img src="${url}" class="media-img" loading="lazy"></a>`); const hashtagRegex = /#(\w+)/g; content = content.replace(hashtagRegex, (match, tag) => `<span class="hashtag" onclick="alert('Tag: #${tag}')">#${tag}</span>`); return content; }
 
         if (myPubKey) { document.getElementById('login-form').classList.add('hidden'); document.getElementById('user-info').classList.remove('hidden'); document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(myPubKey); if (myPrivKey) document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey); else document.getElementById('nsec-display-container').classList.add('hidden'); }
