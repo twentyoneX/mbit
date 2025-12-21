@@ -359,10 +359,11 @@
             <h3>>> SEARCH & DISCOVERY</h3>
             <div style="display:flex; gap:10px;">
                 <input type="text" id="search-input" placeholder="npub, @user, #tag, or text..." style="margin-bottom:0;">
-                <button onclick="handleSearch()" style="width:auto;">GO</button>
+                <button onclick="handleSearch()" style="width:20%;">GO</button>
+                <button onclick="clearSearch()" style="width:15%;" class="secondary">X</button>
             </div>
             <hr style="border:0; border-top:1px dashed var(--post-border); margin: 20px 0;">
-            <div id="search-status" style="font-size:0.8em; opacity:0.7; margin-bottom:10px;">RESULTS:</div>
+            <div id="search-status" style="font-size:0.8em; opacity:0.7; margin-bottom:10px;">UNIVERSAL FEED (LIVE):</div>
             <div id="search-results"></div>
         </div>
 
@@ -443,6 +444,7 @@
         
         let events = [], incomingBuffer = [], pendingEvents = []; 
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [], threadEvents = [], bookmarkEvents = [];
+        let isSearching = false; // Flag for Search Tab state
         
         let likedPosts = new Set();
         try { likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []); } catch(e){}
@@ -501,22 +503,42 @@
             currentThreadId = null;
         }
 
-        /* --- UPDATED SEARCH LOGIC --- */
-        function openSearch() { togglePanel('panel-search'); }
+        /* --- SEARCH LOGIC --- */
+        function openSearch() { 
+            togglePanel('panel-search'); 
+            // If we are NOT currently holding a search result, show universal feed
+            if (!isSearching) {
+                document.getElementById('search-status').innerText = 'UNIVERSAL FEED (LIVE):';
+                renderDiscoveryFeed();
+            }
+        }
+        
+        function clearSearch() {
+            document.getElementById('search-input').value = "";
+            isSearching = false;
+            document.getElementById('search-status').innerText = 'UNIVERSAL FEED (LIVE):';
+            renderDiscoveryFeed();
+        }
+
+        function renderDiscoveryFeed() {
+            // Render the global 'events' array into the search-results div
+            document.getElementById('search-results').innerHTML = events.map(generatePostHTML).join('');
+        }
         
         function handleSearch() {
             const term = document.getElementById('search-input').value.trim();
             if (!term) return;
             
+            isSearching = true; // Set flag to stop auto-updating with global feed
+            document.getElementById('search-status').innerText = 'SEARCH RESULTS:';
             document.getElementById('search-results').innerHTML = '<div style="padding:10px;text-align:center;opacity:0.6;">Searching decentralized network...</div>';
-            searchEvents = []; // Reset results
+            searchEvents = []; 
             
             // 1. Check if NPUB
             if (term.startsWith('npub1')) {
                 try {
                     const decoded = window.NostrTools.nip19.decode(term);
                     const pubkey = decoded.data;
-                    // Search Profile (Kind 0) and Notes (Kind 1)
                     const f1 = { kinds: [0], authors: [pubkey], limit: 1 };
                     const f2 = { kinds: [1], authors: [pubkey], limit: 20 };
                     Object.values(sockets).forEach(ws => {
@@ -529,20 +551,14 @@
                 } catch(e) { console.error("Invalid NPUB", e); }
             }
 
-            // 2. Generic Search (@User, #Tag, Text)
+            // 2. Generic Search
             const filters = [];
-            
             if (term.startsWith('#')) {
-                // Hashtag search
                 filters.push({ kinds: [1], '#t': [term.substring(1)], limit: 50 });
             } else {
-                // NIP-50 Text Search (supported by relays like relay.nostr.band, search.nos.today)
                 let q = term;
                 if (q.startsWith('@')) q = q.substring(1);
-                
-                // Search Content (Kind 1)
                 filters.push({ kinds: [1], search: q, limit: 20 });
-                // Search Profiles (Kind 0)
                 filters.push({ kinds: [0], search: q, limit: 10 });
             }
 
@@ -557,7 +573,7 @@
             if (searchEvents.some(e => e.id === ev.id)) return;
             searchEvents.push(ev);
             
-            // SORT: Kind 0 (Profiles) first, then by time
+            // Sort Profiles first, then recent notes
             searchEvents.sort((a,b) => {
                 if(a.kind === 0 && b.kind !== 0) return -1;
                 if(b.kind === 0 && a.kind !== 0) return 1;
@@ -575,7 +591,6 @@
         function generateProfileCardHTML(ev) {
             let meta = {};
             try { meta = JSON.parse(ev.content); } catch(e) {}
-            // Update global profile cache while we are at it
             if(!profiles[ev.pubkey]) initProfileData(ev.pubkey);
             profiles[ev.pubkey].meta = meta;
 
@@ -976,10 +991,42 @@
         
         function handleContacts(ev) { if(ev.kind===3) { const pTags = ev.tags.filter(t=>t[0]==='p').map(t=>t[1]); myContacts = new Set(pTags); if(currentViewedProfile) renderUserProfileHeader(currentViewedProfile); } }
         function handleGlobalEvent(ev) { if(processedIds.has(ev.id)) return; processedIds.add(ev.id); fetchProfileIfNeeded(ev.pubkey); incomingBuffer.push(ev); }
-        setInterval(() => { if(incomingBuffer.length===0) return; incomingBuffer.sort((a,b)=>b.created_at-a.created_at); if(events.length>=25) { pendingEvents=[...incomingBuffer,...pendingEvents]; updateNewButton(); } else { events=[...incomingBuffer,...events]; events.sort((a,b)=>b.created_at-a.created_at); renderGlobalFeed(); } incomingBuffer=[]; }, 1500);
+        
+        // BUFFER PROCESSOR & LIVE FEED UPDATER
+        setInterval(() => { 
+            if(incomingBuffer.length===0) return; 
+            incomingBuffer.sort((a,b)=>b.created_at-a.created_at); 
+            if(events.length>=25) { 
+                pendingEvents=[...incomingBuffer,...pendingEvents]; 
+                updateNewButton(); 
+            } else { 
+                events=[...incomingBuffer,...events]; 
+                events.sort((a,b)=>b.created_at-a.created_at); 
+                renderGlobalFeed(); 
+                
+                // ALSO UPDATE SEARCH TAB IF LIVE
+                if (!document.getElementById('panel-search').classList.contains('hidden') && !isSearching) {
+                    renderDiscoveryFeed();
+                }
+            } 
+            incomingBuffer=[]; 
+        }, 1500);
+
         function fetchProfileIfNeeded(pubkey) { if(!profiles[pubkey] && !requestedProfiles.has(pubkey)) { requestedProfiles.add(pubkey); Object.values(sockets).forEach(s => { if(s.readyState===1) s.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds:[0], authors:[pubkey], limit:1 }])); }); } }
         function updateNewButton() { const b = document.getElementById('new-btn'); b.classList.toggle('hidden', pendingEvents.length===0); b.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; }
-        function mergeQueue() { events = [...pendingEvents, ...events].slice(0, 100); pendingEvents = []; renderGlobalFeed(); updateNewButton(); window.scrollTo(0,0); }
+        
+        function mergeQueue() { 
+            events = [...pendingEvents, ...events].slice(0, 100); 
+            pendingEvents = []; 
+            renderGlobalFeed(); 
+            // Also update search tab if open and live
+            if (!document.getElementById('panel-search').classList.contains('hidden') && !isSearching) {
+                renderDiscoveryFeed();
+            }
+            updateNewButton(); 
+            window.scrollTo(0,0); 
+        }
+
         function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
         
         async function toggleFollow(pubkey) { if(!myPubKey) return alert("Login required"); if(myContacts.has(pubkey)) myContacts.delete(pubkey); else myContacts.add(pubkey); renderUserProfileHeader(pubkey); const tags = Array.from(myContacts).map(p => ['p', p]); const event = { kind: 3, created_at: Math.floor(Date.now()/1000), tags: tags, content: "", pubkey: myPubKey }; await signAndBroadcast(event); }
