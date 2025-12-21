@@ -305,36 +305,37 @@
             color: var(--bg-color);
         }
 
-        /* NPUB COPY BOX STYLE */
+        /* NPUB COPY BOX STYLE - THEME AWARE */
         .npub-wrapper {
-            background: #262626; 
-            border-radius: 8px;
+            background: var(--input-bg); /* Matches Theme */
+            border: 1px solid var(--post-border); /* Matches Theme */
+            border-radius: 20px; /* Pill Shape */
             padding: 8px 12px;
-            display: inline-flex; /* Changed to inline-flex to center nicely */
+            display: inline-flex;
             align-items: center;
             justify-content: space-between;
-            margin: 5px auto 15px auto; /* Centered with margin */
-            width: 100%; /* Full width in container */
-            max-width: 320px; /* Limit max width */
+            margin: 5px auto 15px auto;
+            width: 100%;
+            max-width: 380px; /* A bit wider for full npub */
             cursor: pointer;
-            border: 1px solid var(--post-border);
             user-select: all;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .npub-text {
             font-family: monospace;
-            font-size: 0.85em;
-            color: #e0e0e0;
+            font-size: 0.75em; /* Smaller font to fit full npub */
+            color: var(--text-color); /* Matches Theme */
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            word-break: break-all; /* Ensure long string wraps or fits */
+            white-space: normal;
             margin-right: 10px;
             flex-grow: 1;
-            text-align: left;
+            text-align: center;
         }
         .copy-icon-svg {
             width: 16px;
             height: 16px;
-            fill: #aaa;
+            fill: var(--text-color); /* Matches Theme */
             flex-shrink: 0;
         }
 
@@ -839,6 +840,17 @@
                     <button class="secondary" onclick="toggleProfileEditor()">[ EDIT PROFILE ]</button>
                 </div>
 
+                <div id="dynamic-profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
+                    <label>Name:</label><input type="text" id="p-display-name" placeholder="Display Name">
+                    <label>Bio:</label><textarea id="p-about" rows="3"></textarea>
+                    <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
+                    <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
+                    <label style="color:#3498db">Verified Address (NIP-05):</label><input type="text" id="p-nip05" placeholder="name@domain.com">
+                    <label>Picture URL:</label><input type="text" id="p-picture">
+                    <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
+                    <button class="small secondary" onclick="toggleProfileEditor()" style="width:100%; margin-top:5px; margin-left:0;">CANCEL</button>
+                </div>
+
                 <div class="profile-stats-row">
                     <div id="my-tab-following" class="stat-box" onclick="switchMyTab('following')">[ FOLLOWING <span id="my-cnt-following">${profiles[myPubKey].following.size}</span> ]</div>
                     <div id="my-tab-followers" class="stat-box" onclick="switchMyTab('followers')">[ FOLLOWERS <span id="my-cnt-followers">${profiles[myPubKey].followers.size}</span> ]</div>
@@ -908,7 +920,6 @@
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || pubkey.substring(0,8)}</h2>
                 ${p.nip05 ? `<div style="font-size:0.8em; color:#3498db; margin-bottom:5px;">✓ ${p.nip05}</div>` : ''}
-
                 <div class="npub-wrapper" onclick="copyToClipboard('${npub}')">
                     <div class="npub-text">${npub}</div>
                     <svg class="copy-icon-svg" viewBox="0 0 24 24">
