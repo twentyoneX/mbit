@@ -108,6 +108,7 @@
             padding: 0;
             margin: 0;
             cursor: pointer;
+            width: 100%;
         }
         input[type="range"]::-webkit-slider-runnable-track {
             background: var(--post-border);
@@ -119,6 +120,18 @@
             height: 20px;
             width: 20px;
             margin-top: -8px;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-track {
+            background: var(--post-border);
+            height: 4px;
+        }
+        input[type="range"]::-moz-range-thumb {
+            appearance: none;
+            background: var(--btn-bg);
+            height: 20px;
+            width: 20px;
+            border: none;
             border-radius: 50%;
         }
 
@@ -374,7 +387,7 @@
             margin-bottom: 15px;
         }
 
-        /* STICKY FOOTER WITH ICONS */
+        /* STICKY FOOTER UPDATED LAYOUT */
         .sticky-footer {
             position: fixed;
             bottom: 0;
@@ -383,28 +396,35 @@
             background-color: var(--footer-bg);
             border-top: 1px solid var(--border-color);
             display: flex;
-            justify-content: space-around; /* Even spacing */
+            justify-content: space-between; /* Ensures equal spacing */
             align-items: center;
-            padding: 10px 0;
+            padding: 0;
+            height: 60px; /* Fixed height */
             z-index: 1000;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
         }
+        
         .footer-item {
+            flex: 1; /* Each item takes equal width (25%) */
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
             color: var(--text-color);
             opacity: 0.7;
             transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 5px;
         }
-        .footer-item:hover { opacity: 1; transform: scale(1.1); text-shadow: var(--glow); }
+        
+        .footer-item:hover { 
+            opacity: 1; 
+            background-color: rgba(255,255,255,0.05); /* Subtle highlight */
+        }
         
         .footer-icon-svg {
-            width: 24px;
-            height: 24px;
-            fill: currentColor;
+            width: 28px;
+            height: 28px;
+            fill: currentColor; /* Matches theme text color */
         }
 
         .notif-item { 
@@ -938,6 +958,7 @@
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || pubkey.substring(0,8)}</h2>
                 ${p.nip05 ? `<div style="font-size:0.8em; color:#3498db; margin-bottom:5px;">✓ ${p.nip05}</div>` : ''}
+
                 <div class="npub-wrapper" onclick="copyToClipboard('${npub}')">
                     <div class="npub-text">${npub}</div>
                     <svg class="copy-icon-svg" viewBox="0 0 24 24">
@@ -1219,43 +1240,17 @@
         function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
         function fetchProfile(pubkey) { Object.values(sockets).forEach(ws => ws.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]))); }
 
-        // FIXED EXTENSION LOGIN
-        async function loginExtension() {
-            if (typeof window.nostr === 'undefined') {
-                // Wait briefly in case injection is slow
-                await new Promise(r => setTimeout(r, 500));
-                if (typeof window.nostr === 'undefined') return alert("No Nostr extension found (Alby, nos2x, etc).");
-            }
-            try {
-                const pubkey = await window.nostr.getPublicKey();
-                localStorage.setItem('nostr_pubkey', pubkey);
-                localStorage.setItem('nostr_mode', 'extension');
-                location.reload();
-            } catch (err) { 
-                alert("Login failed or cancelled."); 
-            }
-        }
-
-        function openComposer() { if(!myPubKey) return alert("Please Login First"); document.getElementById('composer-modal').classList.remove('hidden'); document.getElementById('msg-input').focus(); }
-        function closeComposer() { document.getElementById('composer-modal').classList.add('hidden'); cancelReply(); }
-        function toggleNsfw() { filterSettings.hideNsfw = document.getElementById('nsfw-toggle').checked; saveFilters(); }
-        function addFilterTag() { const val = document.getElementById('filter-input').value.trim().toLowerCase(); if(val && !filterSettings.blockedTags.includes(val)) { filterSettings.blockedTags.push(val); document.getElementById('filter-input').value = ""; saveFilters(); renderFilterList(); } }
-        function removeFilterTag(tag) { filterSettings.blockedTags = filterSettings.blockedTags.filter(t => t !== tag); saveFilters(); renderFilterList(); }
-        function saveFilters() { localStorage.setItem('mbit_filters', JSON.stringify(filterSettings)); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); }
-        function renderFilterList() { document.getElementById('filter-list').innerHTML = filterSettings.blockedTags.map(tag => `<span class="filter-tag">#${tag} <span class="remove-tag" onclick="removeFilterTag('${tag}')">x</span></span>`).join(''); }
-        function isBlocked(ev) { if (!ev.tags) return false; const evTags = ev.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase()); if (filterSettings.hideNsfw && evTags.includes('nsfw')) return true; for (let blocked of filterSettings.blockedTags) { if (evTags.includes(blocked)) return true; } return false; }
-        
-        function doBookmark(id) { if(bookmarks.has(id)) { bookmarks.delete(id); alert("Bookmark Removed"); } else { bookmarks.add(id); alert("Saved to Bookmarks"); } localStorage.setItem('mbit_bookmarks', JSON.stringify([...bookmarks])); if(!document.getElementById('panel-bookmarks').classList.contains('hidden')) openBookmarks(); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); }
-        function openBookmarks() { togglePanel('panel-bookmarks'); const ids = [...bookmarks]; if(ids.length === 0) { document.getElementById('bookmarks-feed').innerHTML = "No bookmarks yet."; return; } document.getElementById('bookmarks-feed').innerHTML = "Loading saved posts..."; bookmarkEvents = []; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "bookmarks_sub", { kinds: [1], ids: ids }])); }); }
-        function handleBookmarkEvent(ev) { if(bookmarkEvents.some(e => e.id === ev.id)) return; bookmarkEvents.push(ev); bookmarkEvents.sort((a,b) => b.created_at - a.created_at); document.getElementById('bookmarks-feed').innerHTML = bookmarkEvents.map(generatePostHTML).join(''); fetchProfileIfNeeded(ev.pubkey); }
-        async function handleZap(lud16, pubkey) { if(!lud16) return alert("User has no Lightning address set."); const parts = lud16.split('@'); if(parts.length !== 2) return window.open(`lightning:${lud16}`); const amount = prompt(`Zap ${lud16} (sats):`, "21"); if(!amount) return; try { const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`; const res = await fetch(url); const data = await res.json(); if(data.callback) { const millisats = parseInt(amount) * 1000; if(millisats < data.minSendable || millisats > data.maxSendable) return alert(`Amount out of range.`); const cbUrl = `${data.callback}?amount=${millisats}`; const cbRes = await fetch(cbUrl); const cbData = await cbRes.json(); if(cbData.pr) window.location.href = `lightning:${cbData.pr}`; } } catch(e) { if(confirm(`Auto-zap failed. Open wallet manually?`)) window.location.href = `lightning:${lud16}`; } }
-
-        function processEventStats(ev) { if (!ev || !ev.tags) return; const eTags = ev.tags.filter(t => t[0] === 'e'); eTags.forEach(t => { const targetId = t[1]; if (!eventStats[targetId]) eventStats[targetId] = { reply:0, repost:0, like:0, zap:0 }; if (ev.kind === 1) eventStats[targetId].reply++; if (ev.kind === 6) eventStats[targetId].repost++; if (ev.kind === 7) eventStats[targetId].like++; if (ev.kind === 9735) eventStats[targetId].zap++; updateCountDOM(targetId, 'reply'); updateCountDOM(targetId, 'repost'); updateCountDOM(targetId, 'like'); updateCountDOM(targetId, 'zap'); }); }
-        function updateCountDOM(id, type) { const el = document.getElementById(`s-${type}-${id}`); if (el && eventStats[id]) { el.innerText = eventStats[id][type]; } }
-        async function doLike(id, pubkey) { if(!myPubKey) return alert("Login first"); likedPosts.add(id); localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts])); if(!eventStats[id]) eventStats[id] = { reply:0, repost:0, like:0, zap:0 }; eventStats[id].like++; updateCountDOM(id, 'like'); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; await signAndBroadcast(event); }
-
-        function generatePostHTML(ev) { if (isBlocked(ev)) return ''; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)}; let content = ev.content; if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.display_name || p.name || ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button> <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button> </div> </div>`; }
-        function parseContent(text) { if(!text) return ""; let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); const nostrRegex = /nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g; content = content.replace(nostrRegex, (match, id) => { let decodedId = id; try { const decoded = window.NostrTools.nip19.decode(id); decodedId = decoded.data.id || decoded.data; } catch(e){} const cached = events.find(e => e.id === decodedId) || myEvents.find(e => e.id === decodedId); if(cached) { const p = (profiles[cached.pubkey] && profiles[cached.pubkey].meta) ? profiles[cached.pubkey].meta : {name:cached.pubkey.substring(0,6)}; return `<div class="quote-card"><div class="meta"><b>${p.name}</b></div><div>${parseContent(cached.content)}</div></div>`; } else { return `<a href="#" class="hashtag">[ Quoted Note: ${id.substring(0,10)}... ]</a>`; } }); const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi; content = content.replace(videoRegex, (url) => `<video controls class="media-video"><source src="${url}"></video>`); const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi; content = content.replace(imgRegex, (url) => `<a href="${url}" target="_blank"><img src="${url}" class="media-img" loading="lazy"></a>`); const hashtagRegex = /#(\w+)/g; content = content.replace(hashtagRegex, (match, tag) => `<span class="hashtag" onclick="alert('Tag: #${tag}')">#${tag}</span>`); return content; }
+        function openSearch() { togglePanel('panel-search'); document.getElementById('search-input').value = ""; document.getElementById('search-status').innerText = "UNIVERSAL FEED (LIVE):"; document.getElementById('search-results').innerHTML = "Loading global stream..."; searchEvents = []; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", { kinds: [1], limit: 20 }])); }); }
+        function handleSearch() { const q = document.getElementById('search-input').value.trim(); if(!q) return openSearch(); document.getElementById('search-status').innerText = `RESULTS FOR: "${q}"`; document.getElementById('search-results').innerHTML = "Searching..."; searchEvents = []; let filter = { kinds: [1], limit: 20 }; if(q.startsWith('npub')) { try { const decoded = window.NostrTools.nip19.decode(q).data; viewProfile(decoded); return; } catch(e) { alert("Invalid npub"); return; } } else if (q.startsWith('#')) { filter['#t'] = [q.substring(1)]; } else { filter['search'] = q; } Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter])); }); }
+        function handleSearchEvent(ev) { if(searchEvents.some(e => e.id === ev.id)) return; searchEvents.push(ev); searchEvents.sort((a,b) => b.created_at - a.created_at); document.getElementById('search-results').innerHTML = searchEvents.map(generatePostHTML).join(''); fetchProfileIfNeeded(ev.pubkey); }
+        function openNotifications() { togglePanel('panel-notifications'); refreshNotifications(); }
+        function switchNotifTab(tab) { currentNotifTab = tab; document.getElementById('ntab-all').className = tab === 'all' ? 'tab-btn active' : 'tab-btn'; document.getElementById('ntab-zaps').className = tab === 'zaps' ? 'tab-btn active' : 'tab-btn'; document.getElementById('ntab-mentions').className = tab === 'mentions' ? 'tab-btn active' : 'tab-btn'; renderNotifications(); }
+        function refreshNotifications() { if(!myPubKey) return document.getElementById('notifications-feed').innerHTML = "Login required."; notifEvents = []; document.getElementById('notifications-feed').innerHTML = "Loading..."; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) { ws.send(JSON.stringify(["REQ", "notif_sub", { kinds: [1, 6, 7, 9735], '#p': [myPubKey], limit: 50 }])); } }); }
+        function handleNotifEvent(ev) { if(notifEvents.some(e => e.id === ev.id)) return; notifEvents.push(ev); notifEvents.sort((a,b) => b.created_at - a.created_at); renderNotifications(); if(ev.kind === 9735) { try { const desc = ev.tags.find(t => t[0] === 'description'); if(desc) { const request = JSON.parse(desc[1]); fetchProfileIfNeeded(request.pubkey); } else { fetchProfileIfNeeded(ev.pubkey); } } catch(e) { fetchProfileIfNeeded(ev.pubkey); } } else { fetchProfileIfNeeded(ev.pubkey); } }
+        function renderNotifications() { let list = notifEvents; if (currentNotifTab === 'zaps') { list = notifEvents.filter(ev => ev.kind === 9735); } else if (currentNotifTab === 'mentions') { list = notifEvents.filter(ev => ev.kind === 1 || ev.kind === 6); } if (list.length === 0) { document.getElementById('notifications-feed').innerHTML = "No notifications found."; return; } const html = list.map(ev => { let senderPub = ev.pubkey; if(ev.kind === 9735) { try { const desc = ev.tags.find(t => t[0] === 'description'); if(desc) senderPub = JSON.parse(desc[1]).pubkey; } catch(e){} } const p = (profiles[senderPub] && profiles[senderPub].meta) ? profiles[senderPub].meta : {name:senderPub.substring(0,6)}; const avatar = p.picture ? `<img src="${p.picture}" class="avatar">` : `<div class="avatar" style="background:#333"></div>`; let icon = ''; let actionText = ''; let content = ''; if (ev.kind === 7) { icon = '<span style="color:#e74c3c">❤️</span>'; actionText = 'liked your note'; content = ''; } else if (ev.kind === 1) { icon = '<span style="color:#3498db">↩️</span>'; actionText = 'replied/mentioned'; content = parseContent(ev.content); } else if (ev.kind === 6) { icon = '<span style="color:#2ecc71">🔄</span>'; actionText = 'reposted'; try { content = parseContent(JSON.parse(ev.content).content || ""); } catch(e){ content = "Reposted content"; } } else if (ev.kind === 9735) { icon = '<span style="color:#f1c40f">⚡</span>'; actionText = 'ZAPPED YOU'; content = ''; } const time = new Date(ev.created_at * 1000).toLocaleString(); let clickAction = `viewProfile('${senderPub}')`; if (ev.kind === 1 || ev.kind === 6) { clickAction = `viewThread('${ev.id}')`; } return `<div class="notif-item" onclick="${clickAction}" style="cursor:pointer"> <div class="notif-icon">${icon}</div> <div style="flex-grow:1"> <div style="display:flex; align-items:center; margin-bottom:5px;"> ${avatar} <div> <span style="font-weight:bold">${p.name}</span> <span style="opacity:0.7; font-size:0.8em"> ${actionText}</span> </div> </div> <div style="opacity:0.9; font-size:0.9em">${content}</div> <div style="font-size:0.7em; opacity:0.5; margin-top:5px;">${time}</div> </div> </div>`; }).join(''); document.getElementById('notifications-feed').innerHTML = html; }
+        function viewThread(eventId) { let ev = events.find(e => e.id === eventId) || myEvents.find(e => e.id === eventId) || userEvents.find(e => e.id === eventId) || searchEvents.find(e => e.id === eventId) || notifEvents.find(e => e.id === eventId) || bookmarkEvents.find(e => e.id === eventId); if(!ev) return alert("Note not found in memory."); ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container', 'panel-bookmarks'].forEach(p => document.getElementById(p).classList.add('hidden')); document.getElementById('panel-thread').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' }); currentThreadId = eventId; threadEvents = []; document.getElementById('thread-replies-container').innerHTML = "Loading replies..."; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name:ev.pubkey.substring(0,6)}; let content = ev.content; const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; const html = ` <div class="thread-parent"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.name}</span> </div> <div class="content" style="font-size: 1.2em;">${parseContent(content)}</div> <div style="font-size:0.8em; opacity:0.6; margin-top:5px;">${new Date(ev.created_at*1000).toLocaleString()}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button> <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button> </div> </div>`; document.getElementById('thread-parent-container').innerHTML = html; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], '#e': [eventId], limit: 50 }])); }); }
+        function handleThreadEvent(ev) { if(threadEvents.some(e => e.id === ev.id)) return; threadEvents.push(ev); threadEvents.sort((a,b) => a.created_at - b.created_at); renderThreadReplies(); fetchProfileIfNeeded(ev.pubkey); }
+        function renderThreadReplies() { if(threadEvents.length === 0) { document.getElementById('thread-replies-container').innerHTML = "No replies yet."; return; } const html = threadEvents.map(ev => generatePostHTML(ev)).join(''); document.getElementById('thread-replies-container').innerHTML = html; }
 
         if (myPubKey) { document.getElementById('login-form').classList.add('hidden'); document.getElementById('user-info').classList.remove('hidden'); document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(myPubKey); if (myPrivKey) document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey); else document.getElementById('nsec-display-container').classList.add('hidden'); }
         savedRelays.forEach(connectToRelay);
