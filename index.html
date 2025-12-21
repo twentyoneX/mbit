@@ -25,8 +25,6 @@
             --fab-bg: #ffffff;
             --fab-text: #000000;
             --quote-bg: #111;
-            
-            /* Font Size Variable */
             --base-font-size: 16px; 
         }
 
@@ -79,7 +77,6 @@
         }
 
         header { text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px; }
-        
         h1 { font-size: 2.5em; margin: 0; text-shadow: var(--glow); text-transform: lowercase; }
 
         .nav-bar { margin-top: 10px; font-size: 0.9em; user-select: none; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
@@ -91,263 +88,90 @@
 
         .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
 
-        /* Inputs & Buttons - Force Inheritance */
         input, textarea, select, button {
             background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color);
-            font-family: inherit; 
-            font-size: inherit; 
-            padding: 10px; width: 100%; margin-bottom: 10px; display: block;
+            font-family: inherit; font-size: inherit; padding: 10px; width: 100%; margin-bottom: 10px; display: block;
         }
 
-        /* Slider Specific Style */
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            background: transparent;
-            border: none;
-            padding: 0;
-            margin: 0;
-            cursor: pointer;
-        }
-        input[type="range"]::-webkit-slider-runnable-track {
-            background: var(--post-border);
-            height: 4px;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            background: var(--btn-bg);
-            height: 20px;
-            width: 20px;
-            margin-top: -8px;
-            border-radius: 50%;
-        }
+        /* Slider */
+        input[type="range"] { -webkit-appearance: none; background: transparent; border: none; padding: 0; margin: 0; cursor: pointer; }
+        input[type="range"]::-webkit-slider-runnable-track { background: var(--post-border); height: 4px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; background: var(--btn-bg); height: 20px; width: 20px; margin-top: -8px; border-radius: 50%; }
 
-        button {
-            background: var(--btn-bg); color: var(--btn-text); border: none; padding: 10px 20px;
-            font-weight: bold; cursor: pointer; text-transform: uppercase;
-        }
+        button { background: var(--btn-bg); color: var(--btn-text); border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         button:hover { opacity: 0.8; box-shadow: var(--glow); }
         button.small { padding: 5px 10px; font-size: 0.8em; margin-left: 5px; }
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
-        
-        /* POSTS */
+
+        /* Relay Item */
+        .relay-item { display: flex; align-items: center; justify-content: space-between; background: var(--input-bg); border: 1px solid var(--post-border); padding: 8px; margin-bottom: 5px; gap: 10px; }
+        .relay-content { display: flex; align-items: center; overflow: hidden; white-space: nowrap; flex-grow: 1; }
+        .relay-url { font-size: 0.8em; margin-left: 10px; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
+
+        /* Posts */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
-        
         .thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
-        
         .meta { font-size: 0.75em; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
         .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; }
         .username-link { font-weight: bold; color: var(--text-color); text-decoration: underline; }
         .content { font-size: 1em; line-height: 1.4; word-wrap: break-word; cursor: pointer; }
-        .content:hover { opacity: 0.9; }
-
         .media-img, .media-video { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
         .hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
 
-        .quote-card {
-            border: 1px solid var(--post-border);
-            background: var(--quote-bg);
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            font-size: 0.9em;
-        }
+        /* Quote */
+        .quote-card { border: 1px solid var(--post-border); background: var(--quote-bg); padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 0.9em; }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
-        /* ACTION BUTTONS */
-        .actions { 
-            margin-top: 15px; 
-            font-size: 0.8em; 
-            display: flex; 
-            flex-direction: row; 
-            flex-wrap: wrap; 
-            gap: 10px; 
-            border-top: 1px dotted var(--post-border); 
-            padding-top: 12px; 
-        }
-
-        .act-btn { 
-            width: auto !important; 
-            margin-bottom: 0 !important;
-            flex-grow: 1;
-            
-            background: transparent; 
-            color: var(--text-color); 
-            border: 1.5px solid var(--text-color); 
-            padding: 6px 12px; 
-            cursor: pointer; 
-            font-family: inherit; 
-            font-size: 0.9em; 
-            font-weight: bold;
-            text-transform: uppercase;
-            border-radius: 0;
-            transition: 0.2s;
-            white-space: nowrap;
-            text-align: center;
-        }
-        
+        /* Actions */
+        .actions { margin-top: 15px; font-size: 0.8em; display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 12px; }
+        .act-btn { width: auto !important; margin-bottom: 0 !important; flex-grow: 1; background: transparent; color: var(--text-color); border: 1.5px solid var(--text-color); padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 0.9em; font-weight: bold; text-transform: uppercase; border-radius: 0; transition: 0.2s; white-space: nowrap; text-align: center; }
         .act-btn:hover { background: var(--text-color); color: var(--bg-color); }
         .act-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; }
-        
-        /* ZAP BUTTON MODS - BITCOIN ORANGE */
-        .zap-btn { 
-            color: #F7931A; /* Bitcoin Orange */
-            border-color: var(--text-color) !important; 
-        }
-        .zap-btn:hover { 
-            background: #F7931A; 
-            color: #fff; 
-            border-color: #F7931A !important;
-        }
-        
-        /* BOOKMARK BUTTON MODS - THEME COLOR */
-        .bookmark-btn { 
-            color: var(--text-color); 
-            border-color: var(--text-color) !important;
-        }
-        .bookmark-btn:hover { 
-            background: var(--text-color); 
-            color: var(--bg-color); 
-        }
-        .bookmark-btn.active { 
-            background: var(--text-color) !important; 
-            color: var(--bg-color) !important; 
-        }
-
-        /* Support Button override */
+        .zap-btn { color: #F7931A; border-color: var(--text-color) !important; }
+        .zap-btn:hover { background: #F7931A; color: #fff; border-color: #F7931A !important; }
+        .bookmark-btn { color: var(--text-color); border-color: var(--text-color) !important; }
+        .bookmark-btn:hover { background: var(--text-color); color: var(--bg-color); }
+        .bookmark-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; }
         button.zap-active { background: #F7931A; color: #fff; border: 1px solid #F7931A; }
 
-        #new-btn {
-            width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
-            font-weight: bold; text-align: center; cursor: pointer;
-            margin-bottom: 20px; border: 2px solid var(--border-color); animation: pulse 2s infinite;
-        }
+        #new-btn { width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text); font-weight: bold; text-align: center; cursor: pointer; margin-bottom: 20px; border: 2px solid var(--border-color); animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         .p-img-large { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border-color); margin-bottom: 15px; object-fit: cover; }
         .hidden { display: none !important; }
+        .profile-detail-box { margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center; }
 
-        .profile-detail-box {
-            margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
-        }
-
-        .profile-tabs {
-            display: flex;
-            border-bottom: 1px solid var(--post-border);
-            margin-bottom: 15px;
-        }
-        .tab-btn {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 12px;
-            cursor: pointer;
-            color: var(--meta-color);
-            border-bottom: 2px solid transparent;
-            font-size: 0.9em;
-            text-transform: uppercase;
-        }
+        /* TABS (Updated for scrolling) */
+        .profile-tabs { display: flex; border-bottom: 1px solid var(--post-border); margin-bottom: 15px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        /* Hide scrollbar for tabs */
+        .profile-tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { flex: 0 0 auto; /* Don't shrink */ background: transparent; border: none; padding: 12px 20px; cursor: pointer; color: var(--meta-color); border-bottom: 2px solid transparent; font-size: 0.9em; text-transform: uppercase; }
         .tab-btn:hover { color: var(--text-color); }
-        .tab-btn.active {
-            color: var(--text-color);
-            border-bottom: 2px solid var(--text-color);
-            font-weight: bold;
-        }
+        .tab-btn.active { color: var(--text-color); border-bottom: 2px solid var(--text-color); font-weight: bold; }
 
-        .sticky-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: var(--footer-bg);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            padding: 15px 0;
-            z-index: 1000;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
-            font-family: inherit;
-        }
-        .footer-item {
-            font-size: 0.9em;
-            cursor: pointer;
-            text-align: center;
-            transition: 0.3s;
-            color: var(--text-color);
-            text-decoration: none;
-            opacity: 0.7;
-        }
+        /* LIST ITEM FOR FOLLOWERS/RELAYS */
+        .list-item { padding: 10px; border-bottom: 1px solid var(--post-border); display: flex; align-items: center; gap: 10px; }
+        .list-item-content { font-size: 0.9em; word-break: break-all; }
+
+        .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--footer-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 15px; padding: 15px 0; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); font-family: inherit; }
+        .footer-item { font-size: 0.9em; cursor: pointer; text-align: center; transition: 0.3s; color: var(--text-color); text-decoration: none; opacity: 0.7; }
         .footer-item:hover { opacity: 1; text-decoration: underline; text-shadow: var(--glow); }
 
-        .notif-item { 
-            padding: 12px; 
-            border-bottom: 1px solid var(--post-border); 
-            font-size: 0.9em; 
-            display: flex;
-            align-items: flex-start;
-        }
+        .notif-item { padding: 12px; border-bottom: 1px solid var(--post-border); font-size: 0.9em; display: flex; align-items: flex-start; }
         .notif-icon { margin-right: 10px; font-size: 1.2em; min-width: 25px; }
 
         .profile-actions { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .filter-tag { display: inline-flex; align-items: center; background: var(--tag-bg); padding: 2px 8px; margin: 2px; font-size: 0.8em; border-radius: 4px; }
+        .remove-tag { margin-left: 5px; cursor: pointer; color: #ff4141; font-weight: bold; }
 
-        .filter-tag {
-            display: inline-flex; align-items: center; 
-            background: var(--tag-bg); padding: 2px 8px; 
-            margin: 2px; font-size: 0.8em; border-radius: 4px;
-        }
-        .remove-tag {
-            margin-left: 5px; cursor: pointer; color: #ff4141; font-weight: bold;
-        }
-
-        .fab-btn {
-            position: fixed;
-            bottom: 70px;
-            right: 20px;
-            width: 60px; height: 60px;
-            background: var(--fab-bg);
-            color: var(--fab-text);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2rem; font-weight: bold;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            cursor: pointer;
-            z-index: 1500;
-            transition: 0.2s;
-        }
+        .fab-btn { position: fixed; bottom: 70px; right: 20px; width: 60px; height: 60px; background: var(--fab-bg); color: var(--fab-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; box-shadow: 0 0 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 1500; transition: 0.2s; }
         .fab-btn:hover { transform: scale(1.1); box-shadow: var(--glow); }
 
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 2000;
-            display: flex; 
-            justify-content: center; 
-            align-items: flex-start; 
-            padding-top: 100px; 
-            backdrop-filter: blur(3px); 
-        }
-        
-        .modal-content {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            padding: 20px;
-            width: 90%; 
-            max-width: 600px; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-            animation: zoomIn 0.2s;
-        }
-
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; justify-content: center; align-items: flex-start; padding-top: 100px; backdrop-filter: blur(3px); }
+        .modal-content { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; width: 90%; max-width: 600px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); animation: zoomIn 0.2s; }
         @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        #reply-context-bar {
-            background-color: var(--reply-indicator);
-            padding: 10px; margin-bottom: 10px; font-size: 0.8em;
-            display: flex; justify-content: space-between; align-items: center;
-            border-left: 3px solid var(--text-color);
-        }
-
+        #reply-context-bar { background-color: var(--reply-indicator); padding: 10px; margin-bottom: 10px; font-size: 0.8em; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--text-color); }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -385,7 +209,6 @@
             <div id="login-form">
                 <button onclick="loginExtension()" style="width:100%; background:#9b59b6; color:white; margin-bottom:5px;">⚡ LOGIN WITH EXTENSION</button>
                 <div style="font-size: 0.8em; color: var(--meta-color); margin-bottom: 15px; text-align: center; opacity: 0.8;">(Recommended for security)</div>
-                
                 <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR ---</div>
                 <input type="text" id="privkey-input" placeholder="paste private key">
                 <button onclick="login()" style="width:100%;">Login</button>
@@ -410,7 +233,6 @@
             <div id="my-profile-header" style="text-align:center;">
                 <div id="my-p-img"></div>
                 <h2 id="my-p-name">Unknown</h2>
-                
                 <div class="profile-detail-box">
                     <p id="my-p-about" style="opacity:0.8; font-style:italic; margin: 5px 0;">(No bio)</p>
                     <a id="my-p-website" href="" target="_blank" class="hidden" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;"></a>
@@ -418,9 +240,7 @@
                         ⚡ <span id="my-p-lud16"></span>
                     </div>
                 </div>
-
                 <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
-                
                 <div id="profile-editor" class="hidden" style="text-align:left; margin-top:15px; border-top:1px dotted var(--border-color); padding-top:10px;">
                     <label>Name:</label><input type="text" id="p-name">
                     <label>Bio:</label><input type="text" id="p-about">
@@ -435,7 +255,10 @@
             <!-- MY PROFILE TABS -->
             <div class="profile-tabs">
                 <button id="my-tab-notes" class="tab-btn active" onclick="switchMyTab('notes')">NOTES</button>
-                <button id="my-tab-replies" class="tab-btn" onclick="switchMyTab('replies')">NOTES & REPLIES</button>
+                <button id="my-tab-replies" class="tab-btn" onclick="switchMyTab('replies')">REPLIES</button>
+                <button id="my-tab-following" class="tab-btn" onclick="switchMyTab('following')">FOLLOWING <span id="my-cnt-following"></span></button>
+                <button id="my-tab-followers" class="tab-btn" onclick="switchMyTab('followers')">FOLLOWERS <span id="my-cnt-followers"></span></button>
+                <button id="my-tab-relays" class="tab-btn" onclick="switchMyTab('relays')">RELAYS <span id="my-cnt-relays"></span></button>
             </div>
 
             <div id="my-feed"></div>
@@ -449,7 +272,10 @@
             <!-- USER PROFILE TABS -->
             <div class="profile-tabs">
                 <button id="tab-notes" class="tab-btn active" onclick="switchUserTab('notes')">NOTES</button>
-                <button id="tab-replies" class="tab-btn" onclick="switchUserTab('replies')">NOTES & REPLIES</button>
+                <button id="tab-replies" class="tab-btn" onclick="switchUserTab('replies')">REPLIES</button>
+                <button id="tab-following" class="tab-btn" onclick="switchUserTab('following')">FOLLOWING <span id="u-cnt-following"></span></button>
+                <button id="tab-followers" class="tab-btn" onclick="switchUserTab('followers')">FOLLOWERS <span id="u-cnt-followers"></span></button>
+                <button id="tab-relays" class="tab-btn" onclick="switchUserTab('relays')">RELAYS <span id="u-cnt-relays"></span></button>
             </div>
             
             <div id="user-feed"></div>
@@ -464,7 +290,6 @@
                 <option value="matrix">Matrix Green</option>
                 <option value="light">Black on White</option>
             </select>
-            
             <br>
             <label>FONT SIZE:</label>
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px;">
@@ -472,9 +297,7 @@
                 <input type="range" id="font-size-slider" min="12" max="24" step="1" value="16" oninput="changeFontSize(this.value)" style="flex-grow: 1;">
                 <span style="font-size: 1.2em; opacity: 0.7;">BIG</span>
             </div>
-
             <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
-            
             <h3>>> CONTENT FILTERS</h3>
             <div style="margin-bottom: 15px;">
                 <label style="display:flex; align-items:center; cursor:pointer;">
@@ -482,22 +305,18 @@
                     HIDE NOTES WITH #NSFW
                 </label>
             </div>
-            
             <label>BLOCK SPECIFIC HASHTAGS:</label>
             <div style="display:flex; gap:10px;">
                 <input type="text" id="filter-input" placeholder="e.g. politics" style="margin-bottom:0;">
                 <button onclick="addFilterTag()" style="width:auto;">BLOCK</button>
             </div>
             <div id="filter-list" style="margin-top:10px; min-height:20px;"></div>
-
             <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
-            
             <h3>>> SUPPORT</h3>
             <button class="zap-active" onclick="handleZap('itsmircea@walletofsatoshi.com', null)" style="width:100%; border-color:#F7931A;">
                 ⚡ DONATE TO DEV
             </button>
             <div style="text-align:center; font-size:0.8em; margin-top:5px; opacity:0.7; word-break: break-all;">itsmircea@walletofsatoshi.com</div>
-
             <br><br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
@@ -516,14 +335,11 @@
         <!-- 7. NOTIFICATIONS PANEL -->
         <div id="panel-notifications" class="dropdown-panel hidden">
             <h3>>> NOTIFICATIONS</h3>
-            
-            <!-- NOTIFICATION TABS -->
             <div class="profile-tabs">
                 <button id="ntab-all" class="tab-btn active" onclick="switchNotifTab('all')">ALL</button>
                 <button id="ntab-zaps" class="tab-btn" onclick="switchNotifTab('zaps')">ZAPS</button>
                 <button id="ntab-mentions" class="tab-btn" onclick="switchNotifTab('mentions')">MENTIONS</button>
             </div>
-
             <button class="small secondary" onclick="refreshNotifications()" style="margin-bottom:10px;">REFRESH</button>
             <div id="notifications-feed">Loading...</div>
         </div>
@@ -555,7 +371,7 @@
     <!-- FLOATING ACTION BUTTON -->
     <div class="fab-btn" onclick="openComposer()">+</div>
 
-    <!-- COMPOSER MODAL (POPUP) -->
+    <!-- COMPOSER MODAL -->
     <div id="composer-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div id="reply-context-bar" class="hidden">
@@ -583,22 +399,30 @@
 
     <script>
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
-        let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
-        let filterSettings = JSON.parse(localStorage.getItem('mbit_filters')) || { hideNsfw: false, blockedTags: [] };
+        
+        // SAFE LOADING OF LOCAL STORAGE
+        let savedRelays;
+        try { savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays; } catch(e) { savedRelays = defaultRelays; }
+        let filterSettings;
+        try { filterSettings = JSON.parse(localStorage.getItem('mbit_filters')) || { hideNsfw: false, blockedTags: [] }; } catch(e) { filterSettings = { hideNsfw: false, blockedTags: [] }; }
         
         const sockets = {};
         
         let events = [], incomingBuffer = [], pendingEvents = []; 
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [];
         let threadEvents = [], bookmarkEvents = [];
-        let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
-        let bookmarks = new Set(JSON.parse(localStorage.getItem('mbit_bookmarks')) || []);
+        let likedPosts = new Set();
+        try { likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []); } catch(e){}
+        let bookmarks = new Set();
+        try { bookmarks = new Set(JSON.parse(localStorage.getItem('mbit_bookmarks')) || []); } catch(e){}
         let myContacts = new Set(); 
         
-        // Counter Store
         let eventStats = {};
 
-        const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
+        // Profile Data Storage
+        // Structure: { pubkey: { meta: {}, following: Set(), followers: Set(), relays: [] } }
+        const profiles = {};
+        const processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
         
         let replyContext = null;
@@ -651,600 +475,89 @@
             currentThreadId = null;
         }
 
-        /* --- COMPOSER LOGIC --- */
-        function openComposer() {
-            if(!myPubKey) return alert("Please Login First");
-            document.getElementById('composer-modal').classList.remove('hidden');
-            document.getElementById('msg-input').focus();
+        // --- PROFILE LOGIC ---
+        function initProfileData(pubkey) {
+            if (!profiles[pubkey]) profiles[pubkey] = { meta: {}, following: new Set(), followers: new Set(), relays: [] };
+            if (!profiles[pubkey].following) profiles[pubkey].following = new Set();
+            if (!profiles[pubkey].followers) profiles[pubkey].followers = new Set();
+            if (!profiles[pubkey].relays) profiles[pubkey].relays = [];
         }
 
-        function closeComposer() {
-            document.getElementById('composer-modal').classList.add('hidden');
-            cancelReply();
-        }
-
-        /* --- FILTERING LOGIC --- */
-        function toggleNsfw() {
-            filterSettings.hideNsfw = document.getElementById('nsfw-toggle').checked;
-            saveFilters();
-        }
-
-        function addFilterTag() {
-            const val = document.getElementById('filter-input').value.trim().toLowerCase();
-            if(val && !filterSettings.blockedTags.includes(val)) {
-                filterSettings.blockedTags.push(val);
-                document.getElementById('filter-input').value = "";
-                saveFilters();
-                renderFilterList();
-            }
-        }
-
-        function removeFilterTag(tag) {
-            filterSettings.blockedTags = filterSettings.blockedTags.filter(t => t !== tag);
-            saveFilters();
-            renderFilterList();
-        }
-
-        function saveFilters() {
-            localStorage.setItem('mbit_filters', JSON.stringify(filterSettings));
-            if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
-        }
-
-        function renderFilterList() {
-            document.getElementById('filter-list').innerHTML = filterSettings.blockedTags.map(tag => 
-                `<span class="filter-tag">#${tag} <span class="remove-tag" onclick="removeFilterTag('${tag}')">x</span></span>`
-            ).join('');
-        }
-
-        function isBlocked(ev) {
-            const evTags = ev.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase());
-            if (filterSettings.hideNsfw && evTags.includes('nsfw')) return true;
-            for (let blocked of filterSettings.blockedTags) {
-                if (evTags.includes(blocked)) return true;
-            }
-            return false;
-        }
-
-        /* --- BOOKMARKS LOGIC --- */
-        function doBookmark(id) {
-            if(bookmarks.has(id)) {
-                bookmarks.delete(id);
-                alert("Bookmark Removed");
-            } else {
-                bookmarks.add(id);
-                alert("Saved to Bookmarks");
-            }
-            localStorage.setItem('mbit_bookmarks', JSON.stringify([...bookmarks]));
+        function loadMyHistory() { 
+            if (!myPubKey) return alert("Please login first.");
             
-            if(!document.getElementById('panel-bookmarks').classList.contains('hidden')) openBookmarks();
-            if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
-        }
+            document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">Scanning frequency...</div>';
+            initProfileData(myPubKey);
 
-        function openBookmarks() {
-            togglePanel('panel-bookmarks');
-            const ids = [...bookmarks];
-            if(ids.length === 0) {
-                document.getElementById('bookmarks-feed').innerHTML = "No bookmarks yet.";
-                return;
-            }
-            document.getElementById('bookmarks-feed').innerHTML = "Loading saved posts...";
-            bookmarkEvents = [];
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "bookmarks_sub", { kinds: [1], ids: ids }]));
-            });
-        }
-
-        function handleBookmarkEvent(ev) {
-            if(bookmarkEvents.some(e => e.id === ev.id)) return;
-            bookmarkEvents.push(ev);
-            bookmarkEvents.sort((a,b) => b.created_at - a.created_at);
-            document.getElementById('bookmarks-feed').innerHTML = bookmarkEvents.map(generatePostHTML).join('');
-            fetchProfileIfNeeded(ev.pubkey);
-        }
-
-        /* --- THREAD VIEW LOGIC --- */
-        function viewThread(eventId) {
-            let ev = events.find(e => e.id === eventId) || 
-                     myEvents.find(e => e.id === eventId) || 
-                     userEvents.find(e => e.id === eventId) || 
-                     searchEvents.find(e => e.id === eventId) ||
-                     notifEvents.find(e => e.id === eventId) || 
-                     bookmarkEvents.find(e => e.id === eventId);
-
-            if(!ev) return alert("Note not found in memory.");
-
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container', 'panel-bookmarks'].forEach(p => document.getElementById(p).classList.add('hidden'));
-            document.getElementById('panel-thread').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            currentThreadId = eventId;
-            threadEvents = []; 
-            document.getElementById('thread-replies-container').innerHTML = "Loading replies...";
-
-            const p = profiles[ev.pubkey] || {};
-            let content = ev.content; 
-            const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
-            const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn';
-            
-            const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 };
-
-            const html = `
-            <div class="thread-parent">
-                <div class="meta" onclick="viewProfile('${ev.pubkey}')">
-                    ${p.picture?`<img src="${p.picture}" class="avatar">`:''}
-                    <span class="username-link">${p.name||ev.pubkey.substring(0,6)}</span>
-                </div>
-                <div class="content" style="font-size: 1.2em;">${parseContent(content)}</div>
-                <div style="font-size:0.8em; opacity:0.6; margin-top:5px;">${new Date(ev.created_at*1000).toLocaleString()}</div>
-                <div class="actions">
-                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button>
-                    <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button>
-                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button>
-                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button>
-                    <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button>
-                </div>
-            </div>`;
-            document.getElementById('thread-parent-container').innerHTML = html;
-
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], '#e': [eventId], limit: 50 }]));
-            });
-        }
-
-        function handleThreadEvent(ev) {
-            if(threadEvents.some(e => e.id === ev.id)) return;
-            threadEvents.push(ev);
-            threadEvents.sort((a,b) => a.created_at - b.created_at); 
-            renderThreadReplies();
-            fetchProfileIfNeeded(ev.pubkey);
-        }
-
-        function renderThreadReplies() {
-            if(threadEvents.length === 0) {
-                document.getElementById('thread-replies-container').innerHTML = "No replies yet.";
-                return;
-            }
-            const html = threadEvents.map(ev => generatePostHTML(ev)).join(''); 
-            document.getElementById('thread-replies-container').innerHTML = html;
-        }
-
-        /* --- GENERATE HTML --- */
-        function generatePostHTML(ev) {
-            if (isBlocked(ev)) return '';
-
-            const p = profiles[ev.pubkey] || {};
-            let content = ev.content;
-            if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; }
-            const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
-            const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn';
-            
-            const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 };
-
-            return `<div class="post">
-                <div class="meta" onclick="viewProfile('${ev.pubkey}')">
-                    ${p.picture?`<img src="${p.picture}" class="avatar">`:''}
-                    <span class="username-link">${p.name||ev.pubkey.substring(0,6)}</span>
-                    <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span>
-                </div>
-                <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div>
-                <div class="actions">
-                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button>
-                    <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button>
-                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button>
-                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button>
-                    <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button>
-                </div>
-            </div>`;
-        }
-
-        /* --- STATS PROCESSING --- */
-        function processEventStats(ev) {
-            const eTags = ev.tags.filter(t => t[0] === 'e');
-            eTags.forEach(t => {
-                const targetId = t[1];
-                if (!eventStats[targetId]) eventStats[targetId] = { reply:0, repost:0, like:0, zap:0 };
-                
-                if (ev.kind === 1) eventStats[targetId].reply++;
-                if (ev.kind === 6) eventStats[targetId].repost++;
-                if (ev.kind === 7) eventStats[targetId].like++;
-                if (ev.kind === 9735) eventStats[targetId].zap++;
-
-                updateCountDOM(targetId, 'reply');
-                updateCountDOM(targetId, 'repost');
-                updateCountDOM(targetId, 'like');
-                updateCountDOM(targetId, 'zap');
-            });
-        }
-
-        function updateCountDOM(id, type) {
-            const el = document.getElementById(`s-${type}-${id}`);
-            if (el && eventStats[id]) {
-                el.innerText = eventStats[id][type];
-            }
-        }
-
-        /* --- LIKE & REPOST LOGIC --- */
-        async function doLike(id, pubkey) {
-            if(!myPubKey) return alert("Login first");
-            likedPosts.add(id);
-            localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
-            
-            // Optimistic update
-            if(!eventStats[id]) eventStats[id] = { reply:0, repost:0, like:0, zap:0 };
-            eventStats[id].like++;
-            
-            if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
-            if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); 
-            
-            const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
-            await signAndBroadcast(event);
-        }
-
-        /* --- SEARCH AND UNIVERSAL FEED LOGIC --- */
-        function openSearch() { 
-            togglePanel('panel-search'); 
-            document.getElementById('search-input').value = "";
-            document.getElementById('search-status').innerText = "UNIVERSAL FEED (LIVE):";
-            document.getElementById('search-results').innerHTML = "Loading global stream...";
-            searchEvents = [];
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", { kinds: [1], limit: 20 }]));
-            });
-        }
-
-        function handleSearch() {
-            const q = document.getElementById('search-input').value.trim();
-            if(!q) return openSearch();
-            document.getElementById('search-status').innerText = `RESULTS FOR: "${q}"`;
-            document.getElementById('search-results').innerHTML = "Searching...";
-            searchEvents = [];
-            let filter = { kinds: [1], limit: 20 };
-            if(q.startsWith('npub')) {
-                try {
-                    const decoded = window.NostrTools.nip19.decode(q).data;
-                    viewProfile(decoded);
-                    return;
-                } catch(e) { alert("Invalid npub"); return; }
-            } else if (q.startsWith('#')) {
-                filter['#t'] = [q.substring(1)];
-            } else {
-                filter['search'] = q;
-            }
-            Object.values(sockets).forEach(ws => {
-                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter]));
-            });
-        }
-
-        function handleSearchEvent(ev) {
-            if(searchEvents.some(e => e.id === ev.id)) return;
-            searchEvents.push(ev);
-            searchEvents.sort((a,b) => b.created_at - a.created_at);
-            document.getElementById('search-results').innerHTML = searchEvents.map(generatePostHTML).join('');
-            fetchProfileIfNeeded(ev.pubkey);
-        }
-
-        /* --- NOTIFICATIONS --- */
-        function openNotifications() { 
-            togglePanel('panel-notifications'); 
-            refreshNotifications(); 
-        }
-
-        function parseContent(text) {
-            if(!text) return "";
-            let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            
-            const nostrRegex = /nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g;
-            content = content.replace(nostrRegex, (match, id) => {
-                let decodedId = id;
-                try {
-                    const decoded = window.NostrTools.nip19.decode(id);
-                    decodedId = decoded.data.id || decoded.data;
-                } catch(e){}
-
-                const cached = events.find(e => e.id === decodedId) || myEvents.find(e => e.id === decodedId);
-                
-                if(cached) {
-                    const p = profiles[cached.pubkey] || {};
-                    return `<div class="quote-card">
-                        <div class="meta"><b>${p.name||cached.pubkey.substring(0,6)}</b></div>
-                        <div>${parseContent(cached.content)}</div>
-                    </div>`;
-                } else {
-                    return `<a href="#" class="hashtag">[ Quoted Note: ${id.substring(0,10)}... ]</a>`;
-                }
-            });
-
-            const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi;
-            content = content.replace(videoRegex, (url) => `<video controls class="media-video"><source src="${url}"></video>`);
-            const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi;
-            content = content.replace(imgRegex, (url) => `<a href="${url}" target="_blank"><img src="${url}" class="media-img" loading="lazy"></a>`);
-            const hashtagRegex = /#(\w+)/g;
-            content = content.replace(hashtagRegex, (match, tag) => `<span class="hashtag" onclick="alert('Tag: #${tag}')">#${tag}</span>`);
-            return content;
-        }
-
-        async function handleZap(lud16, pubkey) {
-            if(!lud16) return alert("User has no Lightning address set.");
-            const parts = lud16.split('@');
-            if(parts.length !== 2) return window.open(`lightning:${lud16}`); 
-            const amount = prompt(`Zap ${lud16} (sats):`, "21");
-            if(!amount) return;
-            try {
-                const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
-                const res = await fetch(url);
-                const data = await res.json();
-                if(data.callback) {
-                    const millisats = parseInt(amount) * 1000;
-                    if(millisats < data.minSendable || millisats > data.maxSendable) return alert(`Amount out of range.`);
-                    const cbUrl = `${data.callback}?amount=${millisats}`;
-                    const cbRes = await fetch(cbUrl);
-                    const cbData = await cbRes.json();
-                    if(cbData.pr) window.location.href = `lightning:${cbData.pr}`;
-                }
-            } catch(e) {
-                if(confirm(`Auto-zap failed. Open wallet manually?`)) window.location.href = `lightning:${lud16}`;
-            }
-        }
-
-        function switchNotifTab(tab) {
-            currentNotifTab = tab;
-            document.getElementById('ntab-all').className = tab === 'all' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('ntab-zaps').className = tab === 'zaps' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('ntab-mentions').className = tab === 'mentions' ? 'tab-btn active' : 'tab-btn';
-            renderNotifications();
-        }
-
-        function refreshNotifications() {
-            if(!myPubKey) return document.getElementById('notifications-feed').innerHTML = "Login required.";
-            notifEvents = [];
-            document.getElementById('notifications-feed').innerHTML = "Loading...";
-            
+            // Fetch My Meta (Kind 0), Contacts (Kind 3 for Following), Relay List (Kind 10002)
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) {
-                    ws.send(JSON.stringify(["REQ", "notif_sub", { kinds: [1, 6, 7, 9735], '#p': [myPubKey], limit: 50 }]));
+                    ws.send(JSON.stringify(["REQ", "my_meta", { kinds: [0, 3, 10002], authors: [myPubKey], limit: 10 }]));
+                    // Fetch Followers (Kind 3 referring to me)
+                    ws.send(JSON.stringify(["REQ", "my_followers", { kinds: [3], '#p': [myPubKey], limit: 100 }]));
                 }
             });
-        }
 
-        function handleNotifEvent(ev) {
-            if(notifEvents.some(e => e.id === ev.id)) return;
-            notifEvents.push(ev);
-            notifEvents.sort((a,b) => b.created_at - a.created_at);
-            renderNotifications();
+            updateMyProfileHeader();
+            switchMyTab('notes');
+
+            myEvents = []; 
+            Object.values(sockets).forEach(s => {
+                if(s.readyState === 1) s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:100 }]));
+            }); 
             
-            if(ev.kind === 9735) {
-                try {
-                    const desc = ev.tags.find(t => t[0] === 'description');
-                    if(desc) {
-                        const request = JSON.parse(desc[1]);
-                        fetchProfileIfNeeded(request.pubkey);
-                    } else {
-                        fetchProfileIfNeeded(ev.pubkey);
-                    }
-                } catch(e) { fetchProfileIfNeeded(ev.pubkey); }
-            } else {
-                fetchProfileIfNeeded(ev.pubkey);
-            }
-        }
-
-        function renderNotifications() {
-            let list = notifEvents;
-
-            if (currentNotifTab === 'zaps') {
-                list = notifEvents.filter(ev => ev.kind === 9735);
-            } else if (currentNotifTab === 'mentions') {
-                list = notifEvents.filter(ev => ev.kind === 1 || ev.kind === 6);
-            } 
-
-            if (list.length === 0) {
-                document.getElementById('notifications-feed').innerHTML = "No notifications found.";
-                return;
-            }
-
-            const html = list.map(ev => {
-                let senderPub = ev.pubkey;
-                if(ev.kind === 9735) {
-                    try {
-                        const desc = ev.tags.find(t => t[0] === 'description');
-                        if(desc) senderPub = JSON.parse(desc[1]).pubkey;
-                    } catch(e){}
+            setTimeout(() => {
+                if(myEvents.length === 0 && currentMyTab === 'notes') {
+                     document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">No notes found.</div>';
                 }
+            }, 3000);
+        }
 
-                const p = profiles[senderPub] || {};
-                const name = p.name || senderPub.substring(0,6);
-                const avatar = p.picture ? `<img src="${p.picture}" class="avatar">` : `<div class="avatar" style="background:#333"></div>`;
-                
-                let icon = '';
-                let actionText = '';
-                let content = '';
-
-                if (ev.kind === 7) {
-                    icon = '<span style="color:#e74c3c">❤️</span>';
-                    actionText = 'liked your note';
-                    content = ''; 
-                } else if (ev.kind === 1) {
-                    icon = '<span style="color:#3498db">↩️</span>';
-                    actionText = 'replied/mentioned';
-                    content = parseContent(ev.content);
-                } else if (ev.kind === 6) {
-                    icon = '<span style="color:#2ecc71">🔄</span>';
-                    actionText = 'reposted';
-                    try { content = parseContent(JSON.parse(ev.content).content || ""); } catch(e){ content = "Reposted content"; }
-                } else if (ev.kind === 9735) {
-                    icon = '<span style="color:#f1c40f">⚡</span>';
-                    actionText = 'ZAPPED YOU';
-                    content = ''; 
-                }
-                
-                const time = new Date(ev.created_at * 1000).toLocaleString();
-                
-                let clickAction = `viewProfile('${senderPub}')`;
-                if (ev.kind === 1 || ev.kind === 6) {
-                    clickAction = `viewThread('${ev.id}')`;
-                }
-
-                return `
-                <div class="notif-item" onclick="${clickAction}" style="cursor:pointer">
-                    <div class="notif-icon">${icon}</div>
-                    <div style="flex-grow:1">
-                        <div style="display:flex; align-items:center; margin-bottom:5px;">
-                            ${avatar}
-                            <div>
-                                <span style="font-weight:bold">${name}</span>
-                                <span style="opacity:0.7; font-size:0.8em"> ${actionText}</span>
-                            </div>
-                        </div>
-                        <div style="opacity:0.9; font-size:0.9em">${content}</div>
-                        <div style="font-size:0.7em; opacity:0.5; margin-top:5px;">${time}</div>
-                    </div>
-                </div>`;
-            }).join('');
+        function updateMyProfileHeader() {
+            initProfileData(myPubKey);
+            const p = profiles[myPubKey].meta || {}; 
+            document.getElementById('my-p-name').innerText = p.name || 'Unknown'; 
+            document.getElementById('my-p-about').innerText = p.about || '(No bio set)'; 
+            document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; 
             
-            document.getElementById('notifications-feed').innerHTML = html;
-        }
+            const webEl = document.getElementById('my-p-website');
+            if(p.website) { webEl.href = p.website; webEl.innerText = p.website; webEl.classList.remove('hidden'); } else { webEl.classList.add('hidden'); }
 
-        async function loginExtension() {
-            if (!window.nostr) return alert("No Nostr extension found.");
-            try {
-                const pubkey = await window.nostr.getPublicKey();
-                localStorage.setItem('nostr_pubkey', pubkey);
-                localStorage.setItem('nostr_mode', 'extension');
-                location.reload();
-            } catch (err) { alert("Login failed: " + err); }
-        }
-
-        function initReply(eventId, pubkey) {
-            if(!myPubKey) return alert("Login required.");
+            const zapEl = document.getElementById('my-p-lud16');
+            if(p.lud16) { zapEl.innerText = p.lud16; document.getElementById('my-p-lud16-container').classList.remove('hidden'); } else { document.getElementById('my-p-lud16-container').classList.add('hidden'); }
             
-            const p = profiles[pubkey] || {name: pubkey.substring(0,8)};
-            replyContext = { id: eventId, pubkey: pubkey };
-            
-            openComposer();
-            
-            document.getElementById('reply-context-bar').classList.remove('hidden');
-            document.getElementById('reply-text').innerHTML = `Replying to: <b>${p.name}</b>`;
+            // Update Counts
+            document.getElementById('my-cnt-following').innerText = `(${profiles[myPubKey].following.size})`;
+            document.getElementById('my-cnt-followers').innerText = `(${profiles[myPubKey].followers.size})`;
+            document.getElementById('my-cnt-relays').innerText = `(${profiles[myPubKey].relays.length})`;
         }
-
-        function cancelReply() {
-            replyContext = null;
-            document.getElementById('reply-context-bar').classList.add('hidden');
-        }
-
-        function initQuote(eventId) {
-            if(!myPubKey) return alert("Login required.");
-            openComposer();
-            try {
-                const noteId = window.NostrTools.nip19.noteEncode(eventId);
-                const input = document.getElementById('msg-input');
-                input.value += `\nnostr:${noteId}\n`;
-                input.focus();
-            } catch(e) {}
-        }
-
-        function connectToRelay(url) {
-            try {
-                const ws = new WebSocket(url); sockets[url] = ws;
-                ws.onopen = () => { 
-                    ws.send(JSON.stringify(["REQ", "g", { kinds:[1,6], limit:40 }])); 
-                    if(myPubKey) {
-                        fetchProfile(myPubKey);
-                        ws.send(JSON.stringify(["REQ", "my_contacts", { kinds:[3], authors:[myPubKey], limit:1 }]));
-                    }
-                    renderRelays(); 
-                };
-                ws.onmessage = (msg) => {
-                    const data = JSON.parse(msg.data);
-                    if (data[0] === 'EVENT') {
-                        processEventStats(data[2]); // Capture stats
-
-                        if (data[1] === 'g') handleGlobalEvent(data[2]);
-                        if (data[1] === 'sub_me') handleMyEvent(data[2]);
-                        if (data[1] === 'sub_user') handleUserEvent(data[2]);
-                        if (data[1] === 'search_sub') handleSearchEvent(data[2]);
-                        if (data[1] === 'notif_sub') handleNotifEvent(data[2]);
-                        if (data[1] === 'thread_sub') handleThreadEvent(data[2]);
-                        if (data[1] === 'bookmarks_sub') handleBookmarkEvent(data[2]);
-                        if (data[1] === 'my_contacts') handleContacts(data[2]);
-                        if (data[1].startsWith('m_')) { 
-                            profiles[data[2].pubkey] = JSON.parse(data[2].content); 
-                            renderNotifications(); 
-                            if(currentViewedProfile === data[2].pubkey) renderUserProfileHeader(data[2].pubkey);
-                        }
-                    }
-                };
-            } catch(e) {}
-        }
-
-        function handleContacts(ev) {
-            if(ev.kind === 3) {
-                const pTags = ev.tags.filter(t => t[0] === 'p').map(t => t[1]);
-                myContacts = new Set(pTags);
-                if(currentViewedProfile) renderUserProfileHeader(currentViewedProfile);
-            }
-        }
-
-        function handleGlobalEvent(ev) {
-            if (processedIds.has(ev.id)) return; processedIds.add(ev.id);
-            fetchProfileIfNeeded(ev.pubkey);
-            incomingBuffer.push(ev);
-        }
-
-        setInterval(() => {
-            if (incomingBuffer.length === 0) return;
-            incomingBuffer.sort((a,b) => b.created_at - a.created_at);
-            if (events.length >= 25) {
-                pendingEvents = [...incomingBuffer, ...pendingEvents];
-                updateNewButton();
-            } else {
-                events = [...incomingBuffer, ...events];
-                events.sort((a,b) => b.created_at - a.created_at);
-                renderGlobalFeed();
-            }
-            incomingBuffer = []; 
-        }, 1500);
-
-        function fetchProfileIfNeeded(pubkey) {
-            if (!profiles[pubkey] && !requestedProfiles.has(pubkey)) {
-                requestedProfiles.add(pubkey);
-                Object.values(sockets).forEach(s => { if(s.readyState === 1) s.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds:[0], authors:[pubkey], limit:1 }])); });
-            }
-        }
-
-        function updateNewButton() { const b = document.getElementById('new-btn'); b.classList.toggle('hidden', pendingEvents.length === 0); b.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; }
-        function mergeQueue() { events = [...pendingEvents, ...events].slice(0, 100); pendingEvents = []; renderGlobalFeed(); updateNewButton(); window.scrollTo(0,0); }
-        function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
 
         function viewProfile(pubkey) {
             ['panel-search', 'panel-notifications', 'panel-thread', 'panel-bookmarks'].forEach(p => document.getElementById(p).classList.add('hidden'));
             togglePanel('panel-user-profile');
             currentViewedProfile = pubkey;
+            initProfileData(pubkey);
             renderUserProfileHeader(pubkey);
             
-            // Reset to Notes by default
             switchUserTab('notes');
 
             userEvents = []; 
             document.getElementById('user-feed').innerHTML = "...scanning user history...";
-            Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_user", { kinds:[1,6], authors:[pubkey], limit:20 }])));
-        }
-
-        function switchUserTab(tab) {
-            currentUserTab = tab;
-            document.getElementById('tab-notes').className = tab === 'notes' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('tab-replies').className = tab === 'replies' ? 'tab-btn active' : 'tab-btn';
-            renderUserFeed();
-        }
-        
-        // --- MY PROFILE TAB LOGIC ---
-        function switchMyTab(tab) {
-            currentMyTab = tab;
-            document.getElementById('my-tab-notes').className = tab === 'notes' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('my-tab-replies').className = tab === 'replies' ? 'tab-btn active' : 'tab-btn';
-            renderMyFeed();
+            
+            Object.values(sockets).forEach(s => {
+                if (s.readyState === 1) {
+                    s.send(JSON.stringify(["REQ", "sub_user", { kinds:[1,6], authors:[pubkey], limit:50 }]));
+                    // Get their Meta, Following (Kind 3), Relays (Kind 10002)
+                    s.send(JSON.stringify(["REQ", "user_meta", { kinds:[0, 3, 10002], authors:[pubkey], limit: 10 }]));
+                    // Get their Followers
+                    s.send(JSON.stringify(["REQ", "user_followers", { kinds:[3], '#p':[pubkey], limit: 100 }]));
+                }
+            });
         }
 
         function renderUserProfileHeader(pubkey) {
-            const p = profiles[pubkey] || {};
+            initProfileData(pubkey);
+            const p = profiles[pubkey].meta || {};
             const isFollowing = myContacts.has(pubkey);
             const isMe = pubkey === myPubKey;
             
@@ -1270,125 +583,213 @@
                 </div>
             `;
             document.getElementById('user-profile-header').innerHTML = html;
+            
+            // Update Counts
+            document.getElementById('u-cnt-following').innerText = `(${profiles[pubkey].following.size})`;
+            document.getElementById('u-cnt-followers').innerText = `(${profiles[pubkey].followers.size})`;
+            document.getElementById('u-cnt-relays').innerText = `(${profiles[pubkey].relays.length})`;
         }
 
-        async function toggleFollow(pubkey) {
-            if(!myPubKey) return alert("Login required");
-            if(myContacts.has(pubkey)) myContacts.delete(pubkey); else myContacts.add(pubkey);
-            renderUserProfileHeader(pubkey);
-            const tags = Array.from(myContacts).map(p => ['p', p]);
-            const event = { kind: 3, created_at: Math.floor(Date.now()/1000), tags: tags, content: "", pubkey: myPubKey };
-            await signAndBroadcast(event);
-        }
-
-        function handleUserEvent(ev) {
-            if (userEvents.some(e => e.id === ev.id)) return;
-            userEvents.unshift(ev); userEvents.sort((a,b)=>b.created_at - a.created_at);
+        function switchUserTab(tab) {
+            currentUserTab = tab;
+            ['tab-notes', 'tab-replies', 'tab-following', 'tab-followers', 'tab-relays'].forEach(id => {
+                document.getElementById(id).className = 'tab-btn';
+            });
+            document.getElementById('tab-' + tab).className = 'tab-btn active';
             renderUserFeed();
+        }
+        
+        function switchMyTab(tab) {
+            currentMyTab = tab;
+            ['my-tab-notes', 'my-tab-replies', 'my-tab-following', 'my-tab-followers', 'my-tab-relays'].forEach(id => {
+                document.getElementById(id).className = 'tab-btn';
+            });
+            document.getElementById('my-tab-' + tab).className = 'tab-btn active';
+            renderMyFeed();
+        }
+
+        // Generic Render for Profile Lists
+        function renderProfileList(id, type, pubkey) {
+            const container = document.getElementById(id);
+            initProfileData(pubkey);
+            
+            if (type === 'following') {
+                if (profiles[pubkey].following.size === 0) return container.innerHTML = '<div style="padding:10px; opacity:0.6">Following nobody.</div>';
+                let html = '';
+                profiles[pubkey].following.forEach(pk => {
+                   html += `<div class="list-item" onclick="viewProfile('${pk}')"><div class="avatar" style="background:#222"></div><span style="font-weight:bold; cursor:pointer;">${pk.substring(0,8)}...</span></div>`;
+                });
+                container.innerHTML = html;
+            } else if (type === 'followers') {
+                 if (profiles[pubkey].followers.size === 0) return container.innerHTML = '<div style="padding:10px; opacity:0.6">No followers found (yet).</div>';
+                let html = '';
+                profiles[pubkey].followers.forEach(pk => {
+                   html += `<div class="list-item" onclick="viewProfile('${pk}')"><div class="avatar" style="background:#222"></div><span style="font-weight:bold; cursor:pointer;">${pk.substring(0,8)}...</span></div>`;
+                });
+                container.innerHTML = html;
+            } else if (type === 'relays') {
+                if (profiles[pubkey].relays.length === 0) return container.innerHTML = '<div style="padding:10px; opacity:0.6">No relays published.</div>';
+                container.innerHTML = profiles[pubkey].relays.map(r => `<div class="list-item"><div class="list-item-content">${r}</div></div>`).join('');
+            }
         }
 
         function renderUserFeed() { 
+            if (currentUserTab === 'following') return renderProfileList('user-feed', 'following', currentViewedProfile);
+            if (currentUserTab === 'followers') return renderProfileList('user-feed', 'followers', currentViewedProfile);
+            if (currentUserTab === 'relays') return renderProfileList('user-feed', 'relays', currentViewedProfile);
+
             let list = userEvents;
             if (currentUserTab === 'notes') {
                 list = userEvents.filter(ev => {
                     if (ev.kind === 6) return true;
-                    return !ev.tags.some(t => t[0] === 'e');
+                    return !ev.tags || !ev.tags.some(t => t[0] === 'e');
                 });
             }
             document.getElementById('user-feed').innerHTML = list.map(generatePostHTML).join('');
         }
 
-        async function signAndBroadcast(event) {
-            if (authMode === 'extension') event = await window.nostr.signEvent(event);
-            else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); }
-            Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["EVENT", event])); });
-            return event;
-        }
+        function renderMyFeed() {
+            if (currentMyTab === 'following') return renderProfileList('my-feed', 'following', myPubKey);
+            if (currentMyTab === 'followers') return renderProfileList('my-feed', 'followers', myPubKey);
+            if (currentMyTab === 'relays') return renderProfileList('my-feed', 'relays', myPubKey);
 
-        async function sendNote() {
-            const content = document.getElementById('msg-input').value; if (!content) return;
-            let tags = [];
-            if (replyContext) {
-                tags.push(['e', replyContext.id, '', 'reply']); 
-                tags.push(['p', replyContext.pubkey]); 
+            let list = myEvents;
+            if (currentMyTab === 'notes') {
+                list = myEvents.filter(ev => {
+                    if (ev.kind === 6) return true;
+                    return !ev.tags || !ev.tags.some(t => t[0] === 'e');
+                });
             }
-            const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: tags, content: content, pubkey: myPubKey };
-            await signAndBroadcast(event); 
-            document.getElementById('msg-input').value = "";
-            closeComposer();
+            if (list.length === 0) {
+                 document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">No notes found.</div>';
+                 return;
+            }
+            document.getElementById('my-feed').innerHTML = list.map(generatePostHTML).join('');
         }
-
-        function login() {
-            let k = document.getElementById('privkey-input').value.trim(); if (!k) return;
-            if (k.startsWith('nsec')) k = window.NostrTools.nip19.decode(k).data;
-            localStorage.setItem('nostr_privkey', k); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(k)); localStorage.setItem('nostr_mode', 'local'); location.reload();
-        }
-
-        function generateNewUser() {
-            const sk = window.NostrTools.generatePrivateKey();
-            localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(sk)); localStorage.setItem('nostr_mode', 'local'); location.reload();
-        }
-
-        async function saveProfile() {
-            const data = { 
-                name: document.getElementById('p-name').value, 
-                about: document.getElementById('p-about').value, 
-                picture: document.getElementById('p-picture').value, 
-                website: document.getElementById('p-website').value, 
-                lud16: document.getElementById('p-lud16').value 
-            };
-            let ev = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: JSON.stringify(data), pubkey: myPubKey };
-            await signAndBroadcast(ev); alert("PUBLISHED"); location.reload();
-        }
-
-        function toggleProfileEditor() { 
-            document.getElementById('profile-editor').classList.toggle('hidden'); 
-            const p = profiles[myPubKey] || {}; 
-            document.getElementById('p-name').value = p.name||''; 
-            document.getElementById('p-about').value = p.about||''; 
-            document.getElementById('p-picture').value = p.picture||''; 
-            document.getElementById('p-website').value = p.website||''; 
-            document.getElementById('p-lud16').value = p.lud16||''; 
-        }
-
-        function loadMyHistory() { 
-            const p = profiles[myPubKey] || {}; 
-            document.getElementById('my-p-name').innerText = p.name || 'Unknown'; 
-            document.getElementById('my-p-about').innerText = p.about || '(No bio set)'; 
-            document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; 
-            
-            const webEl = document.getElementById('my-p-website');
-            if(p.website) { webEl.href = p.website; webEl.innerText = p.website; webEl.classList.remove('hidden'); } else { webEl.classList.add('hidden'); }
-
-            const zapEl = document.getElementById('my-p-lud16');
-            if(p.lud16) { zapEl.innerText = p.lud16; document.getElementById('my-p-lud16-container').classList.remove('hidden'); } else { document.getElementById('my-p-lud16-container').classList.add('hidden'); }
-
-            // Reset My Tab
-            switchMyTab('notes');
-
-            myEvents = []; 
-            Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]))); 
-        }
-
+        
         function handleMyEvent(ev) { 
             if (myEvents.some(e => e.id === ev.id)) return; 
             myEvents.unshift(ev); 
             myEvents.sort((a,b)=>b.created_at - a.created_at);
             renderMyFeed(); 
         }
-
-        function renderMyFeed() {
-            let list = myEvents;
-            if (currentMyTab === 'notes') {
-                list = myEvents.filter(ev => {
-                    if (ev.kind === 6) return true;
-                    return !ev.tags.some(t => t[0] === 'e');
-                });
-            }
-            document.getElementById('my-feed').innerHTML = list.map(generatePostHTML).join('');
+        
+        function handleUserEvent(ev) {
+            if (userEvents.some(e => e.id === ev.id)) return;
+            userEvents.unshift(ev); userEvents.sort((a,b)=>b.created_at - a.created_at);
+            renderUserFeed();
         }
 
-        function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><span><span style="color:${isOpen?'#00FF41':'red'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
+        // --- END PROFILE LOGIC ---
+
+        // ... [Rest of standard functions: openComposer, closeComposer, toggleNsfw, etc. are same as previous] ...
+
+        /* --- EVENT PROCESSING --- */
+        function processProfileEvent(ev, isMe) {
+            const pk = ev.pubkey;
+            initProfileData(pk);
+
+            // Kind 0: Metadata
+            if (ev.kind === 0) {
+                try {
+                    profiles[pk].meta = JSON.parse(ev.content);
+                } catch(e) {}
+            }
+            
+            // Kind 3: Contact List (Who they follow)
+            if (ev.kind === 3) {
+                if (isMe || pk === currentViewedProfile) {
+                     // If this IS the user's contact list, we populate 'following'
+                     const following = ev.tags.filter(t => t[0] === 'p').map(t => t[1]);
+                     profiles[pk].following = new Set(following);
+                     if (isMe) myContacts = new Set(following); // Global tracking
+                } else {
+                    // If this is someone else's contact list, check if they follow target
+                    // This is for the "Followers" calculation
+                    // If ev.tags contains target, add ev.pubkey to target's followers
+                    const target = isMe ? myPubKey : currentViewedProfile;
+                    if (target) {
+                        const followsTarget = ev.tags.some(t => t[0] === 'p' && t[1] === target);
+                        if (followsTarget) {
+                            initProfileData(target);
+                            profiles[target].followers.add(pk);
+                        }
+                    }
+                }
+            }
+
+            // Kind 10002: Relay List
+            if (ev.kind === 10002) {
+                const relays = ev.tags.filter(t => t[0] === 'r').map(t => t[1]);
+                profiles[pk].relays = relays;
+            }
+            
+            if (isMe) updateMyProfileHeader();
+            if (pk === currentViewedProfile) renderUserProfileHeader(pk);
+        }
+
+        function connectToRelay(url) {
+            try {
+                const ws = new WebSocket(url); sockets[url] = ws;
+                ws.onopen = () => { 
+                    ws.send(JSON.stringify(["REQ", "g", { kinds:[1,6], limit:40 }])); 
+                    if(myPubKey) {
+                        fetchProfile(myPubKey);
+                        ws.send(JSON.stringify(["REQ", "my_contacts", { kinds:[3], authors:[myPubKey], limit:1 }]));
+                    }
+                    renderRelays(); 
+                };
+                ws.onmessage = (msg) => {
+                    const data = JSON.parse(msg.data);
+                    
+                    if (data[0] === 'EOSE') {
+                         if (data[1] === 'sub_me') { if (myEvents.length === 0) document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">No notes found.</div>'; }
+                    }
+
+                    if (data[0] === 'EVENT') {
+                        const subId = data[1];
+                        const ev = data[2];
+                        processEventStats(ev); 
+
+                        // Profile Metadata Handling
+                        if (subId === 'my_meta' || subId === 'user_meta') processProfileEvent(ev, subId === 'my_meta');
+                        if (subId === 'my_followers' || subId === 'user_followers') processProfileEvent(ev, subId === 'my_followers'); // Process incoming kind 3s as followers
+
+                        if (subId === 'g') handleGlobalEvent(ev);
+                        if (subId === 'sub_me') handleMyEvent(ev);
+                        if (subId === 'sub_user') handleUserEvent(ev);
+                        if (subId === 'search_sub') handleSearchEvent(ev);
+                        if (subId === 'notif_sub') handleNotifEvent(ev);
+                        if (subId === 'thread_sub') handleThreadEvent(ev);
+                        if (subId === 'bookmarks_sub') handleBookmarkEvent(ev);
+                        if (subId.startsWith('m_')) { // Legacy metadata fetch
+                            try { profiles[ev.pubkey].meta = JSON.parse(ev.content); } catch(e) { initProfileData(ev.pubkey); profiles[ev.pubkey].meta = JSON.parse(ev.content); }
+                            renderNotifications();
+                        }
+                    }
+                };
+            } catch(e) {}
+        }
+        
+        // ... [Standard Helpers: handleContacts, handleGlobalEvent, interval, fetchProfile, updateNewButton, mergeQueue, etc from previous version] ...
+        
+        function handleContacts(ev) { if(ev.kind===3) { const pTags = ev.tags.filter(t=>t[0]==='p').map(t=>t[1]); myContacts = new Set(pTags); if(currentViewedProfile) renderUserProfileHeader(currentViewedProfile); } }
+        function handleGlobalEvent(ev) { if(processedIds.has(ev.id)) return; processedIds.add(ev.id); fetchProfileIfNeeded(ev.pubkey); incomingBuffer.push(ev); }
+        setInterval(() => { if(incomingBuffer.length===0) return; incomingBuffer.sort((a,b)=>b.created_at-a.created_at); if(events.length>=25) { pendingEvents=[...incomingBuffer,...pendingEvents]; updateNewButton(); } else { events=[...incomingBuffer,...events]; events.sort((a,b)=>b.created_at-a.created_at); renderGlobalFeed(); } incomingBuffer=[]; }, 1500);
+        function fetchProfileIfNeeded(pubkey) { if(!profiles[pubkey] && !requestedProfiles.has(pubkey)) { requestedProfiles.add(pubkey); Object.values(sockets).forEach(s => { if(s.readyState===1) s.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds:[0], authors:[pubkey], limit:1 }])); }); } }
+        function updateNewButton() { const b = document.getElementById('new-btn'); b.classList.toggle('hidden', pendingEvents.length===0); b.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; }
+        function mergeQueue() { events = [...pendingEvents, ...events].slice(0, 100); pendingEvents = []; renderGlobalFeed(); updateNewButton(); window.scrollTo(0,0); }
+        function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
+        
+        // ... [Standard Interaction: toggleFollow, signAndBroadcast, sendNote, login, etc] ...
+        async function toggleFollow(pubkey) { if(!myPubKey) return alert("Login required"); if(myContacts.has(pubkey)) myContacts.delete(pubkey); else myContacts.add(pubkey); renderUserProfileHeader(pubkey); const tags = Array.from(myContacts).map(p => ['p', p]); const event = { kind: 3, created_at: Math.floor(Date.now()/1000), tags: tags, content: "", pubkey: myPubKey }; await signAndBroadcast(event); }
+        async function signAndBroadcast(event) { if (authMode === 'extension') event = await window.nostr.signEvent(event); else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); } Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["EVENT", event])); }); return event; }
+        async function sendNote() { const content = document.getElementById('msg-input').value; if (!content) return; let tags = []; if (replyContext) { tags.push(['e', replyContext.id, '', 'reply']); tags.push(['p', replyContext.pubkey]); } const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: tags, content: content, pubkey: myPubKey }; await signAndBroadcast(event); document.getElementById('msg-input').value = ""; closeComposer(); }
+        function login() { let k = document.getElementById('privkey-input').value.trim(); if (!k) return; if (k.startsWith('nsec')) k = window.NostrTools.nip19.decode(k).data; localStorage.setItem('nostr_privkey', k); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(k)); localStorage.setItem('nostr_mode', 'local'); location.reload(); }
+        function generateNewUser() { const sk = window.NostrTools.generatePrivateKey(); localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(sk)); localStorage.setItem('nostr_mode', 'local'); location.reload(); }
+        async function saveProfile() { const data = { name: document.getElementById('p-name').value, about: document.getElementById('p-about').value, picture: document.getElementById('p-picture').value, website: document.getElementById('p-website').value, lud16: document.getElementById('p-lud16').value }; let ev = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: JSON.stringify(data), pubkey: myPubKey }; await signAndBroadcast(ev); alert("PUBLISHED"); location.reload(); }
+        function toggleProfileEditor() { document.getElementById('profile-editor').classList.toggle('hidden'); const p = (profiles[myPubKey] && profiles[myPubKey].meta) ? profiles[myPubKey].meta : {}; document.getElementById('p-name').value = p.name||''; document.getElementById('p-about').value = p.about||''; document.getElementById('p-picture').value = p.picture||''; document.getElementById('p-website').value = p.website||''; document.getElementById('p-lud16').value = p.lud16||''; }
+        function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><div class="relay-content"><span style="color:${isOpen?'#00FF41':'red'}; font-weight:bold; margin-right:5px;">[${isOpen?'ON':'OFF'}]</span><span class="relay-url" title="${url}">${url}</span></div><button class="small danger" style="width: 30px; flex-shrink: 0;" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
         function addRelay() { let url = document.getElementById('new-relay').value.trim(); if(url){ if(!url.startsWith('wss://')) url = 'wss://' + url; savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; } }
         function removeRelay(url) { savedRelays = savedRelays.filter(r => r !== url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); if(sockets[url]) sockets[url].close(); renderRelays(); }
         function logout() { localStorage.clear(); location.reload(); }
@@ -1396,14 +797,44 @@
         function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
         function fetchProfile(pubkey) { Object.values(sockets).forEach(ws => ws.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]))); }
 
-        if (myPubKey) {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('user-info').classList.remove('hidden');
-            document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(myPubKey);
-            if (myPrivKey) document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey);
-            else document.getElementById('nsec-display-container').classList.add('hidden');
-        }
+        // ... [Same Helper functions: openComposer, closeComposer, toggleNsfw, addFilterTag, etc from previous working code] ...
+        function openComposer() { if(!myPubKey) return alert("Please Login First"); document.getElementById('composer-modal').classList.remove('hidden'); document.getElementById('msg-input').focus(); }
+        function closeComposer() { document.getElementById('composer-modal').classList.add('hidden'); cancelReply(); }
+        function toggleNsfw() { filterSettings.hideNsfw = document.getElementById('nsfw-toggle').checked; saveFilters(); }
+        function addFilterTag() { const val = document.getElementById('filter-input').value.trim().toLowerCase(); if(val && !filterSettings.blockedTags.includes(val)) { filterSettings.blockedTags.push(val); document.getElementById('filter-input').value = ""; saveFilters(); renderFilterList(); } }
+        function removeFilterTag(tag) { filterSettings.blockedTags = filterSettings.blockedTags.filter(t => t !== tag); saveFilters(); renderFilterList(); }
+        function saveFilters() { localStorage.setItem('mbit_filters', JSON.stringify(filterSettings)); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); }
+        function renderFilterList() { document.getElementById('filter-list').innerHTML = filterSettings.blockedTags.map(tag => `<span class="filter-tag">#${tag} <span class="remove-tag" onclick="removeFilterTag('${tag}')">x</span></span>`).join(''); }
+        function isBlocked(ev) { if (!ev.tags) return false; const evTags = ev.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase()); if (filterSettings.hideNsfw && evTags.includes('nsfw')) return true; for (let blocked of filterSettings.blockedTags) { if (evTags.includes(blocked)) return true; } return false; }
+        
+        // ... [Bookmarks, Zap, etc] ...
+        function doBookmark(id) { if(bookmarks.has(id)) { bookmarks.delete(id); alert("Bookmark Removed"); } else { bookmarks.add(id); alert("Saved to Bookmarks"); } localStorage.setItem('mbit_bookmarks', JSON.stringify([...bookmarks])); if(!document.getElementById('panel-bookmarks').classList.contains('hidden')) openBookmarks(); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); }
+        function openBookmarks() { togglePanel('panel-bookmarks'); const ids = [...bookmarks]; if(ids.length === 0) { document.getElementById('bookmarks-feed').innerHTML = "No bookmarks yet."; return; } document.getElementById('bookmarks-feed').innerHTML = "Loading saved posts..."; bookmarkEvents = []; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "bookmarks_sub", { kinds: [1], ids: ids }])); }); }
+        function handleBookmarkEvent(ev) { if(bookmarkEvents.some(e => e.id === ev.id)) return; bookmarkEvents.push(ev); bookmarkEvents.sort((a,b) => b.created_at - a.created_at); document.getElementById('bookmarks-feed').innerHTML = bookmarkEvents.map(generatePostHTML).join(''); fetchProfileIfNeeded(ev.pubkey); }
+        async function handleZap(lud16, pubkey) { if(!lud16) return alert("User has no Lightning address set."); const parts = lud16.split('@'); if(parts.length !== 2) return window.open(`lightning:${lud16}`); const amount = prompt(`Zap ${lud16} (sats):`, "21"); if(!amount) return; try { const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`; const res = await fetch(url); const data = await res.json(); if(data.callback) { const millisats = parseInt(amount) * 1000; if(millisats < data.minSendable || millisats > data.maxSendable) return alert(`Amount out of range.`); const cbUrl = `${data.callback}?amount=${millisats}`; const cbRes = await fetch(cbUrl); const cbData = await cbRes.json(); if(cbData.pr) window.location.href = `lightning:${cbData.pr}`; } } catch(e) { if(confirm(`Auto-zap failed. Open wallet manually?`)) window.location.href = `lightning:${lud16}`; } }
 
+        // Stats & Content
+        function processEventStats(ev) { if (!ev || !ev.tags) return; const eTags = ev.tags.filter(t => t[0] === 'e'); eTags.forEach(t => { const targetId = t[1]; if (!eventStats[targetId]) eventStats[targetId] = { reply:0, repost:0, like:0, zap:0 }; if (ev.kind === 1) eventStats[targetId].reply++; if (ev.kind === 6) eventStats[targetId].repost++; if (ev.kind === 7) eventStats[targetId].like++; if (ev.kind === 9735) eventStats[targetId].zap++; updateCountDOM(targetId, 'reply'); updateCountDOM(targetId, 'repost'); updateCountDOM(targetId, 'like'); updateCountDOM(targetId, 'zap'); }); }
+        function updateCountDOM(id, type) { const el = document.getElementById(`s-${type}-${id}`); if (el && eventStats[id]) { el.innerText = eventStats[id][type]; } }
+        async function doLike(id, pubkey) { if(!myPubKey) return alert("Login first"); likedPosts.add(id); localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts])); if(!eventStats[id]) eventStats[id] = { reply:0, repost:0, like:0, zap:0 }; eventStats[id].like++; updateCountDOM(id, 'like'); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; await signAndBroadcast(event); }
+
+        function generatePostHTML(ev) { if (isBlocked(ev)) return ''; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)}; let content = ev.content; if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.name||ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button> <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button> </div> </div>`; }
+        function parseContent(text) { if(!text) return ""; let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); const nostrRegex = /nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g; content = content.replace(nostrRegex, (match, id) => { let decodedId = id; try { const decoded = window.NostrTools.nip19.decode(id); decodedId = decoded.data.id || decoded.data; } catch(e){} const cached = events.find(e => e.id === decodedId) || myEvents.find(e => e.id === decodedId); if(cached) { const p = (profiles[cached.pubkey] && profiles[cached.pubkey].meta) ? profiles[cached.pubkey].meta : {name:cached.pubkey.substring(0,6)}; return `<div class="quote-card"><div class="meta"><b>${p.name}</b></div><div>${parseContent(cached.content)}</div></div>`; } else { return `<a href="#" class="hashtag">[ Quoted Note: ${id.substring(0,10)}... ]</a>`; } }); const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi; content = content.replace(videoRegex, (url) => `<video controls class="media-video"><source src="${url}"></video>`); const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi; content = content.replace(imgRegex, (url) => `<a href="${url}" target="_blank"><img src="${url}" class="media-img" loading="lazy"></a>`); const hashtagRegex = /#(\w+)/g; content = content.replace(hashtagRegex, (match, tag) => `<span class="hashtag" onclick="alert('Tag: #${tag}')">#${tag}</span>`); return content; }
+
+        // Thread & Search & Notifs (unchanged from working version)
+        function openSearch() { togglePanel('panel-search'); document.getElementById('search-input').value = ""; document.getElementById('search-status').innerText = "UNIVERSAL FEED (LIVE):"; document.getElementById('search-results').innerHTML = "Loading global stream..."; searchEvents = []; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", { kinds: [1], limit: 20 }])); }); }
+        function handleSearch() { const q = document.getElementById('search-input').value.trim(); if(!q) return openSearch(); document.getElementById('search-status').innerText = `RESULTS FOR: "${q}"`; document.getElementById('search-results').innerHTML = "Searching..."; searchEvents = []; let filter = { kinds: [1], limit: 20 }; if(q.startsWith('npub')) { try { const decoded = window.NostrTools.nip19.decode(q).data; viewProfile(decoded); return; } catch(e) { alert("Invalid npub"); return; } } else if (q.startsWith('#')) { filter['#t'] = [q.substring(1)]; } else { filter['search'] = q; } Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter])); }); }
+        function handleSearchEvent(ev) { if(searchEvents.some(e => e.id === ev.id)) return; searchEvents.push(ev); searchEvents.sort((a,b) => b.created_at - a.created_at); document.getElementById('search-results').innerHTML = searchEvents.map(generatePostHTML).join(''); fetchProfileIfNeeded(ev.pubkey); }
+        function openNotifications() { togglePanel('panel-notifications'); refreshNotifications(); }
+        function switchNotifTab(tab) { currentNotifTab = tab; document.getElementById('ntab-all').className = tab === 'all' ? 'tab-btn active' : 'tab-btn'; document.getElementById('ntab-zaps').className = tab === 'zaps' ? 'tab-btn active' : 'tab-btn'; document.getElementById('ntab-mentions').className = tab === 'mentions' ? 'tab-btn active' : 'tab-btn'; renderNotifications(); }
+        function refreshNotifications() { if(!myPubKey) return document.getElementById('notifications-feed').innerHTML = "Login required."; notifEvents = []; document.getElementById('notifications-feed').innerHTML = "Loading..."; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) { ws.send(JSON.stringify(["REQ", "notif_sub", { kinds: [1, 6, 7, 9735], '#p': [myPubKey], limit: 50 }])); } }); }
+        function handleNotifEvent(ev) { if(notifEvents.some(e => e.id === ev.id)) return; notifEvents.push(ev); notifEvents.sort((a,b) => b.created_at - a.created_at); renderNotifications(); if(ev.kind === 9735) { try { const desc = ev.tags.find(t => t[0] === 'description'); if(desc) { const request = JSON.parse(desc[1]); fetchProfileIfNeeded(request.pubkey); } else { fetchProfileIfNeeded(ev.pubkey); } } catch(e) { fetchProfileIfNeeded(ev.pubkey); } } else { fetchProfileIfNeeded(ev.pubkey); } }
+        function renderNotifications() { let list = notifEvents; if (currentNotifTab === 'zaps') { list = notifEvents.filter(ev => ev.kind === 9735); } else if (currentNotifTab === 'mentions') { list = notifEvents.filter(ev => ev.kind === 1 || ev.kind === 6); } if (list.length === 0) { document.getElementById('notifications-feed').innerHTML = "No notifications found."; return; } const html = list.map(ev => { let senderPub = ev.pubkey; if(ev.kind === 9735) { try { const desc = ev.tags.find(t => t[0] === 'description'); if(desc) senderPub = JSON.parse(desc[1]).pubkey; } catch(e){} } const p = (profiles[senderPub] && profiles[senderPub].meta) ? profiles[senderPub].meta : {name:senderPub.substring(0,6)}; const avatar = p.picture ? `<img src="${p.picture}" class="avatar">` : `<div class="avatar" style="background:#333"></div>`; let icon = ''; let actionText = ''; let content = ''; if (ev.kind === 7) { icon = '<span style="color:#e74c3c">❤️</span>'; actionText = 'liked your note'; content = ''; } else if (ev.kind === 1) { icon = '<span style="color:#3498db">↩️</span>'; actionText = 'replied/mentioned'; content = parseContent(ev.content); } else if (ev.kind === 6) { icon = '<span style="color:#2ecc71">🔄</span>'; actionText = 'reposted'; try { content = parseContent(JSON.parse(ev.content).content || ""); } catch(e){ content = "Reposted content"; } } else if (ev.kind === 9735) { icon = '<span style="color:#f1c40f">⚡</span>'; actionText = 'ZAPPED YOU'; content = ''; } const time = new Date(ev.created_at * 1000).toLocaleString(); let clickAction = `viewProfile('${senderPub}')`; if (ev.kind === 1 || ev.kind === 6) { clickAction = `viewThread('${ev.id}')`; } return `<div class="notif-item" onclick="${clickAction}" style="cursor:pointer"> <div class="notif-icon">${icon}</div> <div style="flex-grow:1"> <div style="display:flex; align-items:center; margin-bottom:5px;"> ${avatar} <div> <span style="font-weight:bold">${p.name}</span> <span style="opacity:0.7; font-size:0.8em"> ${actionText}</span> </div> </div> <div style="opacity:0.9; font-size:0.9em">${content}</div> <div style="font-size:0.7em; opacity:0.5; margin-top:5px;">${time}</div> </div> </div>`; }).join(''); document.getElementById('notifications-feed').innerHTML = html; }
+        function viewThread(eventId) { let ev = events.find(e => e.id === eventId) || myEvents.find(e => e.id === eventId) || userEvents.find(e => e.id === eventId) || searchEvents.find(e => e.id === eventId) || notifEvents.find(e => e.id === eventId) || bookmarkEvents.find(e => e.id === eventId); if(!ev) return alert("Note not found in memory."); ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container', 'panel-bookmarks'].forEach(p => document.getElementById(p).classList.add('hidden')); document.getElementById('panel-thread').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' }); currentThreadId = eventId; threadEvents = []; document.getElementById('thread-replies-container').innerHTML = "Loading replies..."; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name:ev.pubkey.substring(0,6)}; let content = ev.content; const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; const html = ` <div class="thread-parent"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.name}</span> </div> <div class="content" style="font-size: 1.2em;">${parseContent(content)}</div> <div style="font-size:0.8em; opacity:0.6; margin-top:5px;">${new Date(ev.created_at*1000).toLocaleString()}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button> <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button> </div> </div>`; document.getElementById('thread-parent-container').innerHTML = html; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], '#e': [eventId], limit: 50 }])); }); }
+        function handleThreadEvent(ev) { if(threadEvents.some(e => e.id === ev.id)) return; threadEvents.push(ev); threadEvents.sort((a,b) => a.created_at - b.created_at); renderThreadReplies(); fetchProfileIfNeeded(ev.pubkey); }
+        function renderThreadReplies() { if(threadEvents.length === 0) { document.getElementById('thread-replies-container').innerHTML = "No replies yet."; return; } const html = threadEvents.map(ev => generatePostHTML(ev)).join(''); document.getElementById('thread-replies-container').innerHTML = html; }
+
+        if (myPubKey) { document.getElementById('login-form').classList.add('hidden'); document.getElementById('user-info').classList.remove('hidden'); document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(myPubKey); if (myPrivKey) document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey); else document.getElementById('nsec-display-container').classList.add('hidden'); }
         savedRelays.forEach(connectToRelay);
         goHome();
     </script>
