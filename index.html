@@ -193,7 +193,7 @@
         /* ZAP BUTTON MODS */
         .zap-btn { 
             color: #f1c40f; 
-            border-color: var(--text-color) !important; /* Theme Border */
+            border-color: var(--text-color) !important; 
         }
         .zap-btn:hover { 
             background: #f1c40f; 
@@ -201,20 +201,20 @@
             border-color: #f1c40f !important;
         }
         
-        /* BOOKMARK BUTTON MODS */
+        /* BOOKMARK BUTTON MODS - RED COLOR */
         .bookmark-btn { 
-            color: #CE2B37; /* Italian Red */
-            border-color: var(--text-color) !important; /* Theme Border */
+            color: #ff4141; /* Same as Logout Button */
+            border-color: var(--text-color) !important;
         }
         .bookmark-btn:hover { 
-            background: #CE2B37; 
+            background: #ff4141; 
             color: #fff; 
-            border-color: #CE2B37 !important;
+            border-color: #ff4141 !important;
         }
         .bookmark-btn.active { 
-            background: #CE2B37 !important; 
+            background: #ff4141 !important; 
             color: #fff !important; 
-            border-color: #CE2B37 !important;
+            border-color: #ff4141 !important;
         }
 
         #new-btn {
@@ -382,7 +382,9 @@
         <div id="panel-identity" class="dropdown-panel hidden">
             <h3>>> KEYS</h3>
             <div id="login-form">
-                <button onclick="loginExtension()" style="width:100%; background:#9b59b6; color:white; margin-bottom:10px;">⚡ LOGIN WITH EXTENSION</button>
+                <button onclick="loginExtension()" style="width:100%; background:#9b59b6; color:white; margin-bottom:5px;">⚡ LOGIN WITH EXTENSION</button>
+                <div style="font-size: 0.8em; color: var(--meta-color); margin-bottom: 15px; text-align: center; opacity: 0.8;">(Recommended for security)</div>
+                
                 <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR ---</div>
                 <input type="text" id="privkey-input" placeholder="paste private key">
                 <button onclick="login()" style="width:100%;">Login</button>
@@ -487,7 +489,15 @@
             </div>
             <div id="filter-list" style="margin-top:10px; min-height:20px;"></div>
 
-            <br><button class="small secondary" onclick="goHome()">CLOSE</button>
+            <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
+            
+            <h3>>> SUPPORT</h3>
+            <button class="zap-active" onclick="handleZap('itsmircea@walletofsatoshi.com', null)" style="width:100%; border-color:#f1c40f;">
+                ⚡ DONATE TO DEV
+            </button>
+            <div style="text-align:center; font-size:0.8em; margin-top:5px; opacity:0.7; word-break: break-all;">itsmircea@walletofsatoshi.com</div>
+
+            <br><br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
         <!-- 6. SEARCH PANEL -->
