@@ -157,6 +157,19 @@
             opacity: 0.9;
         }
 
+        /* LIST ITEM FOR FOLLOWERS/RELAYS */
+        .list-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--post-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .list-item-content {
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
         
@@ -258,47 +271,62 @@
             margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
         }
 
-        /* PROFILE TABS SCROLLABLE */
-        .profile-tabs {
+        /* PROFILE LAYOUT */
+        .profile-actions-row {
             display: flex;
-            border-bottom: 1px solid var(--post-border);
-            margin-bottom: 15px;
-            overflow-x: auto; /* Enable horizontal scrolling */
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
+            gap: 10px;
+            margin: 15px 0;
+            width: 100%;
         }
-        /* Hide scrollbar for profile tabs */
-        .profile-tabs::-webkit-scrollbar { display: none; }
-        
-        .tab-btn {
-            flex: 0 0 auto; /* Don't shrink */
-            background: transparent;
-            border: none;
-            padding: 12px 15px;
-            cursor: pointer;
-            color: var(--meta-color);
-            border-bottom: 2px solid transparent;
-            font-size: 0.9em;
-            text-transform: uppercase;
-        }
-        .tab-btn:hover { color: var(--text-color); }
-        .tab-btn.active {
-            color: var(--text-color);
-            border-bottom: 2px solid var(--text-color);
-            font-weight: bold;
+        .profile-actions-row button {
+            flex: 1;
+            padding: 10px;
         }
 
-        /* LIST ITEM FOR FOLLOWERS/RELAYS */
-        .list-item {
-            padding: 10px;
-            border-bottom: 1px solid var(--post-border);
+        .profile-stats-row {
             display: flex;
-            align-items: center;
+            justify-content: space-between;
             gap: 10px;
+            margin-bottom: 15px;
         }
-        .list-item-content {
+        .stat-box {
+            flex: 1;
+            border: 1px solid var(--text-color);
+            background: var(--input-bg);
+            color: var(--text-color);
+            padding: 8px 5px;
+            text-align: center;
+            font-size: 0.75em;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .stat-box:hover, .stat-box.active {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        /* BOTTOM FEED TABS */
+        .profile-subnav {
+            display: flex;
+            border-bottom: 2px solid var(--post-border);
+            margin-bottom: 20px;
+        }
+        .subnav-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 12px;
+            cursor: pointer;
+            color: var(--meta-color);
+            border-bottom: 3px solid transparent;
             font-size: 0.9em;
-            word-break: break-all;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .subnav-btn:hover { color: var(--text-color); }
+        .subnav-btn.active {
+            color: var(--text-color);
+            border-bottom: 3px solid var(--text-color);
         }
 
         .sticky-footer {
@@ -453,41 +481,22 @@
 
         <!-- 3. MY PROFILE PANEL -->
         <div id="panel-my-profile" class="dropdown-panel hidden">
-            <div id="my-profile-header" style="text-align:center;">
-                <div id="my-p-img"></div>
-                <h2 id="my-p-name">Unknown</h2>
-                
-                <div class="profile-detail-box">
-                    <p id="my-p-about" style="opacity:0.8; font-style:italic; margin: 5px 0;">(No bio)</p>
-                    <a id="my-p-website" href="" target="_blank" class="hidden" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;"></a>
-                    <div id="my-p-lud16-container" class="hidden" style="font-size:0.9rem; color:#f1c40f; margin-top:5px; font-weight:bold;">
-                        ⚡ <span id="my-p-lud16"></span>
-                    </div>
-                </div>
-
-                <button onclick="toggleProfileEditor()" class="secondary">EDIT PROFILE</button>
-                
-                <div id="profile-editor" class="hidden" style="text-align:left; margin-top:15px; border-top:1px dotted var(--border-color); padding-top:10px;">
-                    <label>Name:</label><input type="text" id="p-name">
-                    <label>Bio:</label><input type="text" id="p-about">
-                    <label>Picture URL:</label><input type="text" id="p-picture">
-                    <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
-                    <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
-                    <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
-                </div>
-            </div>
-            <h3 style="border-top:1px solid var(--post-border); margin-top:20px; padding-top:10px;">>> SIGNAL HISTORY</h3>
-            
-            <!-- MY PROFILE TABS -->
-            <div class="profile-tabs">
-                <button id="my-tab-notes" class="tab-btn active" onclick="switchMyTab('notes')">NOTES</button>
-                <button id="my-tab-replies" class="tab-btn" onclick="switchMyTab('replies')">REPLIES</button>
-                <button id="my-tab-following" class="tab-btn" onclick="switchMyTab('following')">FOLLOWING <span id="my-cnt-following"></span></button>
-                <button id="my-tab-followers" class="tab-btn" onclick="switchMyTab('followers')">FOLLOWERS <span id="my-cnt-followers"></span></button>
-                <button id="my-tab-relays" class="tab-btn" onclick="switchMyTab('relays')">RELAYS <span id="my-cnt-relays"></span></button>
-            </div>
+            <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
+            <div id="my-profile-header" style="text-align:center;"></div>
+            <!-- Dynamic Content -->
+            <div id="my-profile-content"></div>
 
             <div id="my-feed"></div>
+            
+            <!-- Hidden Editor -->
+             <div id="profile-editor" class="hidden" style="text-align:left; margin-top:15px; border-top:1px dotted var(--border-color); padding-top:10px;">
+                <label>Name:</label><input type="text" id="p-name">
+                <label>Bio:</label><input type="text" id="p-about">
+                <label>Picture URL:</label><input type="text" id="p-picture">
+                <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
+                <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
+                <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
+            </div>
         </div>
 
         <!-- 4. PUBLIC USER PROFILE VIEW -->
@@ -495,15 +504,7 @@
             <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
             <div id="user-profile-header" style="text-align:center; padding-bottom:15px;"></div>
             
-            <!-- USER PROFILE TABS -->
-            <div class="profile-tabs">
-                <button id="tab-notes" class="tab-btn active" onclick="switchUserTab('notes')">NOTES</button>
-                <button id="tab-replies" class="tab-btn" onclick="switchUserTab('replies')">REPLIES</button>
-                <button id="tab-following" class="tab-btn" onclick="switchUserTab('following')">FOLLOWING <span id="u-cnt-following"></span></button>
-                <button id="tab-followers" class="tab-btn" onclick="switchUserTab('followers')">FOLLOWERS <span id="u-cnt-followers"></span></button>
-                <button id="tab-relays" class="tab-btn" onclick="switchUserTab('relays')">RELAYS <span id="u-cnt-relays"></span></button>
-            </div>
-            
+            <div id="user-profile-content"></div>
             <div id="user-feed"></div>
         </div>
 
@@ -570,7 +571,7 @@
             <h3>>> NOTIFICATIONS</h3>
             
             <!-- NOTIFICATION TABS -->
-            <div class="profile-tabs">
+            <div class="profile-tabs" style="justify-content: space-around;">
                 <button id="ntab-all" class="tab-btn active" onclick="switchNotifTab('all')">ALL</button>
                 <button id="ntab-zaps" class="tab-btn" onclick="switchNotifTab('zaps')">ZAPS</button>
                 <button id="ntab-mentions" class="tab-btn" onclick="switchNotifTab('mentions')">MENTIONS</button>
@@ -764,20 +765,37 @@
         function updateMyProfileHeader() {
             initProfileData(myPubKey);
             const p = profiles[myPubKey].meta || {}; 
-            document.getElementById('my-p-name').innerText = p.name || 'Unknown'; 
-            document.getElementById('my-p-about').innerText = p.about || '(No bio set)'; 
-            document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; 
             
-            const webEl = document.getElementById('my-p-website');
-            if(p.website) { webEl.href = p.website; webEl.innerText = p.website; webEl.classList.remove('hidden'); } else { webEl.classList.add('hidden'); }
-
-            const zapEl = document.getElementById('my-p-lud16');
-            if(p.lud16) { zapEl.innerText = p.lud16; document.getElementById('my-p-lud16-container').classList.remove('hidden'); } else { document.getElementById('my-p-lud16-container').classList.add('hidden'); }
-            
-            // Update Counts
-            document.getElementById('my-cnt-following').innerText = `(${profiles[myPubKey].following.size})`;
-            document.getElementById('my-cnt-followers').innerText = `(${profiles[myPubKey].followers.size})`;
-            document.getElementById('my-cnt-relays').innerText = `(${profiles[myPubKey].relays.length})`;
+            // Build header
+            const headerHtml = `
+                ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
+                <h2>${p.name||myPubKey.substring(0,8)}</h2>
+                <div class="profile-detail-box">
+                    <p style="opacity:0.8; font-style:italic; margin: 5px 0;">${p.about || '(No bio)'}</p>
+                    ${p.website ? `<a href="${p.website}" target="_blank" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;">${p.website}</a>` : ''}
+                    ${p.lud16 ? `<div style="font-size:0.9em; color:#f1c40f; margin-top:5px; font-weight:bold;">⚡ ${p.lud16}</div>` : ''}
+                </div>
+                <div class="profile-actions-row">
+                    <button class="secondary" onclick="toggleProfileEditor()">[ EDIT PROFILE ]</button>
+                    <button onclick="copyKey('display-npub')">[ SHARE ]</button>
+                </div>
+                <div class="profile-stats-row">
+                    <div id="my-tab-following" class="stat-box" onclick="switchMyTab('following')">[ FOLLOWING <span id="my-cnt-following">${profiles[myPubKey].following.size}</span> ]</div>
+                    <div id="my-tab-followers" class="stat-box" onclick="switchMyTab('followers')">[ FOLLOWERS <span id="my-cnt-followers">${profiles[myPubKey].followers.size}</span> ]</div>
+                    <div id="my-tab-relays" class="stat-box" onclick="switchMyTab('relays')">[ RELAYS <span id="my-cnt-relays">${profiles[myPubKey].relays.length}</span> ]</div>
+                </div>
+                <div class="profile-subnav">
+                    <button id="my-tab-notes" class="subnav-btn active" onclick="switchMyTab('notes')">NOTES</button>
+                    <button id="my-tab-replies" class="subnav-btn" onclick="switchMyTab('replies')">NOTES & REPLIES</button>
+                </div>
+            `;
+            document.getElementById('my-profile-header').innerHTML = headerHtml;
+            // Pre-fill editor inputs
+            document.getElementById('p-name').value = p.name||''; 
+            document.getElementById('p-about').value = p.about||''; 
+            document.getElementById('p-picture').value = p.picture||''; 
+            document.getElementById('p-website').value = p.website||''; 
+            document.getElementById('p-lud16').value = p.lud16||'';
         }
 
         function viewProfile(pubkey) {
@@ -812,47 +830,84 @@
             let followBtn = '';
             if (!isMe && myPubKey) {
                 followBtn = isFollowing 
-                    ? `<button class="secondary act-btn" onclick="toggleFollow('${pubkey}')">[UNFOLLOW]</button>`
-                    : `<button class="act-btn" onclick="toggleFollow('${pubkey}')">[FOLLOW]</button>`;
+                    ? `<button class="secondary act-btn" onclick="toggleFollow('${pubkey}')">[ UNFOLLOW ]</button>`
+                    : `<button class="act-btn" onclick="toggleFollow('${pubkey}')">[ FOLLOW ]</button>`;
+            } else if (isMe) {
+                 followBtn = `<button class="secondary act-btn" onclick="togglePanel('panel-my-profile')">[ EDIT ]</button>`;
             }
 
             let zapBtn = '';
             if (p.lud16) {
-                zapBtn = `<button class="zap-active act-btn zap-btn" onclick="handleZap('${p.lud16}', '${pubkey}')">[ZAP ⚡]</button>`;
+                zapBtn = `<button class="zap-active act-btn zap-btn" onclick="handleZap('${p.lud16}', '${pubkey}')">⚡ ZAP</button>`;
             }
 
             const html = `
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.name||pubkey.substring(0,8)}</h2>
-                <p>${p.about||''}</p>
-                <div class="profile-actions">
+                <div class="profile-detail-box">
+                    <p style="opacity:0.8; font-style:italic; margin: 5px 0;">${p.about || ''}</p>
+                    ${p.website ? `<a href="${p.website}" target="_blank" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;">${p.website}</a>` : ''}
+                    ${p.lud16 ? `<div style="font-size:0.9em; color:#f1c40f; margin-top:5px; font-weight:bold;">⚡ ${p.lud16}</div>` : ''}
+                </div>
+                <div class="profile-actions-row">
                     ${followBtn}
                     ${zapBtn}
                 </div>
+                 <div class="profile-stats-row">
+                    <div id="tab-following" class="stat-box" onclick="switchUserTab('following')">[ FOLLOWING <span id="u-cnt-following">${profiles[pubkey].following.size}</span> ]</div>
+                    <div id="tab-followers" class="stat-box" onclick="switchUserTab('followers')">[ FOLLOWERS <span id="u-cnt-followers">${profiles[pubkey].followers.size}</span> ]</div>
+                    <div id="tab-relays" class="stat-box" onclick="switchUserTab('relays')">[ RELAYS <span id="u-cnt-relays">${profiles[pubkey].relays.length}</span> ]</div>
+                </div>
+                <div class="profile-subnav">
+                    <button id="tab-notes" class="subnav-btn active" onclick="switchUserTab('notes')">NOTES</button>
+                    <button id="tab-replies" class="subnav-btn" onclick="switchUserTab('replies')">NOTES & REPLIES</button>
+                </div>
             `;
             document.getElementById('user-profile-header').innerHTML = html;
-            
-            // Update Counts
-            document.getElementById('u-cnt-following').innerText = `(${profiles[pubkey].following.size})`;
-            document.getElementById('u-cnt-followers').innerText = `(${profiles[pubkey].followers.size})`;
-            document.getElementById('u-cnt-relays').innerText = `(${profiles[pubkey].relays.length})`;
         }
 
         function switchUserTab(tab) {
             currentUserTab = tab;
-            ['tab-notes', 'tab-replies', 'tab-following', 'tab-followers', 'tab-relays'].forEach(id => {
-                document.getElementById(id).className = 'tab-btn';
+            // Update UI for stats buttons
+            ['tab-following', 'tab-followers', 'tab-relays'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.remove('active');
             });
-            document.getElementById('tab-' + tab).className = 'tab-btn active';
+            if(['following','followers','relays'].includes(tab)) {
+                document.getElementById('tab-' + tab).classList.add('active');
+            }
+            
+            // Update UI for subnav buttons
+            ['tab-notes', 'tab-replies'].forEach(id => {
+                 const el = document.getElementById(id);
+                 if(el) el.className = 'subnav-btn';
+            });
+            if(tab === 'notes' || tab === 'replies') {
+                document.getElementById('tab-' + tab).className = 'subnav-btn active';
+            }
+
             renderUserFeed();
         }
         
         function switchMyTab(tab) {
             currentMyTab = tab;
-            ['my-tab-notes', 'my-tab-replies', 'my-tab-following', 'my-tab-followers', 'my-tab-relays'].forEach(id => {
-                document.getElementById(id).className = 'tab-btn';
+             // Update UI for stats buttons
+            ['my-tab-following', 'my-tab-followers', 'my-tab-relays'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.remove('active');
             });
-            document.getElementById('my-tab-' + tab).className = 'tab-btn active';
+            if(['following','followers','relays'].includes(tab)) {
+                document.getElementById('my-tab-' + tab).classList.add('active');
+            }
+            
+            // Update UI for subnav buttons
+            ['my-tab-notes', 'my-tab-replies'].forEach(id => {
+                 const el = document.getElementById(id);
+                 if(el) el.className = 'subnav-btn';
+            });
+            if(tab === 'notes' || tab === 'replies') {
+                document.getElementById('my-tab-' + tab).className = 'subnav-btn active';
+            }
             renderMyFeed();
         }
 
@@ -950,8 +1005,6 @@
                      if (isMe) myContacts = new Set(following); // Global tracking
                 } else {
                     // If this is someone else's contact list, check if they follow target
-                    // This is for the "Followers" calculation
-                    // If ev.tags contains target, add ev.pubkey to target's followers
                     const target = isMe ? myPubKey : currentViewedProfile;
                     if (target) {
                         const followsTarget = ev.tags.some(t => t[0] === 'p' && t[1] === target);
