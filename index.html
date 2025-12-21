@@ -275,7 +275,7 @@
         .profile-actions-row {
             display: flex;
             gap: 10px;
-            margin: 15px 0;
+            margin-bottom: 20px; /* Space below button */
             width: 100%;
         }
         .profile-actions-row button {
@@ -665,7 +665,6 @@
         let eventStats = {};
 
         // Profile Data Storage
-        // Structure: { pubkey: { meta: {}, following: Set(), followers: Set(), relays: [] } }
         const profiles = {};
         const processedIds = new Set(), requestedProfiles = new Set();
         let myPrivKey = localStorage.getItem('nostr_privkey'), myPubKey = localStorage.getItem('nostr_pubkey'), authMode = localStorage.getItem('nostr_mode');
@@ -762,7 +761,7 @@
             initProfileData(myPubKey);
             const p = profiles[myPubKey].meta || {}; 
             
-            // Build header
+            // Build header - STATS ABOVE EDIT BUTTON
             const headerHtml = `
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.name||myPubKey.substring(0,8)}</h2>
@@ -771,13 +770,13 @@
                     ${p.website ? `<a href="${p.website}" target="_blank" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;">${p.website}</a>` : ''}
                     ${p.lud16 ? `<div style="font-size:0.9em; color:#f1c40f; margin-top:5px; font-weight:bold;">⚡ ${p.lud16}</div>` : ''}
                 </div>
-                <div class="profile-actions-row">
-                    <button class="secondary" onclick="toggleProfileEditor()">[ EDIT PROFILE ]</button>
-                </div>
-                <div class="profile-stats-row">
+                 <div class="profile-stats-row">
                     <div id="my-tab-following" class="stat-box" onclick="switchMyTab('following')">[ FOLLOWING <span id="my-cnt-following">${profiles[myPubKey].following.size}</span> ]</div>
                     <div id="my-tab-followers" class="stat-box" onclick="switchMyTab('followers')">[ FOLLOWERS <span id="my-cnt-followers">${profiles[myPubKey].followers.size}</span> ]</div>
                     <div id="my-tab-relays" class="stat-box" onclick="switchMyTab('relays')">[ RELAYS <span id="my-cnt-relays">${profiles[myPubKey].relays.length}</span> ]</div>
+                </div>
+                <div class="profile-actions-row">
+                    <button class="secondary" onclick="toggleProfileEditor()">[ EDIT PROFILE ]</button>
                 </div>
                 <div class="profile-subnav">
                     <button id="my-tab-notes" class="subnav-btn active" onclick="switchMyTab('notes')">NOTES</button>
@@ -844,14 +843,14 @@
                     ${p.website ? `<a href="${p.website}" target="_blank" style="display:block; margin:5px 0; color:var(--text-color); text-decoration:underline;">${p.website}</a>` : ''}
                     ${p.lud16 ? `<div style="font-size:0.9em; color:#f1c40f; margin-top:5px; font-weight:bold;">⚡ ${p.lud16}</div>` : ''}
                 </div>
-                <div class="profile-actions-row">
-                    ${followBtn}
-                    ${zapBtn}
-                </div>
                  <div class="profile-stats-row">
                     <div id="tab-following" class="stat-box" onclick="switchUserTab('following')">[ FOLLOWING <span id="u-cnt-following">${profiles[pubkey].following.size}</span> ]</div>
                     <div id="tab-followers" class="stat-box" onclick="switchUserTab('followers')">[ FOLLOWERS <span id="u-cnt-followers">${profiles[pubkey].followers.size}</span> ]</div>
                     <div id="tab-relays" class="stat-box" onclick="switchUserTab('relays')">[ RELAYS <span id="u-cnt-relays">${profiles[pubkey].relays.length}</span> ]</div>
+                </div>
+                <div class="profile-actions-row">
+                    ${followBtn}
+                    ${zapBtn}
                 </div>
                 <div class="profile-subnav">
                     <button id="tab-notes" class="subnav-btn active" onclick="switchUserTab('notes')">NOTES</button>
