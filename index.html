@@ -415,7 +415,6 @@
         let replyContext = null;
         let currentViewedProfile = null;
         let currentThreadId = null;
-        let currentThreadRootId = null; 
         let currentUserTab = 'notes'; 
         let currentMyTab = 'notes';
         let currentNotifTab = 'all';
@@ -460,55 +459,77 @@
             currentThreadId = null;
         }
 
-        /* --- THREAD & REPLY LOGIC UPDATED (REWRITTEN) --- */
+        /* --- REDESIGNED THREAD LOGIC --- */
+        function getImmediateParentId(ev) {
+            // NIP-10: tags = [['e', id, url, marker], ...]
+            // 1. Look for 'reply' marker
+            const replyTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'reply');
+            if (replyTag) return replyTag[1];
+
+            // 2. Look for 'root' marker (if no reply marker, root is the parent)
+            const rootTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'root');
+            if (rootTag && !replyTag) return rootTag[1];
+
+            // 3. Fallback: last 'e' tag
+            const eTags = ev.tags.filter(t => t[0] === 'e');
+            if (eTags.length > 0) return eTags[eTags.length - 1][1];
+
+            return null;
+        }
+
         function viewThread(id) {
             currentThreadId = id;
             togglePanel('panel-thread');
             
-            document.getElementById('thread-parent-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading note...</div>';
+            document.getElementById('thread-parent-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading thread...</div>';
             document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading replies...</div>';
+            
             threadEvents = [];
             
-            // 1. Try to find the note in memory first
+            // Check cache
             const cached = events.find(e => e.id === id) || notifEvents.find(e => e.id === id) || myEvents.find(e => e.id === id) || userEvents.find(e => e.id === id);
             
             if (cached) {
-                // If we have it, show it immediately
                 threadEvents.push(cached);
                 renderThreadView(); 
+                // Immediately check for parent
+                const parentId = getImmediateParentId(cached);
+                if (parentId) {
+                    fetchNote(parentId); // Recursively fetch up
+                }
             }
 
-            // 2. Fetch specific thread data from relays
+            // Always fetch fresh data
             Object.values(sockets).forEach(ws => {
                 if (ws.readyState === 1) {
-                    // Get the Note itself (in case we missed it or need fresh data)
                     ws.send(JSON.stringify(["REQ", "thread_main", { kinds: [1], ids: [id] }]));
-                    
-                    // Get all replies to this note
                     ws.send(JSON.stringify(["REQ", "thread_children", { kinds: [1], '#e': [id], limit: 100 }]));
                 }
             });
         }
 
+        function fetchNote(id) {
+            // Prevent infinite loops if id is already fetched
+            if(threadEvents.some(e => e.id === id)) return;
+
+            Object.values(sockets).forEach(ws => {
+                if (ws.readyState === 1) {
+                    ws.send(JSON.stringify(["REQ", "thread_ancestor_" + id.substring(0,8), { kinds: [1], ids: [id] }]));
+                }
+            });
+        }
+
         function handleThreadEvent(ev) {
-            // Avoid duplicates
             if (threadEvents.some(e => e.id === ev.id)) return;
-            
             threadEvents.push(ev);
             fetchProfileIfNeeded(ev.pubkey);
             
-            // Check if this new event is the main note we are looking at
-            if (ev.id === currentThreadId) {
-                // If this note is a reply, we need to fetch its parent to show context
-                const parentTag = ev.tags.find(t => t[0] === 'e');
-                if (parentTag) {
-                    const parentId = parentTag[1];
-                    // Fetch Parent
-                    Object.values(sockets).forEach(ws => {
-                        if (ws.readyState === 1) {
-                            ws.send(JSON.stringify(["REQ", "thread_parent", { kinds: [1], ids: [parentId] }]));
-                        }
-                    });
+            // If this is an ancestor, check if IT has a parent
+            const parentId = getImmediateParentId(ev);
+            if (parentId) {
+                // If we don't have the parent yet, fetch it
+                if (!threadEvents.some(e => e.id === parentId)) {
+                    fetchNote(parentId);
                 }
             }
             
@@ -516,43 +537,54 @@
         }
 
         function renderThreadView() {
-            // 1. Find the main note
             const mainNote = threadEvents.find(e => e.id === currentThreadId);
             
-            // 2. Find Parent (Context)
-            let parentHtml = '';
-            if (mainNote) {
-                const parentTag = mainNote.tags.find(t => t[0] === 'e');
-                if (parentTag) {
-                    const parentNote = threadEvents.find(e => e.id === parentTag[1]);
-                    if (parentNote) {
-                        parentHtml = `<div class="thread-ancestor">
-                            <div style="font-size:0.8em; margin-bottom:5px; opacity:0.7;">In reply to:</div>
-                            ${generatePostHTML(parentNote)}
-                        </div>`;
-                    } else {
-                        // We know there is a parent, but we haven't loaded it yet
-                        parentHtml = `<div style="padding:10px; opacity:0.6; border-left: 2px dotted var(--meta-color); margin-bottom:10px;">Loading parent conversation...</div>`;
-                    }
+            if (!mainNote) return; // Wait for main note
+
+            // Trace ancestors up
+            let ancestors = [];
+            let current = mainNote;
+            let loopGuard = 0;
+            
+            while(loopGuard < 10) {
+                const pid = getImmediateParentId(current);
+                if (!pid) break;
+                const parent = threadEvents.find(e => e.id === pid);
+                if (!parent) {
+                    // Parent exists but not loaded
+                    ancestors.unshift({ missing: true, id: pid });
+                    break;
                 }
+                ancestors.unshift({ missing: false, note: parent });
+                current = parent;
+                loopGuard++;
             }
 
-            if (mainNote) {
-                document.getElementById('thread-parent-container').innerHTML = parentHtml + `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
-            }
+            let html = '';
+            ancestors.forEach(a => {
+                if (a.missing) {
+                    html += `<div class="thread-ancestor" style="opacity:0.6;">
+                        <button class="small secondary" onclick="fetchNote('${a.id}')">[ Load Parent ]</button>
+                    </div>`;
+                } else {
+                    html += `<div class="thread-ancestor">${generatePostHTML(a.note)}</div>`;
+                }
+            });
 
-            // 3. Find Children (Replies)
-            // A reply is any note in threadEvents that has an 'e' tag pointing to currentThreadId
-            const replies = threadEvents.filter(e => e.tags.some(t => t[0] === 'e' && t[1] === currentThreadId));
+            html += `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
+            document.getElementById('thread-parent-container').innerHTML = html;
+
+            // Replies
+            const replies = threadEvents.filter(e => {
+                const pid = getImmediateParentId(e);
+                return pid === currentThreadId;
+            });
             replies.sort((a,b) => a.created_at - b.created_at);
             
             if (replies.length > 0) {
                 document.getElementById('thread-replies-container').innerHTML = replies.map(generatePostHTML).join('');
             } else {
-                // If main note is loaded but no replies found yet
-                if (mainNote) {
-                    document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:10px;">No replies found yet.</div>';
-                }
+                document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:10px;">No replies found yet.</div>';
             }
         }
         /* --- END THREAD LOGIC --- */
@@ -1055,8 +1087,8 @@
                         if (subId === 'search_sub') handleSearchEvent(ev);
                         if (subId === 'notif_sub') handleNotifEvent(ev);
                         
-                        // Handle Thread Events (Main, Children, Parent)
-                        if (subId === 'thread_main' || subId === 'thread_children' || subId === 'thread_parent') {
+                        // Handle Thread Events (Main, Children, Ancestors)
+                        if (subId === 'thread_main' || subId === 'thread_children' || subId.startsWith('thread_ancestor')) {
                             handleThreadEvent(ev);
                         }
 
