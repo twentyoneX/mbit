@@ -108,9 +108,8 @@
             padding: 0;
             margin: 0;
             cursor: pointer;
-            width: 100%; /* Ensure full width */
+            width: 100%;
         }
-        /* WebKit (Chrome, Safari) */
         input[type="range"]::-webkit-slider-runnable-track {
             background: var(--post-border);
             height: 4px;
@@ -123,7 +122,6 @@
             margin-top: -8px;
             border-radius: 50%;
         }
-        /* Firefox */
         input[type="range"]::-moz-range-track {
             background: var(--post-border);
             height: 4px;
@@ -495,8 +493,7 @@
             <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-my-profile')">[ MY PROFILE ]</span>
             <span>|</span>
-            <span class="nav-item" onclick="togglePanel('panel-relays')">[ RELAYS ]</span>
-            <span>|</span>
+            <!-- Relays removed from here -->
             <span class="nav-item" onclick="togglePanel('panel-settings')">[ SETTINGS ]</span>
         </div>
     </header>
@@ -557,12 +554,8 @@
                 <button class="small secondary" onclick="toggleProfileEditor()" style="width:100%; margin-top:5px; margin-left:0;">CANCEL</button>
             </div>
 
-            <!-- STATIC TABS FOR MY PROFILE -->
-            <div class="profile-subnav">
-                <button id="my-tab-notes" class="subnav-btn active" onclick="switchMyTab('notes')">NOTES</button>
-                <button id="my-tab-replies" class="subnav-btn" onclick="switchMyTab('replies')">NOTES & REPLIES</button>
-            </div>
-
+            <!-- TABS GENERATED DYNAMICALLY BY JS -->
+            <!-- Removing static tabs here to prevent duplication -->
             <div id="my-feed"></div>
         </div>
 
@@ -576,6 +569,10 @@
         <!-- 5. SETTINGS PANEL -->
         <div id="panel-settings" class="dropdown-panel hidden">
             <h3>>> SETTINGS</h3>
+            
+            <!-- RELAY MANAGER BUTTON -->
+            <button onclick="togglePanel('panel-relays')" style="width:100%; margin-bottom:15px; border: 1px solid var(--text-color);">>> MANAGE RELAYS</button>
+
             <label>SYSTEM THEME:</label>
             <select id="theme-selector" onchange="changeTheme(this.value)">
                 <option value="dark">White on Black</option>
@@ -935,6 +932,7 @@
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || pubkey.substring(0,8)}</h2>
                 ${p.nip05 ? `<div style="font-size:0.8em; color:#3498db; margin-bottom:5px;">✓ ${p.nip05}</div>` : ''}
+
                 <div class="npub-wrapper" onclick="copyToClipboard('${npub}')">
                     <div class="npub-text">${npub}</div>
                     <svg class="copy-icon-svg" viewBox="0 0 24 24">
