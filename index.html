@@ -86,8 +86,8 @@
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
-        /* FIXED BOX SIZE FOR DESKTOP - 800PX */
-        #main-container { max-width: 800px; margin: 0 auto; }
+        /* FIXED BOX SIZE FOR DESKTOP - SET TO 600PX */
+        #main-container { max-width: 600px; margin: 0 auto; }
 
         .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
 
@@ -155,13 +155,13 @@
         }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
-        /* ACTION BUTTONS */
+        /* ACTION BUTTONS - STYLED LIKE IMAGE */
         .actions { 
             margin-top: 15px; 
             font-size: 0.8em; 
             display: flex; 
             flex-direction: row; 
-            flex-wrap: wrap;
+            flex-wrap: wrap; /* Wraps if screen is very small, but usually horizontal */
             gap: 15px; 
             border-top: 1px dotted var(--post-border); 
             padding-top: 12px; 
@@ -170,14 +170,14 @@
         .act-btn { 
             background: transparent; 
             color: var(--text-color); 
-            border: 1.5px solid var(--text-color); 
+            border: 1.5px solid var(--text-color); /* Thicker border */
             padding: 6px 12px; 
             cursor: pointer; 
             font-family: inherit; 
             font-size: 0.9em; 
             font-weight: bold;
             text-transform: uppercase;
-            border-radius: 0;
+            border-radius: 0; /* Sharp corners */
             transition: 0.2s;
             white-space: nowrap;
         }
@@ -560,7 +560,7 @@
         let bookmarks = new Set(JSON.parse(localStorage.getItem('mbit_bookmarks')) || []);
         let myContacts = new Set(); 
         
-        // Counter Store: { eventId: { reply: 0, repost: 0, like: 0, zap: 0 } }
+        // Counter Store
         let eventStats = {};
 
         const profiles = {}, processedIds = new Set(), requestedProfiles = new Set();
@@ -681,9 +681,7 @@
             }
             localStorage.setItem('mbit_bookmarks', JSON.stringify([...bookmarks]));
             
-            // Refresh views if open
             if(!document.getElementById('panel-bookmarks').classList.contains('hidden')) openBookmarks();
-            // Re-render feed to show active state
             if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
         }
 
@@ -696,7 +694,6 @@
             }
             document.getElementById('bookmarks-feed').innerHTML = "Loading saved posts...";
             bookmarkEvents = [];
-            // Request the specific IDs
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "bookmarks_sub", { kinds: [1], ids: ids }]));
             });
@@ -705,7 +702,6 @@
         function handleBookmarkEvent(ev) {
             if(bookmarkEvents.some(e => e.id === ev.id)) return;
             bookmarkEvents.push(ev);
-            // Sort by saved time isn't tracked, so sort by event time
             bookmarkEvents.sort((a,b) => b.created_at - a.created_at);
             document.getElementById('bookmarks-feed').innerHTML = bookmarkEvents.map(generatePostHTML).join('');
             fetchProfileIfNeeded(ev.pubkey);
@@ -735,7 +731,6 @@
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
             const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn';
             
-            // Get stats
             const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 };
 
             const html = `
@@ -747,10 +742,10 @@
                 <div class="content" style="font-size: 1.2em;">${parseContent(content)}</div>
                 <div style="font-size:0.8em; opacity:0.6; margin-top:5px;">${new Date(ev.created_at*1000).toLocaleString()}</div>
                 <div class="actions">
-                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY ${s.reply}]</button>
-                    <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE ${s.repost}]</button>
-                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE ${s.like}]</button>
-                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ ${s.zap}]</button>
+                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button>
+                    <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button>
+                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button>
+                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button>
                     <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button>
                 </div>
             </div>`;
@@ -788,7 +783,6 @@
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
             const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn';
             
-            // Counts
             const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 };
 
             return `<div class="post">
@@ -810,7 +804,6 @@
 
         /* --- STATS PROCESSING --- */
         function processEventStats(ev) {
-            // Check tags for 'e' to see if this event interacts with another
             const eTags = ev.tags.filter(t => t[0] === 'e');
             eTags.forEach(t => {
                 const targetId = t[1];
@@ -821,7 +814,6 @@
                 if (ev.kind === 7) eventStats[targetId].like++;
                 if (ev.kind === 9735) eventStats[targetId].zap++;
 
-                // Update DOM if element exists
                 updateCountDOM(targetId, 'reply');
                 updateCountDOM(targetId, 'repost');
                 updateCountDOM(targetId, 'like');
@@ -1128,8 +1120,7 @@
                 ws.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
                     if (data[0] === 'EVENT') {
-                        // Count every event seen
-                        processEventStats(data[2]);
+                        processEventStats(data[2]); // Capture stats
 
                         if (data[1] === 'g') handleGlobalEvent(data[2]);
                         if (data[1] === 'sub_me') handleMyEvent(data[2]);
