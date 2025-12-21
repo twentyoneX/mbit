@@ -673,18 +673,25 @@
             fetchProfileIfNeeded(ev.pubkey);
         }
 
+        function findTargetContent(id) {
+            // Helper to see if we already downloaded the note this notification is about
+            const note = events.find(e => e.id === id) || 
+                         myEvents.find(e => e.id === id) || 
+                         userEvents.find(e => e.id === id) ||
+                         threadEvents.find(e => e.id === id);
+            
+            if (!note) return null;
+            let text = note.content;
+            if (text.length > 80) text = text.substring(0, 80) + '...';
+            return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
         function renderNotifications() {
             let list = notifEvents;
-            if (currentNotifTab === 'zaps') {
-                list = notifEvents.filter(e => e.kind === 9735);
-            } else if (currentNotifTab === 'mentions') {
-                list = notifEvents.filter(e => e.kind === 1);
-            }
+            if (currentNotifTab === 'zaps') list = notifEvents.filter(e => e.kind === 9735);
+            else if (currentNotifTab === 'mentions') list = notifEvents.filter(e => e.kind === 1);
             
-            if (list.length === 0) { 
-                document.getElementById('notifications-feed').innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6;">No notifications found.</div>'; 
-                return; 
-            }
+            if (list.length === 0) { document.getElementById('notifications-feed').innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6;">No notifications found.</div>'; return; }
             
             document.getElementById('notifications-feed').innerHTML = list.map(ev => {
                 // 1. ZAPS (Kind 9735)
@@ -708,32 +715,35 @@
 
                      const p = (profiles[senderPubkey] && profiles[senderPubkey].meta) ? profiles[senderPubkey].meta : {name: senderPubkey.substring(0,6)};
                      
+                     const snippet = targetId ? findTargetContent(targetId) : null;
+
                      return `
                      <div class="notif-item" onclick="${targetId ? `viewThread('${targetId}')` : ''}" style="cursor:pointer;">
                         ${p.picture ? `<img src="${p.picture}" class="avatar" style="margin-right:15px;">` : '<span class="notif-icon" style="color:#F7931A;">⚡</span>'}
-                        <div>
+                        <div style="flex-grow:1;">
                             <div style="font-weight:bold; color:#F7931A; font-size:1.1em;">+${amountSats} sats</div>
                             <div style="font-size:0.9em;">
                                 from <span style="font-weight:bold; color:var(--text-color);">${p.name || senderPubkey.substring(0,6)}</span>
                             </div>
-                            ${targetId ? '<div style="font-size:0.75em; opacity:0.6; margin-top:2px;">>> view zapped note</div>' : ''}
+                            ${snippet ? `<div style="margin-top:5px; padding-left:10px; border-left:3px solid #333; font-style:italic; opacity:0.8; font-size:0.8em;">"${snippet}"</div>` : ''}
                         </div>
                      </div>`;
                 }
 
-                // 2. LIKES (Kind 7) - FIXED: Show as text, click to view original note
+                // 2. LIKES (Kind 7)
                 if (ev.kind === 7) {
                     const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)};
                     const targetId = ev.tags.find(t => t[0] === 'e')?.[1];
+                    const snippet = targetId ? findTargetContent(targetId) : null;
                     
                     return `
-                    <div class="notif-item" onclick="viewThread('${targetId}')" style="cursor:pointer;">
+                    <div class="notif-item" onclick="${targetId ? `viewThread('${targetId}')` : ''}" style="cursor:pointer;">
                         <div style="font-size:1.5em; margin-right:15px; color:#e0245e;">❤</div>
-                        <div>
+                        <div style="flex-grow:1;">
                             <div style="font-size:0.9em;">
                                 <span style="font-weight:bold;">${p.name || ev.pubkey.substring(0,6)}</span> liked your note.
                             </div>
-                            <div style="font-size:0.75em; opacity:0.6; margin-top:2px;">>> view note</div>
+                            ${snippet ? `<div style="margin-top:5px; padding-left:10px; border-left:3px solid #333; font-style:italic; opacity:0.8; font-size:0.8em;">"${snippet}"</div>` : ''}
                         </div>
                     </div>`;
                 }
@@ -742,20 +752,21 @@
                 if (ev.kind === 6) {
                     const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)};
                     const targetId = ev.tags.find(t => t[0] === 'e')?.[1];
+                    const snippet = targetId ? findTargetContent(targetId) : null;
                     
                     return `
-                    <div class="notif-item" onclick="viewThread('${targetId}')" style="cursor:pointer;">
+                    <div class="notif-item" onclick="${targetId ? `viewThread('${targetId}')` : ''}" style="cursor:pointer;">
                         <div style="font-size:1.5em; margin-right:15px; color:#17bf63;">↻</div>
-                        <div>
+                        <div style="flex-grow:1;">
                             <div style="font-size:0.9em;">
                                 <span style="font-weight:bold;">${p.name || ev.pubkey.substring(0,6)}</span> reposted your note.
                             </div>
-                            <div style="font-size:0.75em; opacity:0.6; margin-top:2px;">>> view note</div>
+                            ${snippet ? `<div style="margin-top:5px; padding-left:10px; border-left:3px solid #333; font-style:italic; opacity:0.8; font-size:0.8em;">"${snippet}"</div>` : ''}
                         </div>
                     </div>`;
                 }
 
-                // 4. REPLIES (Kind 1) - Show as full post
+                // 4. REPLIES (Kind 1)
                 return `<div style="border-bottom: 1px solid var(--post-border); padding-bottom: 15px; margin-bottom: 15px;">
                     <div style="font-size: 0.75em; opacity: 0.7; margin-bottom: 8px;">💬 Reply to your note:</div>
                     ${generatePostHTML(ev)}
