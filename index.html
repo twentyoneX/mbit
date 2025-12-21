@@ -142,7 +142,7 @@
             margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
         }
 
-        /* PROFILE TABS */
+        /* TABS (PROFILE & NOTIFICATIONS) */
         .profile-tabs {
             display: flex;
             border-bottom: 1px solid var(--post-border);
@@ -193,7 +193,15 @@
         }
         .footer-item:hover { opacity: 1; text-decoration: underline; text-shadow: var(--glow); }
 
-        .notif-item { padding: 10px; border-bottom: 1px solid var(--post-border); font-size: 0.9rem; }
+        .notif-item { 
+            padding: 12px; 
+            border-bottom: 1px solid var(--post-border); 
+            font-size: 0.9rem; 
+            display: flex;
+            align-items: flex-start;
+        }
+        .notif-icon { margin-right: 10px; font-size: 1.2rem; min-width: 25px; }
+
         .profile-actions { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
 
         .filter-tag {
@@ -401,9 +409,17 @@
             <div id="search-results"></div>
         </div>
 
-        <!-- 7. NOTIFICATIONS PANEL -->
+        <!-- 7. NOTIFICATIONS PANEL (UPDATED) -->
         <div id="panel-notifications" class="dropdown-panel hidden">
             <h3>>> NOTIFICATIONS</h3>
+            
+            <!-- NOTIFICATION TABS -->
+            <div class="profile-tabs">
+                <button id="ntab-all" class="tab-btn active" onclick="switchNotifTab('all')">ALL</button>
+                <button id="ntab-zaps" class="tab-btn" onclick="switchNotifTab('zaps')">ZAPS</button>
+                <button id="ntab-mentions" class="tab-btn" onclick="switchNotifTab('mentions')">MENTIONS</button>
+            </div>
+
             <button class="small secondary" onclick="refreshNotifications()" style="margin-bottom:10px;">REFRESH</button>
             <div id="notifications-feed">Loading...</div>
         </div>
@@ -463,6 +479,7 @@
         // Tab States
         let currentUserTab = 'notes'; 
         let currentMyTab = 'notes';
+        let currentNotifTab = 'all';
 
         // Init Theme
         function changeTheme(theme) {
@@ -693,13 +710,27 @@
             }
         }
 
+        function switchNotifTab(tab) {
+            currentNotifTab = tab;
+            document.getElementById('ntab-all').className = tab === 'all' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('ntab-zaps').className = tab === 'zaps' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('ntab-mentions').className = tab === 'mentions' ? 'tab-btn active' : 'tab-btn';
+            renderNotifications();
+        }
+
         function refreshNotifications() {
             if(!myPubKey) return document.getElementById('notifications-feed').innerHTML = "Login required.";
             notifEvents = [];
             document.getElementById('notifications-feed').innerHTML = "Loading...";
+            
+            // Subscribing to:
+            // 1: Text Note (Mentions)
+            // 6: Repost (Mentions)
+            // 7: Reaction (Likes)
+            // 9735: Zap Receipt (Zaps)
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) {
-                    ws.send(JSON.stringify(["REQ", "notif_sub", { kinds: [1, 7], '#p': [myPubKey], limit: 50 }]));
+                    ws.send(JSON.stringify(["REQ", "notif_sub", { kinds: [1, 6, 7, 9735], '#p': [myPubKey], limit: 50 }]));
                 }
             });
         }
@@ -709,18 +740,97 @@
             notifEvents.push(ev);
             notifEvents.sort((a,b) => b.created_at - a.created_at);
             renderNotifications();
-            fetchProfileIfNeeded(ev.pubkey);
+            
+            // Profile Fetching Logic
+            if(ev.kind === 9735) {
+                // For Zaps, try to find the actual sender from description tag
+                try {
+                    const desc = ev.tags.find(t => t[0] === 'description');
+                    if(desc) {
+                        const request = JSON.parse(desc[1]);
+                        fetchProfileIfNeeded(request.pubkey);
+                    } else {
+                        fetchProfileIfNeeded(ev.pubkey);
+                    }
+                } catch(e) { fetchProfileIfNeeded(ev.pubkey); }
+            } else {
+                fetchProfileIfNeeded(ev.pubkey);
+            }
         }
 
         function renderNotifications() {
-            const html = notifEvents.map(ev => {
-                const p = profiles[ev.pubkey] || {};
-                const name = p.name || ev.pubkey.substring(0,6);
-                const type = ev.kind === 7 ? "❤️ Liked" : "↩️ Replied";
-                const content = ev.kind === 7 ? "your note" : parseContent(ev.content);
-                return `<div class="notif-item" onclick="viewProfile('${ev.pubkey}')"><b>${name}</b> ${type}:<br><span style="opacity:0.8">${content}</span></div>`;
+            let list = notifEvents;
+
+            // Filter based on Tab
+            if (currentNotifTab === 'zaps') {
+                list = notifEvents.filter(ev => ev.kind === 9735);
+            } else if (currentNotifTab === 'mentions') {
+                // Show text notes (1) and reposts (6)
+                list = notifEvents.filter(ev => ev.kind === 1 || ev.kind === 6);
+            } 
+            // 'all' includes 1, 6, 7, 9735
+
+            if (list.length === 0) {
+                document.getElementById('notifications-feed').innerHTML = "No notifications found.";
+                return;
+            }
+
+            const html = list.map(ev => {
+                // Determine Real Sender
+                let senderPub = ev.pubkey;
+                
+                // Specific Logic for Zap Senders
+                if(ev.kind === 9735) {
+                    try {
+                        const desc = ev.tags.find(t => t[0] === 'description');
+                        if(desc) senderPub = JSON.parse(desc[1]).pubkey;
+                    } catch(e){}
+                }
+
+                const p = profiles[senderPub] || {};
+                const name = p.name || senderPub.substring(0,6);
+                const avatar = p.picture ? `<img src="${p.picture}" class="avatar">` : `<div class="avatar" style="background:#333"></div>`;
+                
+                let icon = '';
+                let actionText = '';
+                let content = '';
+
+                if (ev.kind === 7) {
+                    icon = '<span style="color:#e74c3c">❤️</span>';
+                    actionText = 'liked your note';
+                    content = ''; // Usually don't show content for likes to save space, or could show "+"
+                } else if (ev.kind === 1) {
+                    icon = '<span style="color:#3498db">↩️</span>';
+                    actionText = 'replied/mentioned';
+                    content = parseContent(ev.content);
+                } else if (ev.kind === 6) {
+                    icon = '<span style="color:#2ecc71">🔄</span>';
+                    actionText = 'reposted';
+                    try { content = parseContent(JSON.parse(ev.content).content || ""); } catch(e){ content = "Reposted content"; }
+                } else if (ev.kind === 9735) {
+                    icon = '<span style="color:#f1c40f">⚡</span>';
+                    actionText = 'ZAPPED YOU';
+                    // We don't parse bolt11 here to keep it light, just show generic success
+                    content = ''; 
+                }
+
+                return `
+                <div class="notif-item" onclick="viewProfile('${senderPub}')" style="cursor:pointer">
+                    <div class="notif-icon">${icon}</div>
+                    <div style="flex-grow:1">
+                        <div style="display:flex; align-items:center; margin-bottom:5px;">
+                            ${avatar}
+                            <div>
+                                <span style="font-weight:bold">${name}</span>
+                                <span style="opacity:0.7; font-size:0.8rem"> ${actionText}</span>
+                            </div>
+                        </div>
+                        <div style="opacity:0.9; font-size:0.9rem">${content}</div>
+                    </div>
+                </div>`;
             }).join('');
-            document.getElementById('notifications-feed').innerHTML = html || "No notifications yet.";
+            
+            document.getElementById('notifications-feed').innerHTML = html;
         }
 
         async function loginExtension() {
