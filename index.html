@@ -487,14 +487,14 @@
     <header>
         <h1>mBIT</h1>
         <div class="nav-bar">
-            <span class="nav-item" onclick="goHome()">[ FEED ]</span>
+            <span class="nav-item" onclick="goHome()">#FEED</span>
             <span>|</span>
-            <span class="nav-item" onclick="togglePanel('panel-identity')">[ LOG IN ]</span>
+            <span class="nav-item" onclick="togglePanel('panel-identity')">#LOG IN</span>
             <span>|</span>
-            <span class="nav-item" onclick="togglePanel('panel-my-profile')">[ MY PROFILE ]</span>
+            <span class="nav-item" onclick="togglePanel('panel-my-profile')">#MY PROFILE</span>
             <span>|</span>
             <!-- Relays removed from here -->
-            <span class="nav-item" onclick="togglePanel('panel-settings')">[ SETTINGS ]</span>
+            <span class="nav-item" onclick="togglePanel('panel-settings')">#SETTINGS</span>
         </div>
     </header>
 
@@ -538,7 +538,7 @@
 
         <!-- 3. MY PROFILE PANEL -->
         <div id="panel-my-profile" class="dropdown-panel hidden">
-            <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
+            <button class="back-btn" onclick="goHome()">&lt; #BACK TO FEED</button>
             <div id="my-profile-header" style="text-align:center;"></div>
             
             <!-- HIDDEN EDITOR (NOW ABOVE TABS) -->
@@ -561,7 +561,7 @@
 
         <!-- 4. PUBLIC USER PROFILE VIEW -->
         <div id="panel-user-profile" class="dropdown-panel hidden">
-            <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
+            <button class="back-btn" onclick="goHome()">&lt; #BACK TO FEED</button>
             <div id="user-profile-header" style="text-align:center; padding-bottom:15px;"></div>
             <div id="user-feed"></div>
         </div>
@@ -645,7 +645,7 @@
 
         <!-- 8. THREAD VIEW PANEL -->
         <div id="panel-thread" class="dropdown-panel hidden">
-            <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
+            <button class="back-btn" onclick="goHome()">&lt; #BACK TO FEED</button>
             <h3>>> THREAD</h3>
             <div id="thread-parent-container"></div>
             <div style="border-bottom: 1px dashed var(--border-color); margin: 20px 0; opacity: 0.5;"></div>
@@ -687,13 +687,13 @@
 
     <!-- STICKY FOOTER -->
     <div class="sticky-footer">
-        <div class="footer-item" onclick="goHome()">[ HOME ]</div>
+        <div class="footer-item" onclick="goHome()">#HOME</div>
         <span style="color:var(--border-color)">|</span>
-        <div class="footer-item" onclick="openSearch()">[ SEARCH ]</div>
+        <div class="footer-item" onclick="openSearch()">#SEARCH</div>
         <span style="color:var(--border-color)">|</span>
-        <div class="footer-item" onclick="openBookmarks()">[ BOOKMARKS ]</div>
+        <div class="footer-item" onclick="openBookmarks()">#BOOKMARKS</div>
         <span style="color:var(--border-color)">|</span>
-        <div class="footer-item" onclick="openNotifications()">[ NOTIFICATIONS ]</div>
+        <div class="footer-item" onclick="openNotifications()">#NOTIFICATIONS</div>
     </div>
 
     <script>
@@ -849,7 +849,7 @@
                 </div>
                  
                 <div class="profile-actions-row">
-                    <button class="secondary" onclick="toggleProfileEditor()">[ EDIT PROFILE ]</button>
+                    <button class="secondary" onclick="toggleProfileEditor()">#EDIT PROFILE</button>
                 </div>
 
                 <div id="dynamic-profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
@@ -864,9 +864,9 @@
                 </div>
 
                 <div class="profile-stats-row">
-                    <div id="my-tab-following" class="stat-box" onclick="switchMyTab('following')">[ FOLLOWING <span id="my-cnt-following">${profiles[myPubKey].following.size}</span> ]</div>
-                    <div id="my-tab-followers" class="stat-box" onclick="switchMyTab('followers')">[ FOLLOWERS <span id="my-cnt-followers">${profiles[myPubKey].followers.size}</span> ]</div>
-                    <div id="my-tab-relays" class="stat-box" onclick="switchMyTab('relays')">[ RELAYS <span id="my-cnt-relays">${profiles[myPubKey].relays.length}</span> ]</div>
+                    <div id="my-tab-following" class="stat-box" onclick="switchMyTab('following')">#FOLLOWING <span id="my-cnt-following">${profiles[myPubKey].following.size}</span></div>
+                    <div id="my-tab-followers" class="stat-box" onclick="switchMyTab('followers')">#FOLLOWERS <span id="my-cnt-followers">${profiles[myPubKey].followers.size}</span></div>
+                    <div id="my-tab-relays" class="stat-box" onclick="switchMyTab('relays')">#RELAYS <span id="my-cnt-relays">${profiles[myPubKey].relays.length}</span></div>
                 </div>
                 
                 <div class="profile-subnav">
@@ -917,15 +917,15 @@
             let followBtn = '';
             if (!isMe && myPubKey) {
                 followBtn = isFollowing 
-                    ? `<button class="secondary act-btn" onclick="toggleFollow('${pubkey}')">[ UNFOLLOW ]</button>`
-                    : `<button class="act-btn" onclick="toggleFollow('${pubkey}')">[ FOLLOW ]</button>`;
+                    ? `<button class="secondary act-btn" onclick="toggleFollow('${pubkey}')">#UNFOLLOW</button>`
+                    : `<button class="act-btn" onclick="toggleFollow('${pubkey}')">#FOLLOW</button>`;
             } else if (isMe) {
-                 followBtn = `<button class="secondary act-btn" onclick="togglePanel('panel-my-profile')">[ EDIT ]</button>`;
+                 followBtn = `<button class="secondary act-btn" onclick="togglePanel('panel-my-profile')">#EDIT</button>`;
             }
 
             let zapBtn = '';
             if (p.lud16) {
-                zapBtn = `<button class="zap-active act-btn zap-btn" onclick="handleZap('${p.lud16}', '${pubkey}')">⚡ ZAP</button>`;
+                zapBtn = `<button class="zap-active act-btn zap-btn" onclick="handleZap('${p.lud16}', '${pubkey}')">⚡ #ZAP</button>`;
             }
 
             const html = `
@@ -950,9 +950,9 @@
                     ${zapBtn}
                 </div>
                  <div class="profile-stats-row">
-                    <div id="tab-following" class="stat-box" onclick="switchUserTab('following')">[ FOLLOWING <span id="u-cnt-following">${profiles[pubkey].following.size}</span> ]</div>
-                    <div id="tab-followers" class="stat-box" onclick="switchUserTab('followers')">[ FOLLOWERS <span id="u-cnt-followers">${profiles[pubkey].followers.size}</span> ]</div>
-                    <div id="tab-relays" class="stat-box" onclick="switchUserTab('relays')">[ RELAYS <span id="u-cnt-relays">${profiles[pubkey].relays.length}</span> ]</div>
+                    <div id="tab-following" class="stat-box" onclick="switchUserTab('following')">#FOLLOWING <span id="u-cnt-following">${profiles[pubkey].following.size}</span></div>
+                    <div id="tab-followers" class="stat-box" onclick="switchUserTab('followers')">#FOLLOWERS <span id="u-cnt-followers">${profiles[pubkey].followers.size}</span></div>
+                    <div id="tab-relays" class="stat-box" onclick="switchUserTab('relays')">#RELAYS <span id="u-cnt-relays">${profiles[pubkey].relays.length}</span></div>
                 </div>
                 <div class="profile-subnav">
                     <button id="tab-notes" class="subnav-btn active" onclick="switchUserTab('notes')">NOTES</button>
@@ -1205,7 +1205,7 @@
             if (editor) editor.classList.toggle('hidden');
         }
 
-        function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><div class="relay-content"><span style="color:${isOpen?'#00FF41':'red'}; font-weight:bold; margin-right:5px;">[${isOpen?'ON':'OFF'}]</span><span class="relay-url" title="${url}">${url}</span></div><button class="small danger" style="width: 30px; flex-shrink: 0;" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
+        function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><div class="relay-content"><span style="color:${isOpen?'#00FF41':'red'}; font-weight:bold; margin-right:5px;">${isOpen?'#ON':'#OFF'}</span><span class="relay-url" title="${url}">${url}</span></div><button class="small danger" style="width: 30px; flex-shrink: 0;" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
         function addRelay() { let url = document.getElementById('new-relay').value.trim(); if(url){ if(!url.startsWith('wss://')) url = 'wss://' + url; savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; } }
         function removeRelay(url) { savedRelays = savedRelays.filter(r => r !== url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); if(sockets[url]) sockets[url].close(); renderRelays(); }
         function logout() { localStorage.clear(); location.reload(); }
@@ -1249,7 +1249,7 @@
         function updateCountDOM(id, type) { const el = document.getElementById(`s-${type}-${id}`); if (el && eventStats[id]) { el.innerText = eventStats[id][type]; } }
         async function doLike(id, pubkey) { if(!myPubKey) return alert("Login first"); likedPosts.add(id); localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts])); if(!eventStats[id]) eventStats[id] = { reply:0, repost:0, like:0, zap:0 }; eventStats[id].like++; updateCountDOM(id, 'like'); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey }; await signAndBroadcast(event); }
 
-        function generatePostHTML(ev) { if (isBlocked(ev)) return ''; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)}; let content = ev.content; if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.display_name || p.name || ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY <span id="s-reply-${ev.id}">${s.reply}</span>]</button> <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE <span id="s-repost-${ev.id}">${s.repost}</span>]</button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE <span id="s-like-${ev.id}">${s.like}</span>]</button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span>]</button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">[MARK]</button> </div> </div>`; }
+        function generatePostHTML(ev) { if (isBlocked(ev)) return ''; const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)}; let content = ev.content; if (ev.kind === 6) try { content = JSON.parse(ev.content).content || "[Repost]"; } catch(e) { content = "[Repost]"; } const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.display_name || p.name || ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">#REPLY <span id="s-reply-${ev.id}">${s.reply}</span></button> <button class="act-btn" onclick="initQuote('${ev.id}')">#SHARE <span id="s-repost-${ev.id}">${s.repost}</span></button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">#LIKE <span id="s-like-${ev.id}">${s.like}</span></button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">#ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span></button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">#MARK</button> </div> </div>`; }
         function parseContent(text) { if(!text) return ""; let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); const nostrRegex = /nostr:(note1[a-z0-9]+|nevent1[a-z0-9]+)/g; content = content.replace(nostrRegex, (match, id) => { let decodedId = id; try { const decoded = window.NostrTools.nip19.decode(id); decodedId = decoded.data.id || decoded.data; } catch(e){} const cached = events.find(e => e.id === decodedId) || myEvents.find(e => e.id === decodedId); if(cached) { const p = (profiles[cached.pubkey] && profiles[cached.pubkey].meta) ? profiles[cached.pubkey].meta : {name:cached.pubkey.substring(0,6)}; return `<div class="quote-card"><div class="meta"><b>${p.name}</b></div><div>${parseContent(cached.content)}</div></div>`; } else { return `<a href="#" class="hashtag">[ Quoted Note: ${id.substring(0,10)}... ]</a>`; } }); const videoRegex = /(https?:\/\/[^\s]+(?:\.mp4|\.webm|\.ogg|\.mov)[^\s]*)/gi; content = content.replace(videoRegex, (url) => `<video controls class="media-video"><source src="${url}"></video>`); const imgRegex = /(https?:\/\/[^\s]+(?:\.jpg|\.jpeg|\.png|\.gif|\.webp)[^\s]*)/gi; content = content.replace(imgRegex, (url) => `<a href="${url}" target="_blank"><img src="${url}" class="media-img" loading="lazy"></a>`); const hashtagRegex = /#(\w+)/g; content = content.replace(hashtagRegex, (match, tag) => `<span class="hashtag" onclick="alert('Tag: #${tag}')">#${tag}</span>`); return content; }
 
         if (myPubKey) { document.getElementById('login-form').classList.add('hidden'); document.getElementById('user-info').classList.remove('hidden'); document.getElementById('display-npub').value = window.NostrTools.nip19.npubEncode(myPubKey); if (myPrivKey) document.getElementById('display-nsec').value = window.NostrTools.nip19.nsecEncode(myPrivKey); else document.getElementById('nsec-display-container').classList.add('hidden'); }
