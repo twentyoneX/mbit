@@ -80,7 +80,6 @@
 
         header { text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px; }
         
-        /* H1 scales with font size */
         h1 { font-size: 2.5em; margin: 0; text-shadow: var(--glow); text-transform: lowercase; }
 
         .nav-bar { margin-top: 10px; font-size: 0.9em; user-select: none; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
@@ -92,11 +91,11 @@
 
         .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
 
-        /* Inputs & Buttons - Force Inheritance of Font Size */
+        /* Inputs & Buttons - Force Inheritance */
         input, textarea, select, button {
             background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color);
             font-family: inherit; 
-            font-size: inherit; /* THIS ENSURES SETTING APPLIES EVERYWHERE */
+            font-size: inherit; 
             padding: 10px; width: 100%; margin-bottom: 10px; display: block;
         }
 
@@ -133,13 +132,11 @@
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
         button.zap-active { background: #f1c40f; color: #000; border: 1px solid #f1c40f; }
 
-        /* LIKE BUTTON ACTIVE STATE */
         button.act-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; font-weight: bold; }
 
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
         
-        /* Thread Parent Style */
         .thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
         
         .meta { font-size: 0.75em; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
@@ -151,7 +148,6 @@
         .media-img, .media-video { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
         .hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
 
-        /* QUOTE CARD STYLE */
         .quote-card {
             border: 1px solid var(--post-border);
             background: var(--quote-bg);
@@ -162,8 +158,22 @@
         }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
-        .actions { margin-top: 10px; font-size: 0.75em; display: flex; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 8px; flex-wrap: wrap; }
-        .act-btn { background: transparent; color: var(--text-color); border: 1px solid var(--text-color); padding: 2px 8px; cursor: pointer; font-family: inherit; font-size: 0.7em; }
+        /* ACTION BUTTONS: HORIZONTAL ROW */
+        .actions { 
+            margin-top: 10px; 
+            font-size: 0.75em; 
+            display: flex; 
+            flex-direction: row; /* Horizontal */
+            flex-wrap: nowrap; /* No wrapping */
+            overflow-x: auto; /* Scroll if needed */
+            gap: 10px; 
+            border-top: 1px dotted var(--post-border); 
+            padding-top: 8px; 
+        }
+        /* Hide scrollbar for actions to look cleaner */
+        .actions::-webkit-scrollbar { display: none; }
+
+        .act-btn { background: transparent; color: var(--text-color); border: 1px solid var(--text-color); padding: 4px 10px; cursor: pointer; font-family: inherit; font-size: 0.8em; white-space: nowrap; }
         .zap-btn { color: #f1c40f; border-color: #f1c40f; }
 
         #new-btn {
@@ -180,7 +190,6 @@
             margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
         }
 
-        /* TABS (PROFILE & NOTIFICATIONS) */
         .profile-tabs {
             display: flex;
             border-bottom: 1px solid var(--post-border);
@@ -204,7 +213,6 @@
             font-weight: bold;
         }
 
-        /* STICKY FOOTER */
         .sticky-footer {
             position: fixed;
             bottom: 0;
@@ -251,7 +259,6 @@
             margin-left: 5px; cursor: pointer; color: #ff4141; font-weight: bold;
         }
 
-        /* FAB */
         .fab-btn {
             position: fixed;
             bottom: 70px;
@@ -269,7 +276,6 @@
         }
         .fab-btn:hover { transform: scale(1.1); box-shadow: var(--glow); }
 
-        /* MODAL */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85);
@@ -470,7 +476,7 @@
             <div id="notifications-feed">Loading...</div>
         </div>
 
-        <!-- 8. THREAD VIEW PANEL (NEW) -->
+        <!-- 8. THREAD VIEW PANEL -->
         <div id="panel-thread" class="dropdown-panel hidden">
             <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
             <h3>>> THREAD</h3>
@@ -523,7 +529,7 @@
         
         let events = [], incomingBuffer = [], pendingEvents = []; 
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [];
-        let threadEvents = []; // New array for comments
+        let threadEvents = []; 
         let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
         let myContacts = new Set(); 
         
@@ -636,25 +642,22 @@
 
         /* --- THREAD VIEW LOGIC --- */
         function viewThread(eventId) {
-            // Find event in memory or define placeholder
             let ev = events.find(e => e.id === eventId) || 
                      myEvents.find(e => e.id === eventId) || 
                      userEvents.find(e => e.id === eventId) ||
                      searchEvents.find(e => e.id === eventId) ||
                      notifEvents.find(e => e.id === eventId);
 
-            if(!ev) return alert("Note not found in memory (fetching not implemented in this demo)");
+            if(!ev) return alert("Note not found in memory.");
 
-            // Switch UI
             ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('panel-thread').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
             currentThreadId = eventId;
-            threadEvents = []; // Clear old replies
+            threadEvents = []; 
             document.getElementById('thread-replies-container').innerHTML = "Loading replies...";
 
-            // Render Parent
             const p = profiles[ev.pubkey] || {};
             let content = ev.content; 
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
@@ -675,7 +678,6 @@
             </div>`;
             document.getElementById('thread-parent-container').innerHTML = html;
 
-            // Fetch Replies
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], '#e': [eventId], limit: 50 }]));
             });
@@ -684,7 +686,7 @@
         function handleThreadEvent(ev) {
             if(threadEvents.some(e => e.id === ev.id)) return;
             threadEvents.push(ev);
-            threadEvents.sort((a,b) => a.created_at - b.created_at); // Oldest first for comments
+            threadEvents.sort((a,b) => a.created_at - b.created_at); 
             renderThreadReplies();
             fetchProfileIfNeeded(ev.pubkey);
         }
@@ -694,7 +696,7 @@
                 document.getElementById('thread-replies-container').innerHTML = "No replies yet.";
                 return;
             }
-            const html = threadEvents.map(ev => generatePostHTML(ev)).join(''); // Use standard generator
+            const html = threadEvents.map(ev => generatePostHTML(ev)).join(''); 
             document.getElementById('thread-replies-container').innerHTML = html;
         }
 
@@ -716,7 +718,6 @@
                 <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div>
                 <div class="actions">
                     <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
-                    <button class="act-btn" onclick="viewThread('${ev.id}')">[THREAD]</button>
                     <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE]</button>
                     <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
                     <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
@@ -731,7 +732,7 @@
             localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
             
             if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
-            if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); // Re-render thread view
+            if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); 
             
             const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
             await signAndBroadcast(event);
@@ -856,11 +857,6 @@
             notifEvents = [];
             document.getElementById('notifications-feed').innerHTML = "Loading...";
             
-            // Subscribing to:
-            // 1: Text Note (Mentions)
-            // 6: Repost (Mentions)
-            // 7: Reaction (Likes)
-            // 9735: Zap Receipt (Zaps)
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) {
                     ws.send(JSON.stringify(["REQ", "notif_sub", { kinds: [1, 6, 7, 9735], '#p': [myPubKey], limit: 50 }]));
@@ -874,9 +870,7 @@
             notifEvents.sort((a,b) => b.created_at - a.created_at);
             renderNotifications();
             
-            // Profile Fetching Logic
             if(ev.kind === 9735) {
-                // For Zaps, try to find the actual sender from description tag
                 try {
                     const desc = ev.tags.find(t => t[0] === 'description');
                     if(desc) {
@@ -894,14 +888,11 @@
         function renderNotifications() {
             let list = notifEvents;
 
-            // Filter based on Tab
             if (currentNotifTab === 'zaps') {
                 list = notifEvents.filter(ev => ev.kind === 9735);
             } else if (currentNotifTab === 'mentions') {
-                // Show text notes (1) and reposts (6)
                 list = notifEvents.filter(ev => ev.kind === 1 || ev.kind === 6);
             } 
-            // 'all' includes 1, 6, 7, 9735
 
             if (list.length === 0) {
                 document.getElementById('notifications-feed').innerHTML = "No notifications found.";
@@ -909,10 +900,7 @@
             }
 
             const html = list.map(ev => {
-                // Determine Real Sender
                 let senderPub = ev.pubkey;
-                
-                // Specific Logic for Zap Senders
                 if(ev.kind === 9735) {
                     try {
                         const desc = ev.tags.find(t => t[0] === 'description');
@@ -931,7 +919,7 @@
                 if (ev.kind === 7) {
                     icon = '<span style="color:#e74c3c">❤️</span>';
                     actionText = 'liked your note';
-                    content = ''; // Usually don't show content for likes to save space, or could show "+"
+                    content = ''; 
                 } else if (ev.kind === 1) {
                     icon = '<span style="color:#3498db">↩️</span>';
                     actionText = 'replied/mentioned';
@@ -943,15 +931,19 @@
                 } else if (ev.kind === 9735) {
                     icon = '<span style="color:#f1c40f">⚡</span>';
                     actionText = 'ZAPPED YOU';
-                    // We don't parse bolt11 here to keep it light, just show generic success
                     content = ''; 
                 }
                 
-                // Time Format
                 const time = new Date(ev.created_at * 1000).toLocaleString();
+                
+                // CLICK ACTION: If text/repost -> Go to Thread. If like/zap -> Go to Profile.
+                let clickAction = `viewProfile('${senderPub}')`;
+                if (ev.kind === 1 || ev.kind === 6) {
+                    clickAction = `viewThread('${ev.id}')`;
+                }
 
                 return `
-                <div class="notif-item" onclick="viewProfile('${senderPub}')" style="cursor:pointer">
+                <div class="notif-item" onclick="${clickAction}" style="cursor:pointer">
                     <div class="notif-icon">${icon}</div>
                     <div style="flex-grow:1">
                         <div style="display:flex; align-items:center; margin-bottom:5px;">
@@ -986,7 +978,6 @@
             const p = profiles[pubkey] || {name: pubkey.substring(0,8)};
             replyContext = { id: eventId, pubkey: pubkey };
             
-            // Open Modal
             openComposer();
             
             document.getElementById('reply-context-bar').classList.remove('hidden');
