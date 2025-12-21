@@ -1200,6 +1200,17 @@
                 };
                 ws.onmessage = (msg) => {
                     const data = JSON.parse(msg.data);
+                    
+                    // HANDLE EOSE (End of Stored Events)
+                    if (data[0] === 'EOSE') {
+                        if (data[1] === 'sub_me') {
+                            // Check if empty after relays are done
+                            if (myEvents.length === 0) {
+                                document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">No notes found (Check Notes & Replies).</div>';
+                            }
+                        }
+                    }
+
                     if (data[0] === 'EVENT') {
                         processEventStats(data[2]); 
                         
@@ -1268,7 +1279,6 @@
         function loadMyHistory() { 
             if (!myPubKey) return alert("Please login first.");
             
-            // Show Loading State
             document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">Scanning frequency...</div>';
 
             Object.values(sockets).forEach(ws => {
@@ -1279,10 +1289,16 @@
             switchMyTab('notes');
 
             myEvents = []; 
-            // Increased limit to 100 to ensure we catch recent posts even if replying a lot
             Object.values(sockets).forEach(s => {
                 if(s.readyState === 1) s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:100 }]));
             }); 
+            
+            // Safety Timeout in case EOSE never comes
+            setTimeout(() => {
+                if(myEvents.length === 0) {
+                     document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">No notes found (Check Notes & Replies).</div>';
+                }
+            }, 3000);
         }
 
         function updateMyProfileHeader() {
@@ -1309,15 +1325,19 @@
             let list = myEvents;
             if (currentMyTab === 'notes') {
                 list = myEvents.filter(ev => {
-                    if (ev.kind === 6) return true; // Always show reposts
-                    // If e tag exists, it's a reply (usually). Filter out replies.
+                    if (ev.kind === 6) return true; 
                     return !ev.tags || !ev.tags.some(t => t[0] === 'e');
                 });
             }
             
-            if (list.length === 0) {
+            if (list.length === 0 && myEvents.length > 0) {
+                 // We have events, but they were filtered out by the "Notes" tab logic
                  document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">No notes found (Check Notes & Replies).</div>';
                  return;
+            } else if (list.length === 0) {
+                // Still waiting for data or truly empty
+                // Don't overwrite "Scanning..." yet, let timeout handle it
+                return; 
             }
 
             document.getElementById('my-feed').innerHTML = list.map(generatePostHTML).join('');
