@@ -157,6 +157,19 @@
             opacity: 0.9;
         }
 
+        /* LIST ITEM FOR FOLLOWERS/RELAYS */
+        .list-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--post-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .list-item-content {
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
         
@@ -286,19 +299,6 @@
             color: var(--text-color);
             border-bottom: 2px solid var(--text-color);
             font-weight: bold;
-        }
-
-        /* LIST ITEM FOR FOLLOWERS/RELAYS */
-        .list-item {
-            padding: 10px;
-            border-bottom: 1px solid var(--post-border);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .list-item-content {
-            font-size: 0.9em;
-            word-break: break-all;
         }
 
         .sticky-footer {
@@ -737,6 +737,7 @@
             document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">Scanning frequency...</div>';
             initProfileData(myPubKey);
 
+            // Fetch My Meta (Kind 0), Contacts (Kind 3 for Following), Relay List (Kind 10002)
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) {
                     ws.send(JSON.stringify(["REQ", "my_meta", { kinds: [0, 3, 10002], authors: [myPubKey], limit: 10 }]));
@@ -773,6 +774,7 @@
             const zapEl = document.getElementById('my-p-lud16');
             if(p.lud16) { zapEl.innerText = p.lud16; document.getElementById('my-p-lud16-container').classList.remove('hidden'); } else { document.getElementById('my-p-lud16-container').classList.add('hidden'); }
             
+            // Update Counts
             document.getElementById('my-cnt-following').innerText = `(${profiles[myPubKey].following.size})`;
             document.getElementById('my-cnt-followers').innerText = `(${profiles[myPubKey].followers.size})`;
             document.getElementById('my-cnt-relays').innerText = `(${profiles[myPubKey].relays.length})`;
@@ -793,7 +795,7 @@
             Object.values(sockets).forEach(s => {
                 if (s.readyState === 1) {
                     s.send(JSON.stringify(["REQ", "sub_user", { kinds:[1,6], authors:[pubkey], limit:50 }]));
-                    // Get their Meta, Following, Relays
+                    // Get their Meta, Following (Kind 3), Relays (Kind 10002)
                     s.send(JSON.stringify(["REQ", "user_meta", { kinds:[0, 3, 10002], authors:[pubkey], limit: 10 }]));
                     // Get their Followers
                     s.send(JSON.stringify(["REQ", "user_followers", { kinds:[3], '#p':[pubkey], limit: 100 }]));
@@ -830,6 +832,7 @@
             `;
             document.getElementById('user-profile-header').innerHTML = html;
             
+            // Update Counts
             document.getElementById('u-cnt-following').innerText = `(${profiles[pubkey].following.size})`;
             document.getElementById('u-cnt-followers').innerText = `(${profiles[pubkey].followers.size})`;
             document.getElementById('u-cnt-relays').innerText = `(${profiles[pubkey].relays.length})`;
@@ -853,6 +856,7 @@
             renderMyFeed();
         }
 
+        // Generic Render for Profile Lists
         function renderProfileList(id, type, pubkey) {
             const container = document.getElementById(id);
             initProfileData(pubkey);
@@ -937,13 +941,17 @@
                 } catch(e) {}
             }
             
-            // Kind 3: Contact List
+            // Kind 3: Contact List (Who they follow)
             if (ev.kind === 3) {
                 if (isMe || pk === currentViewedProfile) {
+                     // If this IS the user's contact list, we populate 'following'
                      const following = ev.tags.filter(t => t[0] === 'p').map(t => t[1]);
                      profiles[pk].following = new Set(following);
-                     if (isMe) myContacts = new Set(following); 
+                     if (isMe) myContacts = new Set(following); // Global tracking
                 } else {
+                    // If this is someone else's contact list, check if they follow target
+                    // This is for the "Followers" calculation
+                    // If ev.tags contains target, add ev.pubkey to target's followers
                     const target = isMe ? myPubKey : currentViewedProfile;
                     if (target) {
                         const followsTarget = ev.tags.some(t => t[0] === 'p' && t[1] === target);
@@ -988,8 +996,9 @@
                         const ev = data[2];
                         processEventStats(ev); 
 
+                        // Profile Metadata Handling
                         if (subId === 'my_meta' || subId === 'user_meta') processProfileEvent(ev, subId === 'my_meta');
-                        if (subId === 'my_followers' || subId === 'user_followers') processProfileEvent(ev, subId === 'my_followers');
+                        if (subId === 'my_followers' || subId === 'user_followers') processProfileEvent(ev, subId === 'my_followers'); // Process incoming kind 3s as followers
 
                         if (subId === 'g') handleGlobalEvent(ev);
                         if (subId === 'sub_me') handleMyEvent(ev);
@@ -998,7 +1007,7 @@
                         if (subId === 'notif_sub') handleNotifEvent(ev);
                         if (subId === 'thread_sub') handleThreadEvent(ev);
                         if (subId === 'bookmarks_sub') handleBookmarkEvent(ev);
-                        if (subId.startsWith('m_')) { 
+                        if (subId.startsWith('m_')) { // Legacy metadata fetch
                             try { profiles[ev.pubkey].meta = JSON.parse(ev.content); } catch(e) { initProfileData(ev.pubkey); profiles[ev.pubkey].meta = JSON.parse(ev.content); }
                             renderNotifications();
                         }
@@ -1029,6 +1038,23 @@
         function copyKey(id) { const el = document.getElementById(id); el.select(); navigator.clipboard.writeText(el.value); alert("COPIED"); }
         function toggleSecret() { const el = document.getElementById('display-nsec'); el.type = el.type === "password" ? "text" : "password"; }
         function fetchProfile(pubkey) { Object.values(sockets).forEach(ws => ws.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds: [0], authors: [pubkey], limit: 1 }]))); }
+
+        // FIXED EXTENSION LOGIN
+        async function loginExtension() {
+            if (typeof window.nostr === 'undefined') {
+                // Wait briefly in case injection is slow
+                await new Promise(r => setTimeout(r, 500));
+                if (typeof window.nostr === 'undefined') return alert("No Nostr extension found (Alby, nos2x, etc).");
+            }
+            try {
+                const pubkey = await window.nostr.getPublicKey();
+                localStorage.setItem('nostr_pubkey', pubkey);
+                localStorage.setItem('nostr_mode', 'extension');
+                location.reload();
+            } catch (err) { 
+                alert("Login failed or cancelled."); 
+            }
+        }
 
         function openComposer() { if(!myPubKey) return alert("Please Login First"); document.getElementById('composer-modal').classList.remove('hidden'); document.getElementById('msg-input').focus(); }
         function closeComposer() { document.getElementById('composer-modal').classList.add('hidden'); cancelReply(); }
