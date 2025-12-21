@@ -86,8 +86,8 @@
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
-        /* FIXED BOX SIZE FOR DESKTOP */
-        #main-container { max-width: 600px; margin: 0 auto; }
+        /* FIXED BOX SIZE FOR DESKTOP - UPDATED TO 800PX */
+        #main-container { max-width: 800px; margin: 0 auto; }
 
         .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
 
@@ -130,10 +130,7 @@
         button.small { padding: 5px 10px; font-size: 0.8em; margin-left: 5px; }
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
-        button.zap-active { background: #f1c40f; color: #000; border: 1px solid #f1c40f; }
-
-        button.act-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; font-weight: bold; }
-
+        
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
         
@@ -158,23 +155,52 @@
         }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
-        /* ACTION BUTTONS: HORIZONTAL ROW */
+        /* ACTION BUTTONS: STYLED LIKE IMAGE */
         .actions { 
-            margin-top: 10px; 
-            font-size: 0.75em; 
+            margin-top: 15px; 
+            font-size: 0.8em; 
             display: flex; 
-            flex-direction: row; /* Horizontal */
-            flex-wrap: nowrap; /* No wrapping */
-            overflow-x: auto; /* Scroll if needed */
-            gap: 10px; 
+            flex-direction: row; 
+            flex-wrap: wrap;
+            gap: 15px; 
             border-top: 1px dotted var(--post-border); 
-            padding-top: 8px; 
+            padding-top: 12px; 
         }
-        /* Hide scrollbar for actions to look cleaner */
-        .actions::-webkit-scrollbar { display: none; }
 
-        .act-btn { background: transparent; color: var(--text-color); border: 1px solid var(--text-color); padding: 4px 10px; cursor: pointer; font-family: inherit; font-size: 0.8em; white-space: nowrap; }
-        .zap-btn { color: #f1c40f; border-color: #f1c40f; }
+        .act-btn { 
+            background: transparent; 
+            color: var(--text-color); 
+            border: 1.5px solid var(--text-color); /* Thicker, solid border */
+            padding: 6px 12px; 
+            cursor: pointer; 
+            font-family: inherit; 
+            font-size: 0.9em; 
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 0; /* Sharp corners */
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        
+        .act-btn:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+        
+        .act-btn.active { 
+            background: var(--text-color) !important; 
+            color: var(--bg-color) !important; 
+        }
+
+        .zap-btn { 
+            color: #f1c40f; 
+            border-color: #f1c40f; 
+        }
+        
+        .zap-btn:hover {
+            background: #f1c40f;
+            color: #000;
+        }
 
         #new-btn {
             width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
@@ -672,7 +698,7 @@
                 <div style="font-size:0.8em; opacity:0.6; margin-top:5px;">${new Date(ev.created_at*1000).toLocaleString()}</div>
                 <div class="actions">
                     <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
-                    <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
+                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
                     <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
                 </div>
             </div>`;
@@ -719,7 +745,7 @@
                 <div class="actions">
                     <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
                     <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE]</button>
-                    <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
+                    <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
                     <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
                 </div>
             </div>`;
