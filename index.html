@@ -153,6 +153,25 @@
         .quote-card { border: 1px solid var(--post-border); background: var(--quote-bg); padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 0.9em; }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
+        /* PROFILE CARD FOR SEARCH RESULTS */
+        .profile-card {
+            border: 1px solid var(--text-color);
+            background: var(--input-bg);
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .profile-card:hover { transform: scale(1.02); box-shadow: var(--glow); }
+        .profile-card img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
+        .profile-card .info { flex-grow: 1; overflow: hidden; }
+        .profile-card .name { font-weight: bold; font-size: 1.1em; color: var(--text-color); }
+        .profile-card .nip05 { font-size: 0.8em; color: #3498db; }
+        .profile-card .about { font-size: 0.8em; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         /* ACTION BUTTONS */
         .actions { margin-top: 15px; font-size: 0.8em; display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 12px; }
         .act-btn { 
@@ -196,15 +215,7 @@
 
         .notif-tabs { display: flex; border-bottom: 1px solid var(--post-border); margin-bottom: 15px; }
         
-        /* UPDATED NOTIFICATION ITEM STYLE */
-        .notif-item { 
-            padding: 12px; 
-            border-bottom: 1px solid var(--post-border); 
-            font-size: 0.9em; 
-            display: flex;
-            align-items: center;
-            transition: background 0.2s;
-        }
+        .notif-item { padding: 12px; border-bottom: 1px solid var(--post-border); font-size: 0.9em; display: flex; align-items: center; transition: background 0.2s; }
         .notif-item:hover { background: rgba(255,255,255,0.05); }
         .notif-icon { margin-right: 15px; font-size: 1.5em; width: 25px; text-align: center; }
 
@@ -347,11 +358,11 @@
         <div id="panel-search" class="dropdown-panel hidden">
             <h3>>> SEARCH & DISCOVERY</h3>
             <div style="display:flex; gap:10px;">
-                <input type="text" id="search-input" placeholder="Search content, #tags, or npub..." style="margin-bottom:0;">
+                <input type="text" id="search-input" placeholder="npub, @user, #tag, or text..." style="margin-bottom:0;">
                 <button onclick="handleSearch()" style="width:auto;">GO</button>
             </div>
             <hr style="border:0; border-top:1px dashed var(--post-border); margin: 20px 0;">
-            <div id="search-status" style="font-size:0.8em; opacity:0.7; margin-bottom:10px;">UNIVERSAL FEED (LIVE):</div>
+            <div id="search-status" style="font-size:0.8em; opacity:0.7; margin-bottom:10px;">RESULTS:</div>
             <div id="search-results"></div>
         </div>
 
@@ -490,31 +501,96 @@
             currentThreadId = null;
         }
 
-        /* --- MISSING FUNCTIONS ADDED BELOW --- */
+        /* --- UPDATED SEARCH LOGIC --- */
         function openSearch() { togglePanel('panel-search'); }
         
         function handleSearch() {
             const term = document.getElementById('search-input').value.trim();
             if (!term) return;
-            document.getElementById('search-results').innerHTML = '<div style="padding:10px;text-align:center">Searching...</div>';
-            searchEvents = [];
-            // Simple tag search or NIP-50 search
-            const filter = { kinds: [1], limit: 50 };
-            if (term.startsWith('#')) filter['#t'] = [term.substring(1)];
-            else filter.search = term; 
             
+            document.getElementById('search-results').innerHTML = '<div style="padding:10px;text-align:center;opacity:0.6;">Searching decentralized network...</div>';
+            searchEvents = []; // Reset results
+            
+            // 1. Check if NPUB
+            if (term.startsWith('npub1')) {
+                try {
+                    const decoded = window.NostrTools.nip19.decode(term);
+                    const pubkey = decoded.data;
+                    // Search Profile (Kind 0) and Notes (Kind 1)
+                    const f1 = { kinds: [0], authors: [pubkey], limit: 1 };
+                    const f2 = { kinds: [1], authors: [pubkey], limit: 20 };
+                    Object.values(sockets).forEach(ws => {
+                         if (ws.readyState === 1) {
+                             ws.send(JSON.stringify(["REQ", "search_sub", f1]));
+                             ws.send(JSON.stringify(["REQ", "search_sub", f2]));
+                         }
+                    });
+                    return;
+                } catch(e) { console.error("Invalid NPUB", e); }
+            }
+
+            // 2. Generic Search (@User, #Tag, Text)
+            const filters = [];
+            
+            if (term.startsWith('#')) {
+                // Hashtag search
+                filters.push({ kinds: [1], '#t': [term.substring(1)], limit: 50 });
+            } else {
+                // NIP-50 Text Search (supported by relays like relay.nostr.band, search.nos.today)
+                let q = term;
+                if (q.startsWith('@')) q = q.substring(1);
+                
+                // Search Content (Kind 1)
+                filters.push({ kinds: [1], search: q, limit: 20 });
+                // Search Profiles (Kind 0)
+                filters.push({ kinds: [0], search: q, limit: 10 });
+            }
+
             Object.values(sockets).forEach(ws => {
-                if (ws.readyState === 1) ws.send(JSON.stringify(["REQ", "search_sub", filter]));
+                if (ws.readyState === 1) {
+                    filters.forEach(f => ws.send(JSON.stringify(["REQ", "search_sub", f])));
+                }
             });
         }
 
         function handleSearchEvent(ev) {
             if (searchEvents.some(e => e.id === ev.id)) return;
             searchEvents.push(ev);
-            searchEvents.sort((a,b) => b.created_at - a.created_at);
-            document.getElementById('search-results').innerHTML = searchEvents.map(generatePostHTML).join('');
-            fetchProfileIfNeeded(ev.pubkey);
+            
+            // SORT: Kind 0 (Profiles) first, then by time
+            searchEvents.sort((a,b) => {
+                if(a.kind === 0 && b.kind !== 0) return -1;
+                if(b.kind === 0 && a.kind !== 0) return 1;
+                return b.created_at - a.created_at;
+            });
+            
+            document.getElementById('search-results').innerHTML = searchEvents.map(ev => {
+                if(ev.kind === 0) return generateProfileCardHTML(ev);
+                return generatePostHTML(ev);
+            }).join('');
+            
+            if(ev.kind !== 0) fetchProfileIfNeeded(ev.pubkey);
         }
+
+        function generateProfileCardHTML(ev) {
+            let meta = {};
+            try { meta = JSON.parse(ev.content); } catch(e) {}
+            // Update global profile cache while we are at it
+            if(!profiles[ev.pubkey]) initProfileData(ev.pubkey);
+            profiles[ev.pubkey].meta = meta;
+
+            return `
+            <div class="profile-card" onclick="viewProfile('${ev.pubkey}')">
+                ${meta.picture ? `<img src="${meta.picture}">` : '<div style="width:50px;height:50px;background:#222;border-radius:50%;display:flex;align-items:center;justify-content:center;">?</div>'}
+                <div class="info">
+                    <div class="name">${meta.display_name || meta.name || ev.pubkey.substring(0,8)}</div>
+                    ${meta.nip05 ? `<div class="nip05">${meta.nip05}</div>` : ''}
+                    <div class="about">${meta.about || ''}</div>
+                </div>
+                <button class="small act-btn">VIEW</button>
+            </div>`;
+        }
+        /* --- END SEARCH LOGIC --- */
 
         function openNotifications() {
             togglePanel('panel-notifications');
@@ -533,19 +609,15 @@
 
         function handleNotifEvent(ev) {
             if (notifEvents.some(e => e.id === ev.id)) return;
-            
-            // SPECIAL HANDLING FOR ZAP SENDER EXTRACTION
             if (ev.kind === 9735) {
-                // Try to extract real sender from the inner kind 9734 event
                 const descTag = ev.tags.find(t => t[0] === 'description');
                 if (descTag) {
                     try {
                         const request = JSON.parse(descTag[1]);
-                        fetchProfileIfNeeded(request.pubkey); // Fetch REAL sender profile
+                        fetchProfileIfNeeded(request.pubkey); 
                     } catch(e) {}
                 }
             }
-
             notifEvents.push(ev);
             notifEvents.sort((a,b) => b.created_at - a.created_at);
             renderNotifications();
@@ -561,16 +633,13 @@
             
             document.getElementById('notifications-feed').innerHTML = list.map(ev => {
                 if (ev.kind === 9735) {
-                     // ZAP LOGIC
                      let senderPubkey = ev.pubkey;
                      let amountSats = 0;
                      let targetId = null;
                      
-                     // Get target note ID
                      const eTag = ev.tags.find(t => t[0] === 'e');
                      if (eTag) targetId = eTag[1];
 
-                     // Extract real sender and amount
                      const descTag = ev.tags.find(t => t[0] === 'description');
                      if (descTag) {
                         try {
@@ -613,7 +682,6 @@
             document.getElementById('thread-replies-container').innerHTML = "Loading replies...";
             threadEvents = [];
             
-            // Fetch the specific note
             Object.values(sockets).forEach(ws => {
                 if (ws.readyState === 1) {
                     ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], ids: [id] }]));
@@ -658,9 +726,7 @@
                 openComposer();
             }
         }
-        /* --- END MISSING FUNCTIONS --- */
 
-        // --- PROFILE LOGIC ---
         function initProfileData(pubkey) {
             if (!profiles[pubkey]) profiles[pubkey] = { meta: {}, following: new Set(), followers: new Set(), relays: [] };
             if (!profiles[pubkey].following) profiles[pubkey].following = new Set();
