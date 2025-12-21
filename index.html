@@ -131,6 +131,32 @@
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
         
+        /* RELAY ITEM STYLING - RIGHT SIDE BUTTON */
+        .relay-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* Push items to ends */
+            background: var(--input-bg);
+            border: 1px solid var(--post-border);
+            padding: 8px;
+            margin-bottom: 5px;
+            gap: 10px;
+        }
+        .relay-content {
+            display: flex;
+            align-items: center;
+            overflow: hidden; 
+            white-space: nowrap;
+            flex-grow: 1;
+        }
+        .relay-url {
+            font-size: 0.8em; 
+            margin-left: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.9;
+        }
+
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
         
@@ -192,7 +218,7 @@
         
         /* ZAP BUTTON MODS - BITCOIN ORANGE */
         .zap-btn { 
-            color: #F7931A; /* Bitcoin Orange */
+            color: #F7931A; 
             border-color: var(--text-color) !important; 
         }
         .zap-btn:hover { 
@@ -583,16 +609,33 @@
 
     <script>
         const defaultRelays = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
-        let savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
-        let filterSettings = JSON.parse(localStorage.getItem('mbit_filters')) || { hideNsfw: false, blockedTags: [] };
+        
+        // SAFE LOADING OF LOCAL STORAGE
+        let savedRelays;
+        try {
+            savedRelays = JSON.parse(localStorage.getItem('mbit_relays')) || defaultRelays;
+        } catch(e) {
+            savedRelays = defaultRelays;
+        }
+
+        let filterSettings;
+        try {
+            filterSettings = JSON.parse(localStorage.getItem('mbit_filters')) || { hideNsfw: false, blockedTags: [] };
+        } catch(e) {
+            filterSettings = { hideNsfw: false, blockedTags: [] };
+        }
         
         const sockets = {};
         
         let events = [], incomingBuffer = [], pendingEvents = []; 
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [];
         let threadEvents = [], bookmarkEvents = [];
-        let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
-        let bookmarks = new Set(JSON.parse(localStorage.getItem('mbit_bookmarks')) || []);
+        let likedPosts = new Set();
+        try { likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []); } catch(e){}
+        
+        let bookmarks = new Set();
+        try { bookmarks = new Set(JSON.parse(localStorage.getItem('mbit_bookmarks')) || []); } catch(e){}
+        
         let myContacts = new Set(); 
         
         // Counter Store
@@ -697,6 +740,7 @@
         }
 
         function isBlocked(ev) {
+            if (!ev.tags) return false;
             const evTags = ev.tags.filter(t => t[0] === 't').map(t => t[1].toLowerCase());
             if (filterSettings.hideNsfw && evTags.includes('nsfw')) return true;
             for (let blocked of filterSettings.blockedTags) {
@@ -839,6 +883,7 @@
 
         /* --- STATS PROCESSING --- */
         function processEventStats(ev) {
+            if (!ev || !ev.tags) return;
             const eTags = ev.tags.filter(t => t[0] === 'e');
             eTags.forEach(t => {
                 const targetId = t[1];
@@ -872,6 +917,7 @@
             // Optimistic update
             if(!eventStats[id]) eventStats[id] = { reply:0, repost:0, like:0, zap:0 };
             eventStats[id].like++;
+            updateCountDOM(id, 'like');
             
             if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
             if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); 
@@ -1175,220 +1221,20 @@
             } catch(e) {}
         }
 
-        function handleContacts(ev) {
-            if(ev.kind === 3) {
-                const pTags = ev.tags.filter(t => t[0] === 'p').map(t => t[1]);
-                myContacts = new Set(pTags);
-                if(currentViewedProfile) renderUserProfileHeader(currentViewedProfile);
-            }
+        function renderRelays() { 
+            document.getElementById('relay-list').innerHTML = savedRelays.map(url => { 
+                const isOpen = sockets[url] && sockets[url].readyState === 1; 
+                return `
+                <div class="relay-item">
+                    <div class="relay-content">
+                        <span style="color:${isOpen?'#00FF41':'red'}; font-weight:bold; margin-right:5px;">[${isOpen?'ON':'OFF'}]</span>
+                        <span class="relay-url" title="${url}">${url}</span>
+                    </div>
+                    <button class="small danger" style="width: 30px; flex-shrink: 0;" onclick="removeRelay('${url}')">X</button>
+                </div>`; 
+            }).join(''); 
         }
 
-        function handleGlobalEvent(ev) {
-            if (processedIds.has(ev.id)) return; processedIds.add(ev.id);
-            fetchProfileIfNeeded(ev.pubkey);
-            incomingBuffer.push(ev);
-        }
-
-        setInterval(() => {
-            if (incomingBuffer.length === 0) return;
-            incomingBuffer.sort((a,b) => b.created_at - a.created_at);
-            if (events.length >= 25) {
-                pendingEvents = [...incomingBuffer, ...pendingEvents];
-                updateNewButton();
-            } else {
-                events = [...incomingBuffer, ...events];
-                events.sort((a,b) => b.created_at - a.created_at);
-                renderGlobalFeed();
-            }
-            incomingBuffer = []; 
-        }, 1500);
-
-        function fetchProfileIfNeeded(pubkey) {
-            if (!profiles[pubkey] && !requestedProfiles.has(pubkey)) {
-                requestedProfiles.add(pubkey);
-                Object.values(sockets).forEach(s => { if(s.readyState === 1) s.send(JSON.stringify(["REQ", "m_"+pubkey.substring(0,8), { kinds:[0], authors:[pubkey], limit:1 }])); });
-            }
-        }
-
-        function updateNewButton() { const b = document.getElementById('new-btn'); b.classList.toggle('hidden', pendingEvents.length === 0); b.innerText = `>> LOAD ${pendingEvents.length} NEW SIGNALS <<`; }
-        function mergeQueue() { events = [...pendingEvents, ...events].slice(0, 100); pendingEvents = []; renderGlobalFeed(); updateNewButton(); window.scrollTo(0,0); }
-        function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
-
-        function viewProfile(pubkey) {
-            ['panel-search', 'panel-notifications', 'panel-thread', 'panel-bookmarks'].forEach(p => document.getElementById(p).classList.add('hidden'));
-            togglePanel('panel-user-profile');
-            currentViewedProfile = pubkey;
-            renderUserProfileHeader(pubkey);
-            
-            // Reset to Notes by default
-            switchUserTab('notes');
-
-            userEvents = []; 
-            document.getElementById('user-feed').innerHTML = "...scanning user history...";
-            Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_user", { kinds:[1,6], authors:[pubkey], limit:20 }])));
-        }
-
-        function switchUserTab(tab) {
-            currentUserTab = tab;
-            document.getElementById('tab-notes').className = tab === 'notes' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('tab-replies').className = tab === 'replies' ? 'tab-btn active' : 'tab-btn';
-            renderUserFeed();
-        }
-        
-        // --- MY PROFILE TAB LOGIC ---
-        function switchMyTab(tab) {
-            currentMyTab = tab;
-            document.getElementById('my-tab-notes').className = tab === 'notes' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('my-tab-replies').className = tab === 'replies' ? 'tab-btn active' : 'tab-btn';
-            renderMyFeed();
-        }
-
-        function renderUserProfileHeader(pubkey) {
-            const p = profiles[pubkey] || {};
-            const isFollowing = myContacts.has(pubkey);
-            const isMe = pubkey === myPubKey;
-            
-            let followBtn = '';
-            if (!isMe && myPubKey) {
-                followBtn = isFollowing 
-                    ? `<button class="secondary" onclick="toggleFollow('${pubkey}')">[ UNFOLLOW ]</button>`
-                    : `<button onclick="toggleFollow('${pubkey}')">[ FOLLOW ]</button>`;
-            }
-
-            let zapBtn = '';
-            if (p.lud16) {
-                zapBtn = `<button class="zap-active" onclick="handleZap('${p.lud16}', '${pubkey}')">⚡ ZAP</button>`;
-            }
-
-            const html = `
-                ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
-                <h2>${p.name||pubkey.substring(0,8)}</h2>
-                <p>${p.about||''}</p>
-                <div class="profile-actions">
-                    ${followBtn}
-                    ${zapBtn}
-                </div>
-            `;
-            document.getElementById('user-profile-header').innerHTML = html;
-        }
-
-        async function toggleFollow(pubkey) {
-            if(!myPubKey) return alert("Login required");
-            if(myContacts.has(pubkey)) myContacts.delete(pubkey); else myContacts.add(pubkey);
-            renderUserProfileHeader(pubkey);
-            const tags = Array.from(myContacts).map(p => ['p', p]);
-            const event = { kind: 3, created_at: Math.floor(Date.now()/1000), tags: tags, content: "", pubkey: myPubKey };
-            await signAndBroadcast(event);
-        }
-
-        function handleUserEvent(ev) {
-            if (userEvents.some(e => e.id === ev.id)) return;
-            userEvents.unshift(ev); userEvents.sort((a,b)=>b.created_at - a.created_at);
-            renderUserFeed();
-        }
-
-        function renderUserFeed() { 
-            let list = userEvents;
-            if (currentUserTab === 'notes') {
-                list = userEvents.filter(ev => {
-                    if (ev.kind === 6) return true;
-                    return !ev.tags.some(t => t[0] === 'e');
-                });
-            }
-            document.getElementById('user-feed').innerHTML = list.map(generatePostHTML).join('');
-        }
-
-        async function signAndBroadcast(event) {
-            if (authMode === 'extension') event = await window.nostr.signEvent(event);
-            else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); }
-            Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["EVENT", event])); });
-            return event;
-        }
-
-        async function sendNote() {
-            const content = document.getElementById('msg-input').value; if (!content) return;
-            let tags = [];
-            if (replyContext) {
-                tags.push(['e', replyContext.id, '', 'reply']); 
-                tags.push(['p', replyContext.pubkey]); 
-            }
-            const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: tags, content: content, pubkey: myPubKey };
-            await signAndBroadcast(event); 
-            document.getElementById('msg-input').value = "";
-            closeComposer();
-        }
-
-        function login() {
-            let k = document.getElementById('privkey-input').value.trim(); if (!k) return;
-            if (k.startsWith('nsec')) k = window.NostrTools.nip19.decode(k).data;
-            localStorage.setItem('nostr_privkey', k); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(k)); localStorage.setItem('nostr_mode', 'local'); location.reload();
-        }
-
-        function generateNewUser() {
-            const sk = window.NostrTools.generatePrivateKey();
-            localStorage.setItem('nostr_privkey', sk); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(sk)); localStorage.setItem('nostr_mode', 'local'); location.reload();
-        }
-
-        async function saveProfile() {
-            const data = { 
-                name: document.getElementById('p-name').value, 
-                about: document.getElementById('p-about').value, 
-                picture: document.getElementById('p-picture').value, 
-                website: document.getElementById('p-website').value, 
-                lud16: document.getElementById('p-lud16').value 
-            };
-            let ev = { kind: 0, created_at: Math.floor(Date.now()/1000), tags: [], content: JSON.stringify(data), pubkey: myPubKey };
-            await signAndBroadcast(ev); alert("PUBLISHED"); location.reload();
-        }
-
-        function toggleProfileEditor() { 
-            document.getElementById('profile-editor').classList.toggle('hidden'); 
-            const p = profiles[myPubKey] || {}; 
-            document.getElementById('p-name').value = p.name||''; 
-            document.getElementById('p-about').value = p.about||''; 
-            document.getElementById('p-picture').value = p.picture||''; 
-            document.getElementById('p-website').value = p.website||''; 
-            document.getElementById('p-lud16').value = p.lud16||''; 
-        }
-
-        function loadMyHistory() { 
-            const p = profiles[myPubKey] || {}; 
-            document.getElementById('my-p-name').innerText = p.name || 'Unknown'; 
-            document.getElementById('my-p-about').innerText = p.about || '(No bio set)'; 
-            document.getElementById('my-p-img').innerHTML = p.picture ? `<img src="${p.picture}" class="p-img-large">` : ''; 
-            
-            const webEl = document.getElementById('my-p-website');
-            if(p.website) { webEl.href = p.website; webEl.innerText = p.website; webEl.classList.remove('hidden'); } else { webEl.classList.add('hidden'); }
-
-            const zapEl = document.getElementById('my-p-lud16');
-            if(p.lud16) { zapEl.innerText = p.lud16; document.getElementById('my-p-lud16-container').classList.remove('hidden'); } else { document.getElementById('my-p-lud16-container').classList.add('hidden'); }
-
-            // Reset My Tab
-            switchMyTab('notes');
-
-            myEvents = []; 
-            Object.values(sockets).forEach(s => s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]))); 
-        }
-
-        function handleMyEvent(ev) { 
-            if (myEvents.some(e => e.id === ev.id)) return; 
-            myEvents.unshift(ev); 
-            myEvents.sort((a,b)=>b.created_at - a.created_at);
-            renderMyFeed(); 
-        }
-
-        function renderMyFeed() {
-            let list = myEvents;
-            if (currentMyTab === 'notes') {
-                list = myEvents.filter(ev => {
-                    if (ev.kind === 6) return true;
-                    return !ev.tags.some(t => t[0] === 'e');
-                });
-            }
-            document.getElementById('my-feed').innerHTML = list.map(generatePostHTML).join('');
-        }
-
-        function renderRelays() { document.getElementById('relay-list').innerHTML = savedRelays.map(url => { const isOpen = sockets[url] && sockets[url].readyState === 1; return `<div class="relay-item"><span><span style="color:${isOpen?'#00FF41':'red'}">[${isOpen?'ON':'OFF'}]</span> ${url}</span><button class="small danger" onclick="removeRelay('${url}')">X</button></div>`; }).join(''); }
         function addRelay() { let url = document.getElementById('new-relay').value.trim(); if(url){ if(!url.startsWith('wss://')) url = 'wss://' + url; savedRelays.push(url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); connectToRelay(url); document.getElementById('new-relay').value = ''; } }
         function removeRelay(url) { savedRelays = savedRelays.filter(r => r !== url); localStorage.setItem('mbit_relays', JSON.stringify(savedRelays)); if(sockets[url]) sockets[url].close(); renderRelays(); }
         function logout() { localStorage.clear(); location.reload(); }
