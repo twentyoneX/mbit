@@ -141,6 +141,7 @@
 
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
+        
         .thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
         .thread-ancestor { border-left: 2px dotted var(--meta-color); opacity: 0.8; padding-left: 15px; margin-bottom: 10px; font-size: 0.9em; }
         
@@ -454,7 +455,7 @@
         let replyContext = null;
         let currentViewedProfile = null;
         let currentThreadId = null;
-        let currentThreadRootId = null; // Track actual root
+        let currentThreadRootId = null; 
         let currentUserTab = 'notes'; 
         let currentMyTab = 'notes';
         let currentNotifTab = 'all';
@@ -504,38 +505,29 @@
             currentThreadId = id;
             togglePanel('panel-thread');
             
-            // Initial UI State
             document.getElementById('thread-parent-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading context...</div>';
             document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading replies...</div>';
             threadEvents = [];
             
-            // Check if note is in cache to display immediately
             const cached = events.find(e => e.id === id) || notifEvents.find(e => e.id === id) || myEvents.find(e => e.id === id) || userEvents.find(e => e.id === id);
             
             if (cached) {
                 threadEvents.push(cached);
-                // Check if this note is a reply itself (has 'e' tags)
                 const parentTag = cached.tags.find(t => t[0] === 'e');
                 if (parentTag) {
-                    currentThreadRootId = parentTag[1]; // Set parent as root to fetch
+                    currentThreadRootId = parentTag[1]; 
                 } else {
-                    currentThreadRootId = id; // This is the root
+                    currentThreadRootId = id; 
                 }
                 renderThreadView(); 
             } else {
-                currentThreadRootId = id; // Assume this is root until fetched
+                currentThreadRootId = id; 
             }
 
-            // Fetch Note + Ancestors + Replies
             Object.values(sockets).forEach(ws => {
                 if (ws.readyState === 1) {
-                    // 1. Fetch the note itself
                     ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], ids: [id] }]));
-                    
-                    // 2. Fetch replies to this note
                     ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], '#e': [id], limit: 50 }]));
-                    
-                    // 3. If we identified a parent from cache, fetch that too
                     if (currentThreadRootId && currentThreadRootId !== id) {
                          ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], ids: [currentThreadRootId] }]));
                     }
@@ -548,26 +540,21 @@
             threadEvents.push(ev);
             fetchProfileIfNeeded(ev.pubkey);
             
-            // If the fetched note is the one we clicked, check if it has a parent we didn't know about
             if (ev.id === currentThreadId) {
                 const parentTag = ev.tags.find(t => t[0] === 'e');
                 if (parentTag && parentTag[1] !== currentThreadRootId) {
                     currentThreadRootId = parentTag[1];
-                    // Fetch this newly discovered parent
                     Object.values(sockets).forEach(ws => {
                         if (ws.readyState === 1) ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], ids: [currentThreadRootId] }]));
                     });
                 }
             }
-            
             renderThreadView();
         }
 
         function renderThreadView() {
-            // 1. Identify the clicked note
             const mainNote = threadEvents.find(e => e.id === currentThreadId);
             
-            // 2. Identify if there is a parent (ancestor) available
             let parentHtml = '';
             if (mainNote) {
                 const parentTag = mainNote.tags.find(t => t[0] === 'e');
@@ -584,12 +571,10 @@
                 }
             }
 
-            // 3. Render Main Note
             if (mainNote) {
                 document.getElementById('thread-parent-container').innerHTML = parentHtml + `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
             }
 
-            // 4. Render Replies
             const replies = threadEvents.filter(e => e.tags.some(t => t[0] === 'e' && t[1] === currentThreadId));
             replies.sort((a,b) => a.created_at - b.created_at);
             
@@ -733,12 +718,19 @@
 
         function renderNotifications() {
             let list = notifEvents;
-            if (currentNotifTab === 'zaps') list = notifEvents.filter(e => e.kind === 9735);
-            else if (currentNotifTab === 'mentions') list = notifEvents.filter(e => e.kind === 1 || e.kind === 6 || e.kind === 7);
+            if (currentNotifTab === 'zaps') {
+                list = notifEvents.filter(e => e.kind === 9735);
+            } else if (currentNotifTab === 'mentions') {
+                list = notifEvents.filter(e => e.kind === 1);
+            }
             
-            if (list.length === 0) { document.getElementById('notifications-feed').innerHTML = "No notifications found."; return; }
+            if (list.length === 0) { 
+                document.getElementById('notifications-feed').innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6;">No notifications found.</div>'; 
+                return; 
+            }
             
             document.getElementById('notifications-feed').innerHTML = list.map(ev => {
+                // 1. ZAPS (Kind 9735)
                 if (ev.kind === 9735) {
                      let senderPubkey = ev.pubkey;
                      let amountSats = 0;
@@ -771,7 +763,42 @@
                         </div>
                      </div>`;
                 }
-                // Force clearer display for replies in notifications
+
+                // 2. LIKES (Kind 7)
+                if (ev.kind === 7) {
+                    const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)};
+                    const targetId = ev.tags.find(t => t[0] === 'e')?.[1];
+                    
+                    return `
+                    <div class="notif-item" onclick="viewThread('${targetId}')" style="cursor:pointer;">
+                        <div style="font-size:1.5em; margin-right:15px; color:#e0245e;">❤</div>
+                        <div>
+                            <div style="font-size:0.9em;">
+                                <span style="font-weight:bold;">${p.name || ev.pubkey.substring(0,6)}</span> liked your note.
+                            </div>
+                            <div style="font-size:0.75em; opacity:0.6; margin-top:2px;">>> view note</div>
+                        </div>
+                    </div>`;
+                }
+
+                // 3. REPOSTS (Kind 6)
+                if (ev.kind === 6) {
+                    const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)};
+                    const targetId = ev.tags.find(t => t[0] === 'e')?.[1];
+                    
+                    return `
+                    <div class="notif-item" onclick="viewThread('${targetId}')" style="cursor:pointer;">
+                        <div style="font-size:1.5em; margin-right:15px; color:#17bf63;">↻</div>
+                        <div>
+                            <div style="font-size:0.9em;">
+                                <span style="font-weight:bold;">${p.name || ev.pubkey.substring(0,6)}</span> reposted your note.
+                            </div>
+                            <div style="font-size:0.75em; opacity:0.6; margin-top:2px;">>> view note</div>
+                        </div>
+                    </div>`;
+                }
+
+                // 4. REPLIES (Kind 1)
                 return generatePostHTML(ev);
             }).join('');
         }
