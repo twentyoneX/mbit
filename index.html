@@ -108,7 +108,6 @@
             padding: 0;
             margin: 0;
             cursor: pointer;
-            width: 100%;
         }
         input[type="range"]::-webkit-slider-runnable-track {
             background: var(--post-border);
@@ -120,18 +119,6 @@
             height: 20px;
             width: 20px;
             margin-top: -8px;
-            border-radius: 50%;
-        }
-        input[type="range"]::-moz-range-track {
-            background: var(--post-border);
-            height: 4px;
-        }
-        input[type="range"]::-moz-range-thumb {
-            appearance: none;
-            background: var(--btn-bg);
-            height: 20px;
-            width: 20px;
-            border: none;
             border-radius: 50%;
         }
 
@@ -387,6 +374,7 @@
             margin-bottom: 15px;
         }
 
+        /* STICKY FOOTER WITH ICONS */
         .sticky-footer {
             position: fixed;
             bottom: 0;
@@ -395,23 +383,29 @@
             background-color: var(--footer-bg);
             border-top: 1px solid var(--border-color);
             display: flex;
-            justify-content: center;
-            gap: 15px;
-            padding: 15px 0;
+            justify-content: space-around; /* Even spacing */
+            align-items: center;
+            padding: 10px 0;
             z-index: 1000;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
-            font-family: inherit;
         }
         .footer-item {
-            font-size: 0.9em;
             cursor: pointer;
-            text-align: center;
-            transition: 0.3s;
             color: var(--text-color);
-            text-decoration: none;
             opacity: 0.7;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
         }
-        .footer-item:hover { opacity: 1; text-decoration: underline; text-shadow: var(--glow); }
+        .footer-item:hover { opacity: 1; transform: scale(1.1); text-shadow: var(--glow); }
+        
+        .footer-icon-svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
 
         .notif-item { 
             padding: 12px; 
@@ -493,7 +487,6 @@
             <span>|</span>
             <span class="nav-item" onclick="togglePanel('panel-my-profile')">[ MY PROFILE ]</span>
             <span>|</span>
-            <!-- Relays removed from here -->
             <span class="nav-item" onclick="togglePanel('panel-settings')">[ SETTINGS ]</span>
         </div>
     </header>
@@ -554,8 +547,12 @@
                 <button class="small secondary" onclick="toggleProfileEditor()" style="width:100%; margin-top:5px; margin-left:0;">CANCEL</button>
             </div>
 
-            <!-- TABS GENERATED DYNAMICALLY BY JS -->
-            <!-- Removing static tabs here to prevent duplication -->
+            <!-- STATIC TABS FOR MY PROFILE -->
+            <div class="profile-subnav">
+                <button id="my-tab-notes" class="subnav-btn active" onclick="switchMyTab('notes')">NOTES</button>
+                <button id="my-tab-replies" class="subnav-btn" onclick="switchMyTab('replies')">NOTES & REPLIES</button>
+            </div>
+
             <div id="my-feed"></div>
         </div>
 
@@ -687,13 +684,22 @@
 
     <!-- STICKY FOOTER -->
     <div class="sticky-footer">
-        <div class="footer-item" onclick="goHome()">[ HOME ]</div>
-        <span style="color:var(--border-color)">|</span>
-        <div class="footer-item" onclick="openSearch()">[ SEARCH ]</div>
-        <span style="color:var(--border-color)">|</span>
-        <div class="footer-item" onclick="openBookmarks()">[ BOOKMARKS ]</div>
-        <span style="color:var(--border-color)">|</span>
-        <div class="footer-item" onclick="openNotifications()">[ NOTIFICATIONS ]</div>
+        <div class="footer-item" onclick="goHome()">
+            <!-- HOME ICON -->
+            <svg class="footer-icon-svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </div>
+        <div class="footer-item" onclick="openSearch()">
+            <!-- SEARCH ICON -->
+            <svg class="footer-icon-svg" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </div>
+        <div class="footer-item" onclick="openBookmarks()">
+            <!-- BOOKMARK ICON -->
+            <svg class="footer-icon-svg" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <div class="footer-item" onclick="openNotifications()">
+            <!-- BELL ICON -->
+            <svg class="footer-icon-svg" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+        </div>
     </div>
 
     <script>
@@ -932,7 +938,6 @@
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || pubkey.substring(0,8)}</h2>
                 ${p.nip05 ? `<div style="font-size:0.8em; color:#3498db; margin-bottom:5px;">✓ ${p.nip05}</div>` : ''}
-
                 <div class="npub-wrapper" onclick="copyToClipboard('${npub}')">
                     <div class="npub-text">${npub}</div>
                     <svg class="copy-icon-svg" viewBox="0 0 24 24">
