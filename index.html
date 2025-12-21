@@ -1203,15 +1203,12 @@
                     if (data[0] === 'EVENT') {
                         processEventStats(data[2]); 
                         
-                        // Handle generic profiles and my specific profile update
                         if (data[1].startsWith('m_')) { 
                             profiles[data[2].pubkey] = JSON.parse(data[2].content); 
                             renderNotifications(); 
                             if(currentViewedProfile === data[2].pubkey) renderUserProfileHeader(data[2].pubkey);
-                            // Real-time update for my profile
                             if(myPubKey === data[2].pubkey) updateMyProfileHeader();
                         } else if (data[1] === 'my_meta') {
-                            // Specific response for my metadata
                             profiles[data[2].pubkey] = JSON.parse(data[2].content);
                             updateMyProfileHeader();
                         }
@@ -1271,7 +1268,9 @@
         function loadMyHistory() { 
             if (!myPubKey) return alert("Please login first.");
             
-            // Force fetch my metadata
+            // Show Loading State
+            document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">Scanning frequency...</div>';
+
             Object.values(sockets).forEach(ws => {
                 if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "my_meta", { kinds: [0], authors: [myPubKey], limit: 1 }]));
             });
@@ -1280,12 +1279,12 @@
             switchMyTab('notes');
 
             myEvents = []; 
+            // Increased limit to 100 to ensure we catch recent posts even if replying a lot
             Object.values(sockets).forEach(s => {
-                if(s.readyState === 1) s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:20 }]));
+                if(s.readyState === 1) s.send(JSON.stringify(["REQ", "sub_me", { kinds:[1,6], authors:[myPubKey], limit:100 }]));
             }); 
         }
 
-        // Dedicated function to update "My Profile" UI elements
         function updateMyProfileHeader() {
             const p = profiles[myPubKey] || {}; 
             document.getElementById('my-p-name').innerText = p.name || 'Unknown'; 
@@ -1310,11 +1309,17 @@
             let list = myEvents;
             if (currentMyTab === 'notes') {
                 list = myEvents.filter(ev => {
-                    if (ev.kind === 6) return true;
-                    // Safely check tags
+                    if (ev.kind === 6) return true; // Always show reposts
+                    // If e tag exists, it's a reply (usually). Filter out replies.
                     return !ev.tags || !ev.tags.some(t => t[0] === 'e');
                 });
             }
+            
+            if (list.length === 0) {
+                 document.getElementById('my-feed').innerHTML = '<div style="text-align:center; padding:20px; opacity:0.6;">No notes found (Check Notes & Replies).</div>';
+                 return;
+            }
+
             document.getElementById('my-feed').innerHTML = list.map(generatePostHTML).join('');
         }
 
