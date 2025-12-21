@@ -25,6 +25,9 @@
             --fab-bg: #ffffff;
             --fab-text: #000000;
             --quote-bg: #111;
+            
+            /* Font Size Variable */
+            --base-font-size: 16px; 
         }
 
         [data-theme="matrix"] {
@@ -67,6 +70,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: "Courier New", Courier, monospace;
+            font-size: var(--base-font-size); /* UPDATED TO USE VARIABLE */
             padding: 20px; 
             padding-bottom: 80px;
             margin: 0; 
@@ -85,9 +89,33 @@
 
         .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
 
+        /* Inputs */
         input, textarea, select {
             background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color);
             font-family: inherit; padding: 10px; width: 100%; margin-bottom: 10px; display: block;
+        }
+
+        /* Slider Specific Style */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: var(--post-border);
+            height: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            background: var(--btn-bg);
+            height: 20px;
+            width: 20px;
+            margin-top: -8px;
+            border-radius: 50%;
         }
 
         button {
@@ -367,7 +395,7 @@
             <div id="user-feed"></div>
         </div>
 
-        <!-- 5. SETTINGS PANEL -->
+        <!-- 5. SETTINGS PANEL (UPDATED) -->
         <div id="panel-settings" class="dropdown-panel hidden">
             <h3>>> SETTINGS</h3>
             <label>SYSTEM THEME:</label>
@@ -377,6 +405,14 @@
                 <option value="light">Black on White</option>
             </select>
             
+            <br>
+            <label>FONT SIZE:</label>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px;">
+                <span style="font-size: 0.8rem; opacity: 0.7;">SMALL</span>
+                <input type="range" id="font-size-slider" min="12" max="24" step="1" value="16" oninput="changeFontSize(this.value)" style="flex-grow: 1;">
+                <span style="font-size: 1.2rem; opacity: 0.7;">BIG</span>
+            </div>
+
             <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
             
             <h3>>> CONTENT FILTERS</h3>
@@ -409,7 +445,7 @@
             <div id="search-results"></div>
         </div>
 
-        <!-- 7. NOTIFICATIONS PANEL (UPDATED) -->
+        <!-- 7. NOTIFICATIONS PANEL -->
         <div id="panel-notifications" class="dropdown-panel hidden">
             <h3>>> NOTIFICATIONS</h3>
             
@@ -489,6 +525,15 @@
         }
         changeTheme(localStorage.getItem('mbit_theme') || 'dark');
         document.getElementById('theme-selector').value = localStorage.getItem('mbit_theme') || 'dark';
+
+        // Init Font Size
+        function changeFontSize(size) {
+            document.documentElement.style.setProperty('--base-font-size', size + 'px');
+            localStorage.setItem('mbit_fontsize', size);
+        }
+        const savedFontSize = localStorage.getItem('mbit_fontsize') || '16';
+        changeFontSize(savedFontSize);
+        document.getElementById('font-size-slider').value = savedFontSize;
 
         // Init Filters UI
         document.getElementById('nsfw-toggle').checked = filterSettings.hideNsfw;
