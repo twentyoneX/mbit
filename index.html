@@ -70,17 +70,20 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: "Courier New", Courier, monospace;
-            font-size: var(--base-font-size); /* UPDATED TO USE VARIABLE */
+            font-size: var(--base-font-size);
             padding: 20px; 
             padding-bottom: 80px;
             margin: 0; 
             min-height: 100vh;
+            transition: font-size 0.2s ease;
         }
 
         header { text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px; }
-        h1 { font-size: 2.5rem; margin: 0; text-shadow: var(--glow); text-transform: lowercase; }
+        
+        /* H1 scales with font size */
+        h1 { font-size: 2.5em; margin: 0; text-shadow: var(--glow); text-transform: lowercase; }
 
-        .nav-bar { margin-top: 10px; font-size: 0.9rem; user-select: none; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .nav-bar { margin-top: 10px; font-size: 0.9em; user-select: none; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
@@ -89,10 +92,12 @@
 
         .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
 
-        /* Inputs */
-        input, textarea, select {
+        /* Inputs & Buttons - Force Inheritance of Font Size */
+        input, textarea, select, button {
             background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color);
-            font-family: inherit; padding: 10px; width: 100%; margin-bottom: 10px; display: block;
+            font-family: inherit; 
+            font-size: inherit; /* THIS ENSURES SETTING APPLIES EVERYWHERE */
+            padding: 10px; width: 100%; margin-bottom: 10px; display: block;
         }
 
         /* Slider Specific Style */
@@ -120,10 +125,10 @@
 
         button {
             background: var(--btn-bg); color: var(--btn-text); border: none; padding: 10px 20px;
-            font-family: inherit; font-weight: bold; cursor: pointer; text-transform: uppercase;
+            font-weight: bold; cursor: pointer; text-transform: uppercase;
         }
         button:hover { opacity: 0.8; box-shadow: var(--glow); }
-        button.small { padding: 5px 10px; font-size: 0.8rem; margin-left: 5px; }
+        button.small { padding: 5px 10px; font-size: 0.8em; margin-left: 5px; }
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
         button.zap-active { background: #f1c40f; color: #000; border: 1px solid #f1c40f; }
@@ -133,10 +138,15 @@
 
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
-        .meta { font-size: 0.75rem; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
+        
+        /* Thread Parent Style */
+        .thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
+        
+        .meta { font-size: 0.75em; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
         .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; }
         .username-link { font-weight: bold; color: var(--text-color); text-decoration: underline; }
-        .content { font-size: 1rem; line-height: 1.4; word-wrap: break-word; }
+        .content { font-size: 1em; line-height: 1.4; word-wrap: break-word; cursor: pointer; }
+        .content:hover { opacity: 0.9; }
 
         .media-img, .media-video { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
         .hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
@@ -148,12 +158,12 @@
             padding: 10px;
             margin: 10px 0;
             border-radius: 5px;
-            font-size: 0.9rem;
+            font-size: 0.9em;
         }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
-        .actions { margin-top: 10px; font-size: 0.75rem; display: flex; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 8px; flex-wrap: wrap; }
-        .act-btn { background: transparent; color: var(--text-color); border: 1px solid var(--text-color); padding: 2px 8px; cursor: pointer; font-family: inherit; font-size: 0.7rem; }
+        .actions { margin-top: 10px; font-size: 0.75em; display: flex; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 8px; flex-wrap: wrap; }
+        .act-btn { background: transparent; color: var(--text-color); border: 1px solid var(--text-color); padding: 2px 8px; cursor: pointer; font-family: inherit; font-size: 0.7em; }
         .zap-btn { color: #f1c40f; border-color: #f1c40f; }
 
         #new-btn {
@@ -184,7 +194,7 @@
             cursor: pointer;
             color: var(--meta-color);
             border-bottom: 2px solid transparent;
-            font-size: 0.9rem;
+            font-size: 0.9em;
             text-transform: uppercase;
         }
         .tab-btn:hover { color: var(--text-color); }
@@ -211,7 +221,7 @@
             font-family: inherit;
         }
         .footer-item {
-            font-size: 0.9rem;
+            font-size: 0.9em;
             cursor: pointer;
             text-align: center;
             transition: 0.3s;
@@ -224,18 +234,18 @@
         .notif-item { 
             padding: 12px; 
             border-bottom: 1px solid var(--post-border); 
-            font-size: 0.9rem; 
+            font-size: 0.9em; 
             display: flex;
             align-items: flex-start;
         }
-        .notif-icon { margin-right: 10px; font-size: 1.2rem; min-width: 25px; }
+        .notif-icon { margin-right: 10px; font-size: 1.2em; min-width: 25px; }
 
         .profile-actions { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
 
         .filter-tag {
             display: inline-flex; align-items: center; 
             background: var(--tag-bg); padding: 2px 8px; 
-            margin: 2px; font-size: 0.8rem; border-radius: 4px;
+            margin: 2px; font-size: 0.8em; border-radius: 4px;
         }
         .remove-tag {
             margin-left: 5px; cursor: pointer; color: #ff4141; font-weight: bold;
@@ -285,7 +295,7 @@
 
         #reply-context-bar {
             background-color: var(--reply-indicator);
-            padding: 10px; margin-bottom: 10px; font-size: 0.8rem;
+            padding: 10px; margin-bottom: 10px; font-size: 0.8em;
             display: flex; justify-content: space-between; align-items: center;
             border-left: 3px solid var(--text-color);
         }
@@ -395,7 +405,7 @@
             <div id="user-feed"></div>
         </div>
 
-        <!-- 5. SETTINGS PANEL (UPDATED) -->
+        <!-- 5. SETTINGS PANEL -->
         <div id="panel-settings" class="dropdown-panel hidden">
             <h3>>> SETTINGS</h3>
             <label>SYSTEM THEME:</label>
@@ -408,9 +418,9 @@
             <br>
             <label>FONT SIZE:</label>
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px;">
-                <span style="font-size: 0.8rem; opacity: 0.7;">SMALL</span>
+                <span style="font-size: 0.8em; opacity: 0.7;">SMALL</span>
                 <input type="range" id="font-size-slider" min="12" max="24" step="1" value="16" oninput="changeFontSize(this.value)" style="flex-grow: 1;">
-                <span style="font-size: 1.2rem; opacity: 0.7;">BIG</span>
+                <span style="font-size: 1.2em; opacity: 0.7;">BIG</span>
             </div>
 
             <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
@@ -441,7 +451,7 @@
                 <button onclick="handleSearch()" style="width:auto;">GO</button>
             </div>
             <hr style="border:0; border-top:1px dashed var(--post-border); margin: 20px 0;">
-            <div id="search-status" style="font-size:0.8rem; opacity:0.7; margin-bottom:10px;">UNIVERSAL FEED (LIVE):</div>
+            <div id="search-status" style="font-size:0.8em; opacity:0.7; margin-bottom:10px;">UNIVERSAL FEED (LIVE):</div>
             <div id="search-results"></div>
         </div>
 
@@ -458,6 +468,16 @@
 
             <button class="small secondary" onclick="refreshNotifications()" style="margin-bottom:10px;">REFRESH</button>
             <div id="notifications-feed">Loading...</div>
+        </div>
+
+        <!-- 8. THREAD VIEW PANEL (NEW) -->
+        <div id="panel-thread" class="dropdown-panel hidden">
+            <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
+            <h3>>> THREAD</h3>
+            <div id="thread-parent-container"></div>
+            <div style="border-bottom: 1px dashed var(--border-color); margin: 20px 0; opacity: 0.5;"></div>
+            <h4>Replies:</h4>
+            <div id="thread-replies-container">Loading replies...</div>
         </div>
 
         <!-- MAIN FEED STUFF -->
@@ -503,6 +523,7 @@
         
         let events = [], incomingBuffer = [], pendingEvents = []; 
         let myEvents = [], userEvents = [], searchEvents = [], notifEvents = [];
+        let threadEvents = []; // New array for comments
         let likedPosts = new Set(JSON.parse(localStorage.getItem('mbit_likes')) || []);
         let myContacts = new Set(); 
         
@@ -511,6 +532,7 @@
         
         let replyContext = null;
         let currentViewedProfile = null;
+        let currentThreadId = null;
         
         // Tab States
         let currentUserTab = 'notes'; 
@@ -540,20 +562,22 @@
         renderFilterList();
 
         function goHome() {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'panel-thread'].forEach(p => document.getElementById(p).classList.add('hidden'));
             document.getElementById('feed-container').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
             currentViewedProfile = null;
+            currentThreadId = null;
         }
 
         function togglePanel(id) {
-            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container'].forEach(p => {
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container', 'panel-thread'].forEach(p => {
                 const el = document.getElementById(p); if(el) el.classList.add('hidden');
             });
             document.getElementById(id).classList.remove('hidden');
             if (id === 'panel-my-profile') loadMyHistory();
             if (id === 'panel-relays') renderRelays();
             currentViewedProfile = null;
+            currentThreadId = null;
         }
 
         /* --- COMPOSER LOGIC --- */
@@ -610,6 +634,70 @@
             return false;
         }
 
+        /* --- THREAD VIEW LOGIC --- */
+        function viewThread(eventId) {
+            // Find event in memory or define placeholder
+            let ev = events.find(e => e.id === eventId) || 
+                     myEvents.find(e => e.id === eventId) || 
+                     userEvents.find(e => e.id === eventId) ||
+                     searchEvents.find(e => e.id === eventId) ||
+                     notifEvents.find(e => e.id === eventId);
+
+            if(!ev) return alert("Note not found in memory (fetching not implemented in this demo)");
+
+            // Switch UI
+            ['panel-relays', 'panel-identity', 'panel-my-profile', 'panel-user-profile', 'panel-settings', 'panel-search', 'panel-notifications', 'feed-container'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            document.getElementById('panel-thread').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            currentThreadId = eventId;
+            threadEvents = []; // Clear old replies
+            document.getElementById('thread-replies-container').innerHTML = "Loading replies...";
+
+            // Render Parent
+            const p = profiles[ev.pubkey] || {};
+            let content = ev.content; 
+            const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn';
+
+            const html = `
+            <div class="thread-parent">
+                <div class="meta" onclick="viewProfile('${ev.pubkey}')">
+                    ${p.picture?`<img src="${p.picture}" class="avatar">`:''}
+                    <span class="username-link">${p.name||ev.pubkey.substring(0,6)}</span>
+                </div>
+                <div class="content" style="font-size: 1.2em;">${parseContent(content)}</div>
+                <div style="font-size:0.8em; opacity:0.6; margin-top:5px;">${new Date(ev.created_at*1000).toLocaleString()}</div>
+                <div class="actions">
+                    <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
+                    <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
+                    <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
+                </div>
+            </div>`;
+            document.getElementById('thread-parent-container').innerHTML = html;
+
+            // Fetch Replies
+            Object.values(sockets).forEach(ws => {
+                if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "thread_sub", { kinds: [1], '#e': [eventId], limit: 50 }]));
+            });
+        }
+
+        function handleThreadEvent(ev) {
+            if(threadEvents.some(e => e.id === ev.id)) return;
+            threadEvents.push(ev);
+            threadEvents.sort((a,b) => a.created_at - b.created_at); // Oldest first for comments
+            renderThreadReplies();
+            fetchProfileIfNeeded(ev.pubkey);
+        }
+
+        function renderThreadReplies() {
+            if(threadEvents.length === 0) {
+                document.getElementById('thread-replies-container').innerHTML = "No replies yet.";
+                return;
+            }
+            const html = threadEvents.map(ev => generatePostHTML(ev)).join(''); // Use standard generator
+            document.getElementById('thread-replies-container').innerHTML = html;
+        }
+
         /* --- GENERATE HTML --- */
         function generatePostHTML(ev) {
             if (isBlocked(ev)) return '';
@@ -625,9 +713,10 @@
                     <span class="username-link">${p.name||ev.pubkey.substring(0,6)}</span>
                     <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span>
                 </div>
-                <div class="content">${parseContent(content)}</div>
+                <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div>
                 <div class="actions">
                     <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">[REPLY]</button>
+                    <button class="act-btn" onclick="viewThread('${ev.id}')">[THREAD]</button>
                     <button class="act-btn" onclick="initQuote('${ev.id}')">[SHARE]</button>
                     <button class="${likeClass}" onclick="doLike('${ev.id}', '${ev.pubkey}')">[LIKE]</button>
                     <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">[ZAP ⚡]</button>
@@ -642,9 +731,8 @@
             localStorage.setItem('mbit_likes', JSON.stringify([...likedPosts]));
             
             if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed();
-            if(!document.getElementById('panel-user-profile').classList.contains('hidden')) renderUserFeed();
-            if(!document.getElementById('panel-my-profile').classList.contains('hidden')) renderMyFeed();
-
+            if(!document.getElementById('panel-thread').classList.contains('hidden')) viewThread(currentThreadId); // Re-render thread view
+            
             const event = { kind: 7, created_at: Math.floor(Date.now()/1000), tags: [['e', id], ['p', pubkey]], content: "+", pubkey: myPubKey };
             await signAndBroadcast(event);
         }
@@ -858,6 +946,9 @@
                     // We don't parse bolt11 here to keep it light, just show generic success
                     content = ''; 
                 }
+                
+                // Time Format
+                const time = new Date(ev.created_at * 1000).toLocaleString();
 
                 return `
                 <div class="notif-item" onclick="viewProfile('${senderPub}')" style="cursor:pointer">
@@ -867,10 +958,11 @@
                             ${avatar}
                             <div>
                                 <span style="font-weight:bold">${name}</span>
-                                <span style="opacity:0.7; font-size:0.8rem"> ${actionText}</span>
+                                <span style="opacity:0.7; font-size:0.8em"> ${actionText}</span>
                             </div>
                         </div>
-                        <div style="opacity:0.9; font-size:0.9rem">${content}</div>
+                        <div style="opacity:0.9; font-size:0.9em">${content}</div>
+                        <div style="font-size:0.7em; opacity:0.5; margin-top:5px;">${time}</div>
                     </div>
                 </div>`;
             }).join('');
@@ -936,6 +1028,7 @@
                         if (data[1] === 'sub_user') handleUserEvent(data[2]);
                         if (data[1] === 'search_sub') handleSearchEvent(data[2]);
                         if (data[1] === 'notif_sub') handleNotifEvent(data[2]);
+                        if (data[1] === 'thread_sub') handleThreadEvent(data[2]);
                         if (data[1] === 'my_contacts') handleContacts(data[2]);
                         if (data[1].startsWith('m_')) { 
                             profiles[data[2].pubkey] = JSON.parse(data[2].content); 
@@ -987,7 +1080,7 @@
         function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
 
         function viewProfile(pubkey) {
-            ['panel-search', 'panel-notifications'].forEach(p => document.getElementById(p).classList.add('hidden'));
+            ['panel-search', 'panel-notifications', 'panel-thread'].forEach(p => document.getElementById(p).classList.add('hidden'));
             togglePanel('panel-user-profile');
             currentViewedProfile = pubkey;
             renderUserProfileHeader(pubkey);
