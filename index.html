@@ -305,6 +305,39 @@
             color: var(--bg-color);
         }
 
+        /* NPUB COPY BOX STYLE */
+        .npub-wrapper {
+            background: #262626; 
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: inline-flex; /* Changed to inline-flex to center nicely */
+            align-items: center;
+            justify-content: space-between;
+            margin: 5px auto 15px auto; /* Centered with margin */
+            width: 100%; /* Full width in container */
+            max-width: 320px; /* Limit max width */
+            cursor: pointer;
+            border: 1px solid var(--post-border);
+            user-select: all;
+        }
+        .npub-text {
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #e0e0e0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 10px;
+            flex-grow: 1;
+            text-align: left;
+        }
+        .copy-icon-svg {
+            width: 16px;
+            height: 16px;
+            fill: #aaa;
+            flex-shrink: 0;
+        }
+
         /* BOTTOM FEED TABS */
         .profile-subnav {
             display: flex;
@@ -424,15 +457,6 @@
             animation: zoomIn 0.2s;
         }
 
-        .npub-display {
-            font-size: 0.8em;
-            opacity: 0.5;
-            cursor: pointer;
-            text-decoration: underline;
-            margin-bottom: 10px;
-            display: inline-block;
-        }
-
         @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         #reply-context-bar {
@@ -504,6 +528,25 @@
             <button class="back-btn" onclick="goHome()">&lt; BACK TO FEED</button>
             <div id="my-profile-header" style="text-align:center;"></div>
             
+            <!-- HIDDEN EDITOR (NOW ABOVE TABS) -->
+            <div id="profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
+                <!-- Removing Username input as requested -->
+                <label>Name:</label><input type="text" id="p-display-name" placeholder="e.g. Satoshi Nakamoto">
+                <label>Bio:</label><textarea id="p-about" rows="3"></textarea>
+                <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
+                <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
+                <label style="color:#3498db">Verified Address (NIP-05):</label><input type="text" id="p-nip05" placeholder="name@domain.com">
+                <label>Picture URL:</label><input type="text" id="p-picture">
+                <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
+                <button class="small secondary" onclick="toggleProfileEditor()" style="width:100%; margin-top:5px; margin-left:0;">CANCEL</button>
+            </div>
+
+            <!-- STATIC TABS FOR MY PROFILE -->
+            <div class="profile-subnav">
+                <button id="my-tab-notes" class="subnav-btn active" onclick="switchMyTab('notes')">NOTES</button>
+                <button id="my-tab-replies" class="subnav-btn" onclick="switchMyTab('replies')">NOTES & REPLIES</button>
+            </div>
+
             <div id="my-feed"></div>
         </div>
 
@@ -773,12 +816,18 @@
             const p = profiles[myPubKey].meta || {}; 
             const npub = window.NostrTools.nip19.npubEncode(myPubKey);
 
-            // Build header - 1. Name/Pic, 2. Bio/Zap, 3. Actions, 4. Editor (Hidden), 5. Stats
+            // Build header
             const headerHtml = `
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || myPubKey.substring(0,8)}</h2>
                 ${p.nip05 ? `<div style="font-size:0.8em; color:#3498db; margin-bottom:5px;">✓ ${p.nip05}</div>` : ''}
-                <div class="npub-display" onclick="copyToClipboard('${npub}')">${npub.substring(0,12)}...${npub.substring(npub.length-4)}</div>
+                
+                <div class="npub-wrapper" onclick="copyToClipboard('${npub}')">
+                    <div class="npub-text">${npub}</div>
+                    <svg class="copy-icon-svg" viewBox="0 0 24 24">
+                        <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z"/>
+                    </svg>
+                </div>
 
                 <div class="profile-detail-box">
                     <p style="opacity:0.8; font-style:italic; margin: 5px 0;">${p.about || '(No bio)'}</p>
@@ -788,18 +837,6 @@
                  
                 <div class="profile-actions-row">
                     <button class="secondary" onclick="toggleProfileEditor()">[ EDIT PROFILE ]</button>
-                </div>
-
-                <!-- DYNAMIC EDITOR LOCATION -->
-                <div id="dynamic-profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
-                    <label>Name:</label><input type="text" id="p-display-name" placeholder="Display Name">
-                    <label>Bio:</label><textarea id="p-about" rows="3"></textarea>
-                    <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
-                    <label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16" placeholder="name@getalby.com">
-                    <label style="color:#3498db">Verified Address (NIP-05):</label><input type="text" id="p-nip05" placeholder="name@domain.com">
-                    <label>Picture URL:</label><input type="text" id="p-picture">
-                    <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
-                    <button class="small secondary" onclick="toggleProfileEditor()" style="width:100%; margin-top:5px; margin-left:0;">CANCEL</button>
                 </div>
 
                 <div class="profile-stats-row">
@@ -871,7 +908,13 @@
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || pubkey.substring(0,8)}</h2>
                 ${p.nip05 ? `<div style="font-size:0.8em; color:#3498db; margin-bottom:5px;">✓ ${p.nip05}</div>` : ''}
-                <div class="npub-display" onclick="copyToClipboard('${npub}')">${npub.substring(0,12)}...${npub.substring(npub.length-4)}</div>
+
+                <div class="npub-wrapper" onclick="copyToClipboard('${npub}')">
+                    <div class="npub-text">${npub}</div>
+                    <svg class="copy-icon-svg" viewBox="0 0 24 24">
+                        <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z"/>
+                    </svg>
+                </div>
 
                 <div class="profile-detail-box">
                     <p style="opacity:0.8; font-style:italic; margin: 5px 0;">${p.about || ''}</p>
