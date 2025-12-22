@@ -25,6 +25,7 @@
             --fab-text: #000000;
             --quote-bg: #111;
             --base-font-size: 16px; 
+            --thread-indent-color: #333;
         }
 
         [data-theme="matrix"] {
@@ -40,6 +41,7 @@
             --fab-bg: #00FF41;
             --fab-text: #000000;
             --quote-bg: #001100;
+            --thread-indent-color: #004400;
         }
 
         [data-theme="light"] {
@@ -58,6 +60,7 @@
             --fab-bg: #000000;
             --fab-text: #ffffff;
             --quote-bg: #f9f9f9;
+            --thread-indent-color: #cccccc;
         }
 
         /* GLOBAL STYLES */
@@ -112,6 +115,16 @@
         .thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
         .thread-ancestor { border-left: 2px dotted var(--meta-color); opacity: 0.85; padding: 10px; margin-bottom: 15px; background: rgba(255,255,255,0.02); }
         .thread-ancestor .actions { display: none; }
+        .thread-reply { position: relative; }
+        .thread-reply::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--thread-indent-color);
+        }
         
         .meta { font-size: 0.75em; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
         .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; }
@@ -412,7 +425,6 @@
     let replyContext = null;
     let currentViewedProfile = null;
     let currentThreadId = null;
-    let currentThreadRootId = null; 
     let currentUserTab = 'notes'; 
     let currentMyTab = 'notes';
     let currentNotifTab = 'all';
@@ -457,15 +469,22 @@
         currentThreadId = null;
     }
 
-    /* --- FIXED THREAD LOGIC --- */
-    function getImmediateParentId(ev) {
-        const replyTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'reply');
-        if (replyTag) return replyTag[1];
-        const rootTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'root');
-        if (rootTag && !replyTag) return rootTag[1];
-        const eTags = ev.tags.filter(t => t[0] === 'e');
-        if (eTags.length > 0) return eTags[eTags.length - 1][1];
-        return null;
+    /* --- IMPROVED NIP-10 COMPLIANT THREAD LOGIC --- */
+
+    function getReplyTags(ev) {
+        const reply = ev.tags.find(t => t[0] === 'e' && t[3] === 'reply');
+        const root = ev.tags.find(t => t[0] === 'e' && t[3] === 'root');
+        const mentions = ev.tags.filter(t => t[0] === 'e' && t[3] === 'mention');
+        const legacy = ev.tags.filter(t => t[0] === 'e' && !t[3]);
+        return { reply, root, mentions, legacy };
+    }
+
+    function getDirectReplyParentId(ev) {
+        const { reply, root } = getReplyTags(ev);
+        if (reply) return reply[1];
+        if (root) return root[1];
+        const lastE = ev.tags.filter(t => t[0] === 'e').pop();
+        return lastE ? lastE[1] : null;
     }
 
     function viewThread(id) {
@@ -484,19 +503,14 @@
             }
         });
         
-        const cached = events.find(e => e.id === id) || 
-                    notifEvents.find(e => e.id === id) || 
-                    myEvents.find(e => e.id === id) || 
-                    userEvents.find(e => e.id === id) ||
-                    searchEvents.find(e => e.id === id);
+        const allEvents = [...events, ...notifEvents, ...myEvents, ...userEvents, ...searchEvents];
+        const cached = allEvents.find(e => e.id === id);
         
         if (cached) {
             threadEvents.push(cached);
             renderThreadView(); 
-            const parentId = getImmediateParentId(cached);
-            if (parentId) {
-                fetchNote(parentId);
-            }
+            const parentId = getDirectReplyParentId(cached);
+            if (parentId) fetchNote(parentId);
         }
 
         Object.values(sockets).forEach(ws => {
@@ -522,10 +536,43 @@
         fetchProfileIfNeeded(ev.pubkey);
         
         if (ev.id === currentThreadId) {
-            const parentId = getImmediateParentId(ev);
+            const parentId = getDirectReplyParentId(ev);
             if (parentId && !threadEvents.some(e => e.id === parentId)) fetchNote(parentId);
         }
         renderThreadView();
+    }
+
+    function buildReplyTree(mainId) {
+        const nodes = {};
+        const roots = [];
+
+        threadEvents.forEach(ev => {
+            if (ev.id === mainId) return;
+            nodes[ev.id] = { event: ev, children: [] };
+        });
+
+        threadEvents.forEach(ev => {
+            if (ev.id === mainId) return;
+            const parentId = getDirectReplyParentId(ev);
+            if (parentId && nodes[parentId]) {
+                nodes[parentId].children.push(nodes[ev.id]);
+            } else if (parentId === mainId) {
+                roots.push(nodes[ev.id]);
+            }
+        });
+
+        return roots;
+    }
+
+    function generateNestedRepliesHTML(replies, depth = 0) {
+        if (replies.length === 0) return '';
+        const indent = depth * 30;
+        return replies.map(node => `
+            <div class="thread-reply" style="margin-left:${indent}px; padding-left:15px;">
+                ${generatePostHTML(node.event)}
+                ${node.children.length > 0 ? generateNestedRepliesHTML(node.children.sort((a,b) => a.event.created_at - b.event.created_at), depth + 1) : ''}
+            </div>
+        `).join('');
     }
 
     function renderThreadView() {
@@ -533,7 +580,7 @@
         
         let parentHtml = '';
         if (mainNote) {
-            const parentId = getImmediateParentId(mainNote);
+            const parentId = getDirectReplyParentId(mainNote);
             if (parentId) {
                 const parentNote = threadEvents.find(e => e.id === parentId);
                 if (parentNote) {
@@ -547,21 +594,19 @@
                     </div>`;
                 }
             }
-            document.getElementById('thread-parent-container').innerHTML = parentHtml + `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
+            document.getElementById('thread-parent-container').innerHTML = 
+                parentHtml + `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
         }
 
-        // FIXED: Reply filtering - shows ALL replies that reference the thread
-        const replies = threadEvents.filter(e => {
-            if (e.id === currentThreadId) return false;
-            const eTags = e.tags.filter(t => t[0] === 'e');
-            return eTags.some(t => t[1] === currentThreadId);
-        });
-        replies.sort((a,b) => a.created_at - b.created_at);
-        
-        if (replies.length > 0) {
-            document.getElementById('thread-replies-container').innerHTML = replies.map(generatePostHTML).join('');
+        const directReplies = buildReplyTree(currentThreadId);
+        directReplies.sort((a, b) => a.event.created_at - b.event.created_at);
+
+        if (directReplies.length > 0) {
+            document.getElementById('thread-replies-container').innerHTML = 
+                generateNestedRepliesHTML(directReplies);
         } else if (mainNote) {
-            document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:10px;">No replies found yet.</div>';
+            document.getElementById('thread-replies-container').innerHTML = 
+                '<div style="opacity:0.5; padding:10px;">No replies found yet.</div>';
         }
     }
 
@@ -1017,7 +1062,7 @@
         if (ev.kind === 0) { try { profiles[pk].meta = JSON.parse(ev.content); } catch(e) {} }
         if (ev.kind === 3) {
             if (isMe || pk === currentViewedProfile) {
-                const following = ev.tags.filter(t => t[0] === 'p').map(t => t[1]);
+                const following = ev.tags.filter(t => t t[0] === 'p').map(t => t[1]);
                 profiles[pk].following = new Set(following);
                 if (isMe) myContacts = new Set(following); 
             } else {
@@ -1104,7 +1149,7 @@
 
     function renderGlobalFeed() { document.getElementById('feed').innerHTML = events.map(generatePostHTML).join(''); }
 
-    async function toggleFollow(pubkey) { if(!myPubKey) return alert("Login required"); if(myContacts.has(pubkey)) myContacts.delete(pubkey); else myContacts.add(pubkey); renderUserProfileHeader(pubkey); const tags = Array.from(myContacts).map(p => ['p', p]); const event = { kind: 3, created_at: Math.floor(Date.now()/1000), tags: tags, content: "", pubkey: myPubKey }; await signAndBroadcast(event); }
+    async function toggleFollow(pubkey) { if(!myPubKey) return alert("Login required"); if(myContacts.has(pubkey)) myContacts.delete(pubkey); else myContacts.add(pubkey); renderUserProfileHeader(pubkey); const tags = Array.from(myContacts).map(p => ['p', U]); const event = { kind: 3, created_at: Math.floor(Date.now()/1000), tags: tags, content: "", pubkey: myPubKey }; await signAndBroadcast(event); }
     async function signAndBroadcast(event) { if (authMode === 'extension') event = await window.nostr.signEvent(event); else { event.id = window.NostrTools.getEventHash(event); event.sig = window.NostrTools.signEvent(event, myPrivKey); } Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["EVENT", event])); }); return event; }
     async function sendNote() { const content = document.getElementById('msg-input').value; if (!content) return; let tags = []; if (replyContext) { tags.push(['e', replyContext.id, '', 'reply']); tags.push(['p', replyContext.pubkey]); } const event = { kind: 1, created_at: Math.floor(Date.now()/1000), tags: tags, content: content, pubkey: myPubKey }; await signAndBroadcast(event); document.getElementById('msg-input').value = ""; closeComposer(); }
     function login() { let k = document.getElementById('privkey-input').value.trim(); if (!k) return; if (k.startsWith('nsec')) k = window.NostrTools.nip19.decode(k).data; localStorage.setItem('nostr_privkey', k); localStorage.setItem('nostr_pubkey', window.NostrTools.getPublicKey(k)); localStorage.setItem('nostr_mode', 'local'); location.reload(); }
