@@ -190,6 +190,50 @@
 
         #reply-context-bar { background-color: var(--reply-indicator); padding: 10px; margin-bottom: 10px; font-size: 0.8em; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--text-color); }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ZAP MODAL STYLES (SNORT STYLE) */
+        .zap-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .zap-preset {
+            background: var(--input-bg);
+            border: 1px solid #F7931A;
+            color: #F7931A;
+            padding: 10px 0;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+
+        .zap-preset:hover {
+            background: #F7931A;
+            color: #fff;
+        }
+
+        .zap-preset.selected {
+            background: #F7931A;
+            color: #fff;
+            box-shadow: 0 0 10px #F7931A;
+        }
+
+        #zap-amount-display {
+            text-align: center;
+            font-size: 2em;
+            color: #F7931A;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+
+        .sats-label {
+            font-size: 0.5em;
+            color: var(--meta-color);
+        }
     </style>
 </head>
 <body>
@@ -301,7 +345,7 @@
             <div id="filter-list" style="margin-top:10px; min-height:20px;"></div>
             <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
             <h3>>> SUPPORT</h3>
-            <button class="zap-active" onclick="handleZap('itsmircea@walletofsatoshi.com', null)" style="width:100%; border-color:#F7931A;">
+            <button class="zap-active" onclick="handleZap('itsmircea@walletofsatoshi.com', null, null)" style="width:100%; border-color:#F7931A;">
                 ⚡ DONATE TO DEV
             </button>
             <div style="text-align:center; font-size:0.8em; margin-top:5px; opacity:0.7; word-break: break-all;">itsmircea@walletofsatoshi.com</div>
@@ -371,6 +415,39 @@
             <div style="display:flex; gap:10px; margin-top:10px;">
                 <button onclick="closeComposer()" class="secondary" style="flex:1">CANCEL</button>
                 <button onclick="sendNote()" style="flex:2">SEND SIGNAL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZAP MODAL (SNORT STYLE) -->
+    <div id="zap-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 style="color:#F7931A; text-align:center; margin-top:0;">⚡ ZAP</h3>
+            
+            <div id="zap-amount-display">
+                <span id="zap-amt-val">21</span> <span class="sats-label">sats</span>
+            </div>
+
+            <div class="zap-grid">
+                <div class="zap-preset" onclick="setZapAmount(21)">21</div>
+                <div class="zap-preset" onclick="setZapAmount(69)">69</div>
+                <div class="zap-preset" onclick="setZapAmount(420)">420</div>
+                <div class="zap-preset" onclick="setZapAmount(1000)">1k</div>
+                <div class="zap-preset" onclick="setZapAmount(5000)">5k</div>
+                <div class="zap-preset" onclick="setZapAmount(10000)">10k</div>
+                <div class="zap-preset" onclick="setZapAmount(100000)">100k</div>
+                <div class="zap-preset" onclick="setZapAmount(1000000)">1M</div>
+            </div>
+
+            <label>Custom Amount:</label>
+            <input type="number" id="custom-zap-input" placeholder="Custom sats" oninput="updateZapDisplay(this.value)">
+
+            <label>Comment:</label>
+            <textarea id="zap-comment" rows="2" placeholder="Nice post!"></textarea>
+
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button onclick="closeZapModal()" class="secondary" style="flex:1">CANCEL</button>
+                <button onclick="confirmZap()" class="zap-active" style="flex:1; border-color:#F7931A;">⚡ ZAP NOW</button>
             </div>
         </div>
     </div>
@@ -458,19 +535,22 @@
             currentThreadId = null;
         }
 
-        /* --- REDESIGNED THREAD LOGIC WITH YOUR FIX --- */
+        /* --- FIXED THREAD LOGIC (Strict Parenting) --- */
         function getImmediateParentId(ev) {
-            // NIP-10: tags = [['e', id, url, marker], ...]
-            // 1. Look for 'reply' marker
+            // NIP-10 Parsing Logic
+            // 1. Look for a specific "reply" marker (Modern clients)
             const replyTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'reply');
             if (replyTag) return replyTag[1];
 
-            // 2. Look for 'root' marker (if no reply marker, root is the parent)
+            // 2. Look for "root" marker. 
+            // If there is ONLY a root marker and no reply marker, the root is the direct parent.
             const rootTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'root');
-            if (rootTag && !replyTag) return rootTag[1];
-
-            // 3. Fallback: last 'e' tag
             const eTags = ev.tags.filter(t => t[0] === 'e');
+            
+            // If tags have markers, but we didn't find 'reply', rely on 'root'
+            if (rootTag && eTags.length === 1) return rootTag[1];
+
+            // 3. Fallback (Legacy/No markers): The LAST 'e' tag is usually the parent
             if (eTags.length > 0) return eTags[eTags.length - 1][1];
 
             return null;
@@ -485,7 +565,7 @@
             
             threadEvents = [];
             
-            // Close any existing thread subscriptions
+            // Unsubscribe from previous thread calls to save bandwidth
             Object.values(sockets).forEach(ws => {
                 if (ws.readyState === 1) {
                     ws.send(JSON.stringify(["CLOSE", "thread_main"]));
@@ -493,7 +573,7 @@
                 }
             });
             
-            // Check cache first
+            // Check if we already have this note in memory
             const cached = events.find(e => e.id === id) || 
                           notifEvents.find(e => e.id === id) || 
                           myEvents.find(e => e.id === id) || 
@@ -503,22 +583,23 @@
             if (cached) {
                 threadEvents.push(cached);
                 renderThreadView(); 
+                // If the note has a parent, go fetch it so we see the context above
                 const parentId = getImmediateParentId(cached);
-                if (parentId) {
-                    fetchNote(parentId);
-                }
+                if (parentId) fetchNote(parentId);
             }
 
-            // Always fetch fresh data with unique subscription IDs
+            // Fetch the Main Note (just in case it's not cached) AND its Children
             Object.values(sockets).forEach(ws => {
                 if (ws.readyState === 1) {
                     ws.send(JSON.stringify(["REQ", "thread_main", { kinds: [1], ids: [id], limit: 1 }]));
-                    ws.send(JSON.stringify(["REQ", "thread_children", { kinds: [1], '#e': [id], limit: 200 }]));
+                    // limit: 500 ensures we get enough replies to filter through
+                    ws.send(JSON.stringify(["REQ", "thread_children", { kinds: [1], '#e': [id], limit: 500 }]));
                 }
             });
         }
 
         function fetchNote(id) {
+            // Prevent duplicate fetching
             if(threadEvents.some(e => e.id === id)) return;
             Object.values(sockets).forEach(ws => {
                 if (ws.readyState === 1) {
@@ -532,77 +613,84 @@
             threadEvents.push(ev);
             fetchProfileIfNeeded(ev.pubkey);
             
-            // If this is an ancestor, check if IT has a parent
-            const parentId = getImmediateParentId(ev);
-            if (parentId) {
-                if (!threadEvents.some(e => e.id === parentId)) {
-                    fetchNote(parentId);
+            // If this new event is an ancestor of the one we are viewing, check if IT has a parent too
+            // This builds the chain going up: A <- B <- C (current)
+            if (ev.id !== currentThreadId) {
+                // If this event is NOT a child of current, it might be a parent
+                // Check if it's the direct parent of current thread note
+                const currentNote = threadEvents.find(e => e.id === currentThreadId);
+                if (currentNote) {
+                    const parentOfCurrent = getImmediateParentId(currentNote);
+                    if (ev.id === parentOfCurrent) {
+                        // This is the parent! Does IT have a parent?
+                        const grandParent = getImmediateParentId(ev);
+                        if (grandParent) fetchNote(grandParent);
+                    }
                 }
             }
+            
             renderThreadView();
         }
 
         function renderThreadView() {
             const mainNote = threadEvents.find(e => e.id === currentThreadId);
             
-            if (!mainNote && threadEvents.length === 0) return; 
-
-            // Trace ancestors up
-            let ancestors = [];
-            let current = mainNote;
-            if (current) {
-                let loopGuard = 0;
-                while(loopGuard < 10) {
+            // 1. RENDER ANCESTORS (Parents)
+            let ancestorHtml = '';
+            if (mainNote) {
+                let current = mainNote;
+                let depth = 0;
+                let ancestors = [];
+                
+                // Walk up the tree
+                while (depth < 5) { // Prevent infinite loops
                     const pid = getImmediateParentId(current);
                     if (!pid) break;
+                    
                     const parent = threadEvents.find(e => e.id === pid);
-                    if (!parent) {
-                        ancestors.unshift({ missing: true, id: pid });
+                    if (parent) {
+                        ancestors.unshift(parent); // Add to beginning of array
+                        current = parent;
+                    } else {
+                        // Parent exists but hasn't loaded yet
+                        ancestors.unshift({ id: pid, missing: true });
                         break;
                     }
-                    ancestors.unshift({ missing: false, note: parent });
-                    current = parent;
-                    loopGuard++;
+                    depth++;
                 }
-            }
 
-            let html = '';
-            ancestors.forEach(a => {
-                if (a.missing) {
-                    html += `<div class="thread-ancestor" style="opacity:0.6;">
-                        <button class="small secondary" onclick="fetchNote('${a.id}')">[ Load Parent ]</button>
-                    </div>`;
-                } else {
-                    html += `<div class="thread-ancestor">${generatePostHTML(a.note)}</div>`;
-                }
-            });
-
-            if (mainNote) {
-                html += `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
-            } else {
-                html += `<div style="padding:10px;">Loading main note...</div>`;
+                ancestorHtml = ancestors.map(a => {
+                    if (a.missing) {
+                        return `<div class="thread-ancestor" style="opacity:0.6; text-align:center;">
+                            <button class="small secondary" onclick="fetchNote('${a.id}')">Load Parent Note...</button>
+                        </div>`;
+                    }
+                    return `<div class="thread-ancestor">${generatePostHTML(a)}</div>`;
+                }).join('');
             }
             
-            document.getElementById('thread-parent-container').innerHTML = html;
+            document.getElementById('thread-parent-container').innerHTML = 
+                ancestorHtml + (mainNote ? `<div class="thread-parent">${generatePostHTML(mainNote)}</div>` : '');
 
-            // Replies
-            const replies = threadEvents.filter(e => {
-                // Check if this event replies to current thread ID
-                const pid = getImmediateParentId(e);
-                // Also fallback check for direct root tagging if no specific reply tag
-                const rootTag = e.tags.find(t => t[0] === 'e' && t[3] === 'root');
-                const isRootReply = rootTag && rootTag[1] === currentThreadId;
+            // 2. RENDER REPLIES (Strict Filtering)
+            // Only show notes that DIRECTLY reply to the currentThreadId
+            const directReplies = threadEvents.filter(e => {
+                if (e.id === currentThreadId) return false; // Don't show self
                 
-                return pid === currentThreadId || isRootReply;
+                const pid = getImmediateParentId(e);
+                
+                // CRITICAL FIX: Only show if the Immediate Parent IS the current note.
+                // This hides grandchildren and unrelated tagging.
+                return pid === currentThreadId;
             });
             
-            replies.sort((a,b) => a.created_at - b.created_at);
+            directReplies.sort((a,b) => a.created_at - b.created_at);
             
-            if (replies.length > 0) {
-                document.getElementById('thread-replies-container').innerHTML = replies.map(generatePostHTML).join('');
+            if (directReplies.length > 0) {
+                document.getElementById('thread-replies-container').innerHTML = directReplies.map(generatePostHTML).join('');
             } else {
                 if (mainNote) {
-                    document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:10px;">No replies found yet.</div>';
+                    document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:20px; text-align:center;">No direct replies found yet.</div>';
                 }
             }
         }
@@ -967,7 +1055,7 @@
             if (!isMe && myPubKey) {
                 followBtn = isFollowing ? `<button class="secondary act-btn" onclick="toggleFollow('${pubkey}')">#UNFOLLOW</button>` : `<button class="act-btn" onclick="toggleFollow('${pubkey}')">#FOLLOW</button>`;
             } else if (isMe) { followBtn = `<button class="secondary act-btn" onclick="togglePanel('panel-my-profile')">#EDIT</button>`; }
-            let zapBtn = ''; if (p.lud16) zapBtn = `<button class="zap-active act-btn zap-btn" onclick="handleZap('${p.lud16}', '${pubkey}')">⚡ #ZAP</button>`;
+            let zapBtn = ''; if (p.lud16) zapBtn = `<button class="zap-active act-btn zap-btn" onclick="handleZap('${p.lud16}', '${pubkey}', null)">⚡ #ZAP</button>`;
             const html = `
                 ${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}
                 <h2>${p.display_name || p.name || pubkey.substring(0,8)}</h2>
@@ -1203,7 +1291,121 @@
         function doBookmark(id) { if(bookmarks.has(id)) { bookmarks.delete(id); alert("Bookmark Removed"); } else { bookmarks.add(id); alert("Saved to Bookmarks"); } localStorage.setItem('mbit_bookmarks', JSON.stringify([...bookmarks])); if(!document.getElementById('panel-bookmarks').classList.contains('hidden')) openBookmarks(); if(!document.getElementById('feed-container').classList.contains('hidden')) renderGlobalFeed(); }
         function openBookmarks() { togglePanel('panel-bookmarks'); const ids = [...bookmarks]; if(ids.length === 0) { document.getElementById('bookmarks-feed').innerHTML = "No bookmarks yet."; return; } document.getElementById('bookmarks-feed').innerHTML = "Loading saved posts..."; bookmarkEvents = []; Object.values(sockets).forEach(ws => { if(ws.readyState === 1) ws.send(JSON.stringify(["REQ", "bookmarks_sub", { kinds: [1], ids: ids }])); }); }
         function handleBookmarkEvent(ev) { if(bookmarkEvents.some(e => e.id === ev.id)) return; bookmarkEvents.push(ev); bookmarkEvents.sort((a,b) => b.created_at - a.created_at); document.getElementById('bookmarks-feed').innerHTML = bookmarkEvents.map(generatePostHTML).join(''); fetchProfileIfNeeded(ev.pubkey); }
-        async function handleZap(lud16, pubkey) { if(!lud16) return alert("User has no Lightning address set."); const parts = lud16.split('@'); if(parts.length !== 2) return window.open(`lightning:${lud16}`); const amount = prompt(`Zap ${lud16} (sats):`, "21"); if(!amount) return; try { const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`; const res = await fetch(url); const data = await res.json(); if(data.callback) { const millisats = parseInt(amount) * 1000; if(millisats < data.minSendable || millisats > data.maxSendable) return alert(`Amount out of range.`); const cbUrl = `${data.callback}?amount=${millisats}`; const cbRes = await fetch(cbUrl); const cbData = await cbRes.json(); if(cbData.pr) window.location.href = `lightning:${cbData.pr}`; } } catch(e) { if(confirm(`Auto-zap failed. Open wallet manually?`)) window.location.href = `lightning:${lud16}`; } }
+        
+        /* --- ZAP LOGIC (Snort Style) --- */
+        let zapContext = null;
+
+        function handleZap(lud16, pubkey, eventId = null) {
+            if (!lud16) return alert("User has no Lightning address set.");
+            if (!myPubKey) return alert("Please Login to Zap.");
+            
+            zapContext = { lud16, pubkey, eventId };
+            
+            // Reset UI
+            document.getElementById('zap-amt-val').innerText = "21";
+            document.getElementById('custom-zap-input').value = "";
+            document.getElementById('zap-comment').value = "";
+            
+            document.getElementById('zap-modal').classList.remove('hidden');
+        }
+
+        function closeZapModal() {
+            document.getElementById('zap-modal').classList.add('hidden');
+            zapContext = null;
+        }
+
+        function setZapAmount(amount) {
+            document.getElementById('zap-amt-val').innerText = amount;
+            document.getElementById('custom-zap-input').value = amount;
+        }
+
+        function updateZapDisplay(val) {
+            if(!val) val = "0";
+            document.getElementById('zap-amt-val').innerText = val;
+        }
+
+        async function confirmZap() {
+            const amount = parseInt(document.getElementById('zap-amt-val').innerText);
+            const comment = document.getElementById('zap-comment').value;
+            
+            if (!amount || amount <= 0) return alert("Invalid amount");
+            if (!zapContext) return;
+
+            const { lud16, pubkey, eventId } = zapContext;
+            const parts = lud16.split('@');
+            if (parts.length !== 2) return alert("Invalid LUD16");
+
+            // UX: Show loading state
+            const btn = document.querySelector('#zap-modal .zap-active');
+            const oldText = btn.innerText;
+            btn.innerText = "fetching invoice...";
+            btn.disabled = true;
+
+            try {
+                // A. Get LNURL Service Data
+                const url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.callback) {
+                    const millisats = amount * 1000;
+                    if (millisats < data.minSendable || millisats > data.maxSendable) {
+                        alert(`Amount out of range (Min: ${data.minSendable/1000}, Max: ${data.maxSendable/1000})`);
+                        throw new Error("Range error");
+                    }
+
+                    // B. Create NIP-57 Zap Request Event
+                    let zapTags = [
+                        ['p', pubkey],
+                        ['relays', ...savedRelays],
+                        ['amount', millisats.toString()],
+                        ['lnurl', data.callback]
+                    ];
+                    if (eventId) zapTags.push(['e', eventId]);
+
+                    const zapEvent = {
+                        kind: 9734,
+                        created_at: Math.floor(Date.now() / 1000),
+                        tags: zapTags,
+                        content: comment,
+                        pubkey: myPubKey
+                    };
+
+                    // C. Sign the Request
+                    let signedEvent;
+                    if (authMode === 'extension') {
+                        signedEvent = await window.nostr.signEvent(zapEvent);
+                    } else {
+                        zapEvent.id = window.NostrTools.getEventHash(zapEvent);
+                        zapEvent.sig = window.NostrTools.signEvent(zapEvent, myPrivKey);
+                        signedEvent = zapEvent;
+                    }
+
+                    // D. Encode and Fetch Invoice
+                    const encodedEvent = encodeURI(JSON.stringify(signedEvent));
+                    const cbUrl = `${data.callback}?amount=${millisats}&nostr=${encodedEvent}`;
+                    
+                    const cbRes = await fetch(cbUrl);
+                    const cbData = await cbRes.json();
+
+                    if (cbData.pr) {
+                        // E. Launch Wallet
+                        closeZapModal();
+                        window.location.href = `lightning:${cbData.pr}`;
+                    } else {
+                        alert("Lightning Node refused to generate invoice: " + (cbData.reason || "Unknown error"));
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Zap failed. See console.");
+            } finally {
+                // Reset button state
+                btn.innerText = oldText;
+                btn.disabled = false;
+            }
+        }
+        /* --- END ZAP LOGIC --- */
 
         function processEventStats(ev) { if (!ev || !ev.tags) return; const eTags = ev.tags.filter(t => t[0] === 'e'); eTags.forEach(t => { const targetId = t[1]; if (!eventStats[targetId]) eventStats[targetId] = { reply:0, repost:0, like:0, zap:0 }; if (ev.kind === 1) eventStats[targetId].reply++; if (ev.kind === 6) eventStats[targetId].repost++; if (ev.kind === 7) eventStats[targetId].like++; if (ev.kind === 9735) eventStats[targetId].zap++; updateCountDOM(targetId, 'reply'); updateCountDOM(targetId, 'repost'); updateCountDOM(targetId, 'like'); updateCountDOM(targetId, 'zap'); }); }
         function updateCountDOM(id, type) { const el = document.getElementById(`s-${type}-${id}`); if (el && eventStats[id]) { el.innerText = eventStats[id][type]; } }
@@ -1216,7 +1418,7 @@
             const likeClass = likedPosts.has(ev.id) ? 'act-btn active' : 'act-btn'; 
             const bookmarkClass = bookmarks.has(ev.id) ? 'act-btn bookmark-btn active' : 'act-btn bookmark-btn'; 
             const s = eventStats[ev.id] || { reply:0, repost:0, like:0, zap:0 }; 
-            return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.display_name || p.name || ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">#REPLY <span id="s-reply-${ev.id}">${s.reply}</span></button> <button class="act-btn" onclick="initQuote('${ev.id}')">#SHARE <span id="s-repost-${ev.id}">${s.repost}</span></button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">#LIKE <span id="s-like-${ev.id}">${s.like}</span></button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}')">#ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span></button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">#MARK</button> </div> </div>`; 
+            return `<div class="post"> <div class="meta" onclick="viewProfile('${ev.pubkey}')"> ${p.picture?`<img src="${p.picture}" class="avatar">`:''} <span class="username-link">${p.display_name || p.name || ev.pubkey.substring(0,6)}</span> <span style="margin-left:5px; opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span> </div> <div class="content" onclick="viewThread('${ev.id}')">${parseContent(content)}</div> <div class="actions"> <button class="act-btn" onclick="initReply('${ev.id}', '${ev.pubkey}')">#REPLY <span id="s-reply-${ev.id}">${s.reply}</span></button> <button class="act-btn" onclick="initQuote('${ev.id}')">#SHARE <span id="s-repost-${ev.id}">${s.repost}</span></button> <button class="${likeClass} act-btn" onclick="doLike('${ev.id}', '${ev.pubkey}')">#LIKE <span id="s-like-${ev.id}">${s.like}</span></button> <button class="act-btn zap-btn" onclick="handleZap('${p.lud16}', '${ev.pubkey}', '${ev.id}')">#ZAP ⚡ <span id="s-zap-${ev.id}">${s.zap}</span></button> <button class="${bookmarkClass}" onclick="doBookmark('${ev.id}')">#MARK</button> </div> </div>`; 
         }
         function parseContent(text) { 
             if(!text) return ""; let content = text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
