@@ -338,7 +338,6 @@
             <button class="back-btn" onclick="goHome()">&lt; #BACK TO FEED</button>
             <h3>>> THREAD</h3>
             <div id="thread-parent-container"></div>
-            <div id="thread-main-container"></div>
             <div style="border-bottom: 1px dashed var(--border-color); margin: 20px 0; opacity: 0.5;"></div>
             <h4>Replies:</h4>
             <div id="thread-replies-container">Loading replies...</div>
@@ -459,28 +458,30 @@
             currentThreadId = null;
         }
 
-        /* --- THREAD LOGIC --- */
+        /* --- REDESIGNED THREAD LOGIC WITH YOUR FIX --- */
         function getImmediateParentId(ev) {
             // NIP-10: tags = [['e', id, url, marker], ...]
+            // 1. Look for 'reply' marker
             const replyTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'reply');
             if (replyTag) return replyTag[1];
 
+            // 2. Look for 'root' marker (if no reply marker, root is the parent)
             const rootTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'root');
             if (rootTag && !replyTag) return rootTag[1];
 
+            // 3. Fallback: last 'e' tag
             const eTags = ev.tags.filter(t => t[0] === 'e');
             if (eTags.length > 0) return eTags[eTags.length - 1][1];
+
             return null;
         }
 
         function viewThread(id) {
-            console.log("Opening thread:", id);
             currentThreadId = id;
             togglePanel('panel-thread');
             
-            document.getElementById('thread-parent-container').innerHTML = '';
-            document.getElementById('thread-main-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading note...</div>';
-            document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading comments...</div>';
+            document.getElementById('thread-parent-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading thread...</div>';
+            document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading replies...</div>';
             
             threadEvents = [];
             
@@ -506,15 +507,13 @@
                 if (parentId) {
                     fetchNote(parentId);
                 }
-            } else {
-                fetchNote(id); 
             }
 
             // Always fetch fresh data with unique subscription IDs
             Object.values(sockets).forEach(ws => {
                 if (ws.readyState === 1) {
                     ws.send(JSON.stringify(["REQ", "thread_main", { kinds: [1], ids: [id], limit: 1 }]));
-                    ws.send(JSON.stringify(["REQ", "thread_children", { kinds: [1], '#e': [id], limit: 500 }]));
+                    ws.send(JSON.stringify(["REQ", "thread_children", { kinds: [1], '#e': [id], limit: 200 }]));
                 }
             });
         }
@@ -546,41 +545,68 @@
         function renderThreadView() {
             const mainNote = threadEvents.find(e => e.id === currentThreadId);
             
-            // Render Parent
-            let parentHtml = '';
-            if (mainNote) {
-                const parentId = getImmediateParentId(mainNote);
-                if (parentId) {
-                    const parentNote = threadEvents.find(e => e.id === parentId);
-                    if (parentNote) {
-                        parentHtml = `<div class="thread-ancestor">
-                            <div style="font-size:0.8em; margin-bottom:5px; opacity:0.7;">In reply to:</div>
-                            ${generatePostHTML(parentNote)}
-                        </div>`;
-                    } else {
-                        parentHtml = `<div class="thread-ancestor" style="opacity:0.6;">
-                            <button class="small secondary" onclick="fetchNote('${parentId}')">[ Load Parent Note ]</button>
-                        </div>`;
+            if (!mainNote && threadEvents.length === 0) return; 
+
+            // Trace ancestors up
+            let ancestors = [];
+            let current = mainNote;
+            if (current) {
+                let loopGuard = 0;
+                while(loopGuard < 10) {
+                    const pid = getImmediateParentId(current);
+                    if (!pid) break;
+                    const parent = threadEvents.find(e => e.id === pid);
+                    if (!parent) {
+                        ancestors.unshift({ missing: true, id: pid });
+                        break;
                     }
+                    ancestors.unshift({ missing: false, note: parent });
+                    current = parent;
+                    loopGuard++;
                 }
-                document.getElementById('thread-parent-container').innerHTML = parentHtml;
-                document.getElementById('thread-main-container').innerHTML = `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
             }
 
-            // Render Replies - YOUR LOGIC ADDED HERE
-            const replies = threadEvents.filter(e => {
-                if (e.id === currentThreadId) return false;
-                const eTags = e.tags.filter(t => t[0] === 'e');
-                return eTags.some(t => t[1] === currentThreadId);
+            let html = '';
+            ancestors.forEach(a => {
+                if (a.missing) {
+                    html += `<div class="thread-ancestor" style="opacity:0.6;">
+                        <button class="small secondary" onclick="fetchNote('${a.id}')">[ Load Parent ]</button>
+                    </div>`;
+                } else {
+                    html += `<div class="thread-ancestor">${generatePostHTML(a.note)}</div>`;
+                }
             });
+
+            if (mainNote) {
+                html += `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
+            } else {
+                html += `<div style="padding:10px;">Loading main note...</div>`;
+            }
+            
+            document.getElementById('thread-parent-container').innerHTML = html;
+
+            // Replies
+            const replies = threadEvents.filter(e => {
+                // Check if this event replies to current thread ID
+                const pid = getImmediateParentId(e);
+                // Also fallback check for direct root tagging if no specific reply tag
+                const rootTag = e.tags.find(t => t[0] === 'e' && t[3] === 'root');
+                const isRootReply = rootTag && rootTag[1] === currentThreadId;
+                
+                return pid === currentThreadId || isRootReply;
+            });
+            
             replies.sort((a,b) => a.created_at - b.created_at);
             
             if (replies.length > 0) {
                 document.getElementById('thread-replies-container').innerHTML = replies.map(generatePostHTML).join('');
-            } else if (mainNote) {
-                document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:10px;">No replies found yet.</div>';
+            } else {
+                if (mainNote) {
+                    document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:10px;">No replies found yet.</div>';
+                }
             }
         }
+        /* --- END THREAD LOGIC --- */
 
         /* --- SEARCH LOGIC --- */
         function openSearch() { 
@@ -732,12 +758,15 @@
             if (list.length === 0) { document.getElementById('notifications-feed').innerHTML = '<div style="padding:20px; text-align:center; opacity:0.6;">No notifications found.</div>'; return; }
             
             document.getElementById('notifications-feed').innerHTML = list.map(ev => {
-                let targetId = ev.tags.find(t => t[0] === 'e')?.[1];
-                let clickAction = targetId ? `onclick="viewThread('${targetId}')"` : '';
-
+                // 1. ZAPS (Kind 9735)
                 if (ev.kind === 9735) {
                      let senderPubkey = ev.pubkey;
                      let amountSats = 0;
+                     let targetId = null;
+                     
+                     const eTag = ev.tags.find(t => t[0] === 'e');
+                     if (eTag) targetId = eTag[1];
+
                      const descTag = ev.tags.find(t => t[0] === 'description');
                      if (descTag) {
                         try {
@@ -747,10 +776,12 @@
                             if(amountTag) amountSats = Math.floor(parseInt(amountTag[1]) / 1000);
                         } catch(e) {}
                      }
+
                      const p = (profiles[senderPubkey] && profiles[senderPubkey].meta) ? profiles[senderPubkey].meta : {name: senderPubkey.substring(0,6)};
                      const snippet = targetId ? findTargetContent(targetId) : null;
+
                      return `
-                     <div class="notif-item" ${clickAction} style="cursor:pointer;">
+                     <div class="notif-item" onclick="${targetId ? `viewThread('${targetId}')` : ''}" style="cursor:pointer;">
                         ${p.picture ? `<img src="${p.picture}" class="avatar" style="margin-right:15px;">` : '<span class="notif-icon" style="color:#F7931A;">⚡</span>'}
                         <div style="flex-grow:1;">
                             <div style="font-weight:bold; color:#F7931A; font-size:1.1em;">+${amountSats} sats</div>
@@ -762,11 +793,14 @@
                      </div>`;
                 }
 
+                // 2. LIKES (Kind 7)
                 if (ev.kind === 7) {
                     const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)};
+                    const targetId = ev.tags.find(t => t[0] === 'e')?.[1];
                     const snippet = targetId ? findTargetContent(targetId) : null;
+                    
                     return `
-                    <div class="notif-item" ${clickAction} style="cursor:pointer;">
+                    <div class="notif-item" onclick="${targetId ? `viewThread('${targetId}')` : ''}" style="cursor:pointer;">
                         <div style="font-size:1.5em; margin-right:15px; color:#e0245e;">❤</div>
                         <div style="flex-grow:1;">
                             <div style="font-size:0.9em;">
@@ -777,11 +811,14 @@
                     </div>`;
                 }
 
+                // 3. REPOSTS (Kind 6)
                 if (ev.kind === 6) {
                     const p = (profiles[ev.pubkey] && profiles[ev.pubkey].meta) ? profiles[ev.pubkey].meta : {name: ev.pubkey.substring(0,6)};
+                    const targetId = ev.tags.find(t => t[0] === 'e')?.[1];
                     const snippet = targetId ? findTargetContent(targetId) : null;
+                    
                     return `
-                    <div class="notif-item" ${clickAction} style="cursor:pointer;">
+                    <div class="notif-item" onclick="${targetId ? `viewThread('${targetId}')` : ''}" style="cursor:pointer;">
                         <div style="font-size:1.5em; margin-right:15px; color:#17bf63;">↻</div>
                         <div style="flex-grow:1;">
                             <div style="font-size:0.9em;">
@@ -792,6 +829,7 @@
                     </div>`;
                 }
 
+                // 4. REPLIES (Kind 1)
                 return `<div style="border-bottom: 1px solid var(--post-border); padding-bottom: 15px; margin-bottom: 15px;">
                     <div style="font-size: 0.75em; opacity: 0.7; margin-bottom: 8px;">💬 Reply to your note:</div>
                     ${generatePostHTML(ev)}
