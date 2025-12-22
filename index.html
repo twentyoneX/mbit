@@ -3,168 +3,431 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>mBIT</title>
-<link rel="manifest" href="manifest.json">
 <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
 <style>
-:root { --bg-color: #000000; --text-color: #ffffff; --panel-bg: #050505; --border-color: #ffffff; --input-bg: #000000; --btn-bg: #ffffff; --btn-text: #000000; --meta-color: #bbbbbb; --post-border: #333; --glow: 0 0 0px transparent; --reply-indicator: #222; --footer-bg: #000000; --tag-bg: #333; --fab-bg: #ffffff; --fab-text: #000000; --quote-bg: #111; --base-font-size: 16px; }
-[data-theme="matrix"] { --text-color: #00FF41; --border-color: #00FF41; --input-bg: #001100; --btn-bg: #00FF41; --meta-color: #ccffcc; --glow: 0 0 5px #00FF41; --reply-indicator: #002200; --footer-bg: #001100; --tag-bg: #003300; --fab-bg: #00FF41; --fab-text: #000000; --quote-bg: #001100; }
-[data-theme="light"] { --bg-color: #ffffff; --text-color: #000000; --panel-bg: #f5f5f5; --border-color: #000000; --input-bg: #ffffff; --btn-bg: #000000; --btn-text: #ffffff; --meta-color: #444444; --post-border: #cccccc; --reply-indicator: #e0e0e0; --footer-bg: #eeeeee; --tag-bg: #ddd; --fab-bg: #000000; --fab-text: #ffffff; --quote-bg: #f9f9f9; }
-* { box-sizing: border-box; }
-body { background-color: var(--bg-color); color: var(--text-color); font-family: "Courier New", Courier, monospace; font-size: var(--base-font-size); padding: 20px; padding-bottom: 80px; margin: 0; min-height: 100vh; transition: font-size 0.2s ease; }
-header { text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px; }
-h1 { font-size: 2.5em; margin: 0; text-shadow: var(--glow); text-transform: lowercase; }
-.nav-bar { margin-top: 10px; font-size: 0.85em; user-select: none; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
-.nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
-.nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
-#main-container { max-width: 600px; margin: 0 auto; }
-.dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
-input, textarea, select, button { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); font-family: inherit; font-size: inherit; padding: 10px; width: 100%; margin-bottom: 10px; display: block; }
-input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; border: none; padding: 0; margin: 0; cursor: pointer; width: 100%; }
-input[type="range"]::-webkit-slider-runnable-track { background: var(--post-border); height: 4px; }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; background: var(--btn-bg); height: 20px; width: 20px; margin-top: -8px; border-radius: 50%; }
-button { background: var(--btn-bg); color: var(--btn-text); border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-button:hover { opacity: 0.8; box-shadow: var(--glow); }
-button.small { padding: 5px 10px; font-size: 0.8em; margin-left: 5px; }
-button.danger { background: #ff4141; color: white; }
-button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
-.relay-item { display: flex; align-items: center; justify-content: space-between; background: var(--input-bg); border: 1px solid var(--post-border); padding: 8px; margin-bottom: 5px; gap: 10px; }
-.relay-content { display: flex; align-items: center; overflow: hidden; white-space: nowrap; flex-grow: 1; }
-.relay-url { font-size: 0.8em; margin-left: 10px; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
-.list-item { padding: 10px; border-bottom: 1px solid var(--post-border); display: flex; align-items: center; gap: 10px; }
-.post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
-.thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
-.thread-ancestor { border-left: 2px dotted var(--meta-color); opacity: 0.85; padding: 10px; margin-bottom: 15px; background: rgba(255,255,255,0.02); }
-.thread-ancestor .actions { display: none; }
-.meta { font-size: 0.75em; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
-.avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; }
-.username-link { font-weight: bold; color: var(--text-color); text-decoration: underline; }
-.content { font-size: 1em; line-height: 1.4; word-wrap: break-word; cursor: pointer; }
-.content:hover { opacity: 0.9; }
-.media-img, .media-video { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
-.hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
-.quote-card { border: 1px solid var(--post-border); background: var(--quote-bg); padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 0.9em; }
-.quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
-.profile-card { border: 1px solid var(--text-color); background: var(--input-bg); padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; }
-.profile-card:hover { transform: scale(1.02); box-shadow: var(--glow); }
-.profile-card img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
-.profile-card .info { flex-grow: 1; overflow: hidden; }
-.profile-card .name { font-weight: bold; font-size: 1.1em; color: var(--text-color); }
-.profile-card .nip05 { font-size: 0.8em; color: #3498db; }
-.profile-card .about { font-size: 0.8em; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.actions { margin-top: 15px; font-size: 0.8em; display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 12px; }
-.act-btn { width: auto !important; margin-bottom: 0 !important; flex-grow: 1; background: transparent; color: var(--text-color); border: 1.5px solid var(--text-color); padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 0.9em; font-weight: bold; text-transform: uppercase; border-radius: 0; transition: 0.2s; white-space: nowrap; text-align: center; }
-.act-btn:hover { background: var(--text-color); color: var(--bg-color); }
-.act-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; }
-.zap-btn { color: #F7931A; border-color: var(--text-color) !important; }
-.zap-btn:hover { background: #F7931A; color: #fff; border-color: #F7931A !important; }
-.bookmark-btn { color: var(--text-color); border-color: var(--text-color) !important; }
-.bookmark-btn:hover { background: var(--text-color); color: var(--bg-color); }
-.bookmark-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; }
-button.zap-active { background: #F7931A; color: #fff; border: 1px solid #F7931A; }
-#new-btn { width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text); font-weight: bold; text-align: center; cursor: pointer; margin-bottom: 20px; border: 2px solid var(--border-color); animation: pulse 2s infinite; }
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-.p-img-large { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border-color); margin-bottom: 15px; object-fit: cover; }
-.hidden { display: none !important; }
-.profile-detail-box { margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center; }
-.profile-actions-row { display: flex; gap: 10px; margin: 15px 0; width: 100%; }
-.profile-actions-row button { flex: 1; padding: 10px; }
-.profile-stats-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
-.stat-box { flex: 1; border: 1px solid var(--text-color); background: var(--input-bg); color: var(--text-color); padding: 8px 5px; text-align: center; font-size: 0.75em; cursor: pointer; font-weight: bold; }
-.stat-box:hover, .stat-box.active { background: var(--text-color); color: var(--bg-color); }
-.npub-wrapper { background: var(--input-bg); border: 1px solid var(--post-border); border-radius: 20px; padding: 8px 12px; display: inline-flex; align-items: center; justify-content: space-between; margin: 5px auto 15px auto; width: 100%; max-width: 380px; cursor: pointer; user-select: all; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.npub-text { font-family: monospace; font-size: 0.75em; color: var(--text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; flex-grow: 1; text-align: center; }
-.copy-icon-svg { width: 16px; height: 16px; fill: var(--text-color); flex-shrink: 0; }
-.profile-subnav { display: flex; border-bottom: 2px solid var(--post-border); margin-bottom: 20px; overflow-x: auto; white-space: nowrap; }
-.profile-subnav::-webkit-scrollbar { display: none; }
-.subnav-btn { flex: 1; background: transparent; border: none; padding: 12px; cursor: pointer; color: var(--meta-color); border-bottom: 3px solid transparent; font-size: 0.9em; text-transform: uppercase; font-weight: bold; }
-.subnav-btn:hover { color: var(--text-color); }
-.subnav-btn.active { color: var(--text-color); border-bottom: 3px solid var(--text-color); }
-.notif-tabs { display: flex; border-bottom: 1px solid var(--post-border); margin-bottom: 15px; }
-.notif-item { padding: 12px; border-bottom: 1px solid var(--post-border); font-size: 0.9em; display: flex; align-items: center; transition: background 0.2s; }
-.notif-item:hover { background: rgba(255,255,255,0.05); }
-.notif-icon { margin-right: 15px; font-size: 1.5em; width: 25px; text-align: center; }
-.sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--footer-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 6px; padding: 15px 0; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); font-family: inherit; }
-.footer-item { font-size: 0.85em; cursor: pointer; text-align: center; transition: 0.3s; color: var(--text-color); text-decoration: none; opacity: 0.7; }
-.footer-item:hover { opacity: 1; text-decoration: underline; text-shadow: var(--glow); }
-.filter-tag { display: inline-flex; align-items: center; background: var(--tag-bg); padding: 2px 8px; margin: 2px; font-size: 0.8em; border-radius: 4px; }
-.remove-tag { margin-left: 5px; cursor: pointer; color: #ff4141; font-weight: bold; }
-.fab-btn { position: fixed; bottom: 70px; right: 20px; width: 60px; height: 60px; background: var(--fab-bg); color: var(--fab-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; box-shadow: 0 0 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 1500; transition: 0.2s; }
-.fab-btn:hover { transform: scale(1.1); box-shadow: var(--glow); }
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; justify-content: center; align-items: flex-start; padding-top: 100px; backdrop-filter: blur(3px); }
-.modal-content { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; width: 90%; max-width: 600px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); animation: zoomIn 0.2s; }
-@keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-#reply-context-bar { background-color: var(--reply-indicator); padding: 10px; margin-bottom: 10px; font-size: 0.8em; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--text-color); }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+:root{--bg:#000;--txt:#fff;--pnl:#0a0a0a;--brd:#333;--acc:#00FF41;--fnt:16px;}
+body{background:var(--bg);color:var(--txt);font-family:Courier,monospace;font-size:var(--fnt);margin:0;padding:10px;padding-bottom:80px;}
+header{text-align:center;border-bottom:1px solid var(--brd);padding-bottom:10px;margin-bottom:20px;}
+h1{margin:0;text-shadow:0 0 5px var(--acc);}
+.nav{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:10px;user-select:none;}
+.nav span{cursor:pointer;opacity:0.7;} .nav span:hover{opacity:1;text-decoration:underline;color:var(--acc);}
+.panel{border:1px dashed var(--brd);background:var(--pnl);padding:10px;margin-bottom:20px;}
+.hidden{display:none!important;}
+input,textarea,button,select{background:#000;color:#fff;border:1px solid var(--brd);padding:10px;width:100%;margin-bottom:10px;font-family:inherit;}
+button{cursor:pointer;font-weight:bold;text-transform:uppercase;background:var(--txt);color:#000;}
+button:hover{opacity:0.8;} button.sec{background:#222;color:#fff;}
+.post{border-left:2px solid var(--brd);padding-left:10px;margin-bottom:25px;}
+.meta{font-size:0.8em;color:#888;margin-bottom:5px;display:flex;align-items:center;cursor:pointer;}
+.avatar{width:24px;height:24px;border-radius:50%;margin-right:8px;background:#222;}
+.content{font-size:1em;line-height:1.4;white-space:pre-wrap;word-break:break-word;cursor:pointer;}
+.actions{display:flex;gap:10px;margin-top:10px;opacity:0.8;}
+.act-btn{background:0 0;border:1px solid #555;color:#ccc;padding:4px 8px;font-size:0.75em;width:auto;margin:0;}
+.act-btn:hover{border-color:var(--acc);color:var(--acc);}
+.media{max-width:100%;display:block;margin:10px 0;border:1px solid #333;}
+.thread-p{border-left:4px solid var(--acc);background:#051005;padding:10px;margin-bottom:15px;}
+.thread-a{border-left:2px dotted #555;padding:10px;margin-bottom:10px;opacity:0.8;font-size:0.9em;}
+.notif{padding:12px;border-bottom:1px solid var(--brd);display:flex;gap:10px;align-items:center;cursor:pointer;}
+.notif:hover{background:#111;}
+.fab{position:fixed;bottom:70px;right:20px;width:50px;height:50px;background:var(--acc);color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;z-index:99;}
+.bar{position:fixed;bottom:0;left:0;width:100%;background:#000;border-top:1px solid var(--brd);display:flex;justify-content:space-around;padding:15px 0;z-index:90;}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:#000000d0;z-index:100;display:flex;justify-content:center;padding-top:50px;}
+.m-content{background:#111;border:1px solid var(--acc);padding:20px;width:90%;max-width:600px;height:fit-content;}
 </style>
 </head>
 <body>
-<header><h1>mBIT</h1><div class="nav-bar"><span class="nav-item" onclick="goHome()">#FEED</span><span>|</span><span class="nav-item" onclick="togglePanel('panel-identity')">#LOG IN</span><span>|</span><span class="nav-item" onclick="togglePanel('panel-my-profile')">#MY PROFILE</span><span>|</span><span class="nav-item" onclick="togglePanel('panel-settings')">#SETTINGS</span></div></header>
-<div id="main-container">
-<div id="panel-relays" class="dropdown-panel hidden"><h3>>> RELAYS</h3><div id="relay-list"></div><div style="margin-top:10px;display:flex;"><input type="text" id="new-relay" placeholder="wss://..." style="margin-bottom:0;width:80%;"><button onclick="addRelay()" style="width:18%;margin-left:2%;">ADD</button></div><br><button class="small secondary" onclick="goHome()">CLOSE</button></div>
-<div id="panel-identity" class="dropdown-panel hidden"><h3>>> KEYS</h3><div id="login-form"><button onclick="loginExtension()" style="width:100%;background:#9b59b6;color:white;margin-bottom:5px;">⚡ LOGIN WITH EXTENSION</button><div style="font-size:0.8em;color:var(--meta-color);margin-bottom:15px;text-align:center;opacity:0.8;">(Recommended for security)</div><div style="text-align:center;margin:10px 0;opacity:0.5;">--- OR ---</div><input type="text" id="privkey-input" placeholder="paste private key"><button onclick="login()" style="width:100%;">Login</button><button onclick="generateNewUser()" class="secondary" style="width:100%;margin-top:10px;">New Key</button></div><div id="user-info" class="hidden"><div style="margin-bottom:15px;border:1px solid var(--post-border);padding:10px;"><span style="font-size:0.7rem;opacity:0.7;">PUBLIC ID (NPUB)</span><div style="display:flex;gap:5px;"><input type="text" id="display-npub" readonly style="flex-grow:1;font-size:0.8rem;"><button class="small" onclick="copyKey('display-npub')">COPY</button></div></div><div id="nsec-display-container" style="margin-bottom:15px;border:1px solid var(--post-border);padding:10px;"><span style="font-size:0.7rem;color:#ff4141;">SECRET KEY (NSEC)</span><div style="display:flex;gap:5px;"><input type="password" id="display-nsec" readonly style="flex-grow:1;font-size:0.8rem;"><button class="small secondary" onclick="toggleSecret()">SHOW</button><button class="small danger" onclick="copyKey('display-nsec')">COPY</button></div></div><button onclick="logout()" class="danger" style="width:100%">LOGOUT</button></div><br><button class="small secondary" onclick="goHome()">CLOSE</button></div>
-<div id="panel-my-profile" class="dropdown-panel hidden"><button class="back-btn" onclick="goHome()">&lt; #BACK TO FEED</button><div id="my-profile-header" style="text-align:center;"></div><div id="profile-editor" class="hidden" style="text-align:left;margin:15px 0;border:1px dotted var(--border-color);padding:10px;"><label>Name:</label><input type="text" id="p-display-name"><label>Bio:</label><textarea id="p-about" rows="3"></textarea><label>Website:</label><input type="text" id="p-website"><label style="color:#f1c40f">Zap Address (LUD16):</label><input type="text" id="p-lud16"><label style="color:#3498db">Verified Address (NIP-05):</label><input type="text" id="p-nip05"><label>Picture URL:</label><input type="text" id="p-picture"><button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button><button class="small secondary" onclick="toggleProfileEditor()" style="width:100%;margin-top:5px;">CANCEL</button></div><div id="my-feed"></div></div>
-<div id="panel-user-profile" class="dropdown-panel hidden"><button class="back-btn" onclick="goHome()">&lt; #BACK TO FEED</button><div id="user-profile-header" style="text-align:center;padding-bottom:15px;"></div><div id="user-feed"></div></div>
-<div id="panel-settings" class="dropdown-panel hidden"><h3>>> SETTINGS</h3><button onclick="togglePanel('panel-relays')" style="width:100%;margin-bottom:15px;border:1px solid var(--text-color);">>> MANAGE RELAYS</button><label>SYSTEM THEME:</label><select id="theme-selector" onchange="changeTheme(this.value)"><option value="dark">White on Black</option><option value="matrix">Matrix Green</option><option value="light">Black on White</option></select><br><label>FONT SIZE:</label><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:20px;"><span style="font-size:0.8em;opacity:0.7;">SMALL</span><input type="range" id="font-size-slider" min="12" max="24" step="1" value="16" oninput="changeFontSize(this.value)" style="flex-grow:1;"><span style="font-size:1.2em;opacity:0.7;">BIG</span></div><hr style="border:0;border-top:1px dashed var(--border-color);margin:20px 0;"><h3>>> CONTENT FILTERS</h3><div style="margin-bottom:15px;"><label style="display:flex;align-items:center;cursor:pointer;"><input type="checkbox" id="nsfw-toggle" onchange="toggleNsfw()" style="width:auto;margin-right:10px;"> HIDE NOTES WITH #NSFW</label></div><label>BLOCK SPECIFIC HASHTAGS:</label><div style="display:flex;gap:10px;"><input type="text" id="filter-input" placeholder="e.g. politics" style="margin-bottom:0;"><button onclick="addFilterTag()" style="width:auto;">BLOCK</button></div><div id="filter-list" style="margin-top:10px;min-height:20px;"></div><hr style="border:0;border-top:1px dashed var(--border-color);margin:20px 0;"><h3>>> SUPPORT</h3><button class="zap-active" onclick="handleZap('itsmircea@walletofsatoshi.com', null)" style="width:100%;border-color:#F7931A;">⚡ DONATE TO DEV</button><div style="text-align:center;font-size:0.8em;margin-top:5px;opacity:0.7;">itsmircea@walletofsatoshi.com</div><br><br><button class="small secondary" onclick="goHome()">CLOSE</button></div>
-<div id="panel-search" class="dropdown-panel hidden"><h3>>> SEARCH & DISCOVERY</h3><div style="display:flex;gap:10px;"><input type="text" id="search-input" placeholder="npub, @user, #tag, or text..." style="margin-bottom:0;"><button onclick="handleSearch()" style="width:20%;">GO</button><button onclick="clearSearch()" style="width:15%;" class="secondary">X</button></div><hr style="border:0;border-top:1px dashed var(--post-border);margin:20px 0;"><div id="search-status" style="font-size:0.8em;opacity:0.7;margin-bottom:10px;">UNIVERSAL FEED (LIVE):</div><div id="search-results"></div></div>
-<div id="panel-notifications" class="dropdown-panel hidden"><h3>>> NOTIFICATIONS</h3><div class="notif-tabs" style="justify-content:space-around;"><button id="ntab-all" class="tab-btn active" onclick="switchNotifTab('all')">ALL</button><button id="ntab-zaps" class="tab-btn" onclick="switchNotifTab('zaps')">ZAPS</button><button id="ntab-mentions" class="tab-btn" onclick="switchNotifTab('mentions')">MENTIONS</button></div><button class="small secondary" onclick="refreshNotifications()" style="margin-bottom:10px;">REFRESH</button><div id="notifications-feed">Loading...</div></div>
-<div id="panel-thread" class="dropdown-panel hidden"><button class="back-btn" onclick="goHome()">&lt; #BACK TO FEED</button><h3>>> THREAD</h3><div id="thread-parent-container"></div><div style="border-bottom:1px dashed var(--border-color);margin:20px 0;opacity:0.5;"></div><h4>Replies:</h4><div id="thread-replies-container">Loading replies...</div></div>
-<div id="panel-bookmarks" class="dropdown-panel hidden"><h3>>> SAVED BOOKMARKS</h3><button class="small secondary" onclick="openBookmarks()" style="margin-bottom:10px;">REFRESH LIST</button><div id="bookmarks-feed">Loading...</div></div>
-<div id="feed-container"><div id="new-btn" class="hidden" onclick="mergeQueue()">>> LOAD NEW SIGNALS <<</div><div id="feed"></div></div>
+
+<header>
+    <h1>mBIT</h1>
+    <div class="nav">
+        <span onclick="go('feed')">#FEED</span> | 
+        <span onclick="toggle('login')">#LOGIN</span> | 
+        <span onclick="toggle('profile')">#PROFILE</span> | 
+        <span onclick="toggle('settings')">#SETTINGS</span>
+    </div>
+</header>
+
+<div id="main">
+    <!-- FEED -->
+    <div id="feed-panel">
+        <button id="new-btn" class="hidden" onclick="renderFeed()" style="border-color:var(--acc);color:var(--acc)">>> LOAD NEW POSTS <<</button>
+        <div id="feed-list"></div>
+    </div>
+
+    <!-- THREAD -->
+    <div id="thread-panel" class="panel hidden">
+        <button class="sec" onclick="go('feed')">&lt; #BACK</button>
+        <h3>>> THREAD</h3>
+        <div id="thread-content"></div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div id="notif-panel" class="panel hidden">
+        <h3>>> NOTIFICATIONS</h3>
+        <div style="display:flex;gap:5px;margin-bottom:10px;">
+            <button class="sec" onclick="loadNotifs('all')">ALL</button>
+            <button class="sec" onclick="loadNotifs('zaps')">ZAPS</button>
+            <button class="sec" onclick="loadNotifs('mentions')">MENTIONS</button>
+        </div>
+        <div id="notif-list">Loading...</div>
+    </div>
+
+    <!-- SEARCH -->
+    <div id="search-panel" class="panel hidden">
+        <h3>>> SEARCH</h3>
+        <div style="display:flex;gap:5px;">
+            <input id="search-q" placeholder="npub, #tag, or text">
+            <button onclick="doSearch()" style="width:auto">GO</button>
+        </div>
+        <div id="search-res"></div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-panel" class="panel hidden">
+        <h3>>> IDENTITY</h3>
+        <button onclick="loginExt()" style="background:#9b59b6;color:#fff;margin-bottom:10px">EXTENSION LOGIN</button>
+        <input id="pk-in" placeholder="nsec...">
+        <button onclick="loginKey()">LOGIN WITH KEY</button>
+        <div id="user-display" class="hidden" style="margin-top:20px;word-break:break-all;font-size:0.8em;"></div>
+    </div>
+
+    <!-- PROFILE EDITOR -->
+    <div id="profile-panel" class="panel hidden">
+        <button class="sec" onclick="go('feed')">&lt; #BACK</button>
+        <div id="my-profile-view"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings-panel" class="panel hidden">
+        <h3>>> SETTINGS</h3>
+        <button onclick="addRelayPrompt()">ADD RELAY</button>
+        <div id="relay-list" style="margin-top:10px;font-size:0.8em;opacity:0.8;"></div>
+        <br><button class="sec" onclick="go('feed')">CLOSE</button>
+    </div>
 </div>
-<div class="fab-btn" onclick="openComposer()">+</div>
-<div id="composer-modal" class="modal-overlay hidden"><div class="modal-content"><div id="reply-context-bar" class="hidden"><span id="reply-text">Replying to...</span><button class="small danger" onclick="cancelReply()">CANCEL</button></div><textarea id="msg-input" rows="5" placeholder="broadcast signal..."></textarea><div style="display:flex;gap:10px;margin-top:10px;"><button onclick="closeComposer()" class="secondary" style="flex:1">CANCEL</button><button onclick="sendNote()" style="flex:2">SEND SIGNAL</button></div></div></div>
-<div class="sticky-footer"><div class="footer-item" onclick="goHome()">#HOME</div><span style="color:var(--border-color)">|</span><div class="footer-item" onclick="openSearch()">#SEARCH</div><span style="color:var(--border-color)">|</span><div class="footer-item" onclick="openBookmarks()">#BOOKMARKS</div><span style="color:var(--border-color)">|</span><div class="footer-item" onclick="openNotifications()">#NOTIFICATIONS</div></div>
+
+<div class="fab" onclick="openComposer()">+</div>
+
+<!-- COMPOSER -->
+<div id="composer" class="modal hidden">
+    <div class="m-content">
+        <div id="reply-ctx" class="hidden" style="border-left:2px solid var(--acc);padding:5px;margin-bottom:10px;font-size:0.8em;opacity:0.8;"></div>
+        <textarea id="compose-txt" rows="5" placeholder="Signal..."></textarea>
+        <div style="display:flex;gap:10px">
+            <button class="sec" style="flex:1" onclick="closeComposer()">CANCEL</button>
+            <button style="flex:2" onclick="publishNote()">SEND</button>
+        </div>
+    </div>
+</div>
+
+<div class="bar">
+    <span class="footer-item" onclick="go('feed')">#HOME</span>
+    <span class="footer-item" onclick="toggle('search')">#SEARCH</span>
+    <span class="footer-item" onclick="toggle('notif')">#NOTIFS</span>
+</div>
+
 <script>
-const defaultRelays=['wss://relay.damus.io','wss://relay.primal.net','wss://nos.lol'];let savedRelays;try{savedRelays=JSON.parse(localStorage.getItem('mbit_relays'))||defaultRelays}catch(e){savedRelays=defaultRelays}let filterSettings;try{filterSettings=JSON.parse(localStorage.getItem('mbit_filters'))||{hideNsfw:false,blockedTags:[]}}catch(e){filterSettings={hideNsfw:false,blockedTags:[]}}const sockets={};let events=[],incomingBuffer=[],pendingEvents=[],myEvents=[],userEvents=[],searchEvents=[],notifEvents=[],threadEvents=[],bookmarkEvents=[];let isSearching=false;let likedPosts=new Set();try{likedPosts=new Set(JSON.parse(localStorage.getItem('mbit_likes'))||[])}catch(e){}let bookmarks=new Set();try{bookmarks=new Set(JSON.parse(localStorage.getItem('mbit_bookmarks'))||[])}catch(e){}let myContacts=new Set();let eventStats={};const profiles={};const processedIds=new Set(),requestedProfiles=new Set();let myPrivKey=localStorage.getItem('nostr_privkey'),myPubKey=localStorage.getItem('nostr_pubkey'),authMode=localStorage.getItem('nostr_mode');let replyContext=null;let currentViewedProfile=null;let currentThreadId=null;let currentThreadRootId=null;let currentUserTab='notes';let currentMyTab='notes';let currentNotifTab='all';
-function changeTheme(t){document.documentElement.removeAttribute('data-theme');if(t!=='dark')document.documentElement.setAttribute('data-theme',t);localStorage.setItem('mbit_theme',t)}changeTheme(localStorage.getItem('mbit_theme')||'matrix');document.getElementById('theme-selector').value=localStorage.getItem('mbit_theme')||'matrix';
-function changeFontSize(s){document.documentElement.style.setProperty('--base-font-size',s+'px');localStorage.setItem('mbit_fontsize',s)}const savedFontSize=localStorage.getItem('mbit_fontsize')||'16';changeFontSize(savedFontSize);document.getElementById('font-size-slider').value=savedFontSize;
-document.getElementById('nsfw-toggle').checked=filterSettings.hideNsfw;renderFilterList();
-function goHome(){['panel-relays','panel-identity','panel-my-profile','panel-user-profile','panel-settings','panel-search','panel-notifications','panel-thread','panel-bookmarks'].forEach(p=>document.getElementById(p).classList.add('hidden'));document.getElementById('feed-container').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'});currentViewedProfile=null;currentThreadId=null}
-function togglePanel(id){['panel-relays','panel-identity','panel-my-profile','panel-user-profile','panel-settings','panel-search','panel-notifications','feed-container','panel-thread','panel-bookmarks'].forEach(p=>{const el=document.getElementById(p);if(el)el.classList.add('hidden')});document.getElementById(id).classList.remove('hidden');if(id==='panel-my-profile')loadMyHistory();if(id==='panel-relays')renderRelays();currentViewedProfile=null;currentThreadId=null}
-function getImmediateParentId(ev){const rTag=ev.tags.find(t=>t[0]==='e'&&t[3]==='reply');if(rTag)return rTag[1];const rootTag=ev.tags.find(t=>t[0]==='e'&&t[3]==='root');if(rootTag&&!rTag)return rootTag[1];const eTags=ev.tags.filter(t=>t[0]==='e');if(eTags.length>0)return eTags[eTags.length-1][1];return null}
-function viewThread(id){currentThreadId=id;togglePanel('panel-thread');document.getElementById('thread-parent-container').innerHTML='<div style="opacity:0.6;padding:10px;">Loading...</div>';document.getElementById('thread-replies-container').innerHTML='<div style="opacity:0.6;padding:10px;">Loading replies...</div>';threadEvents=[];Object.values(sockets).forEach(ws=>{if(ws.readyState===1){ws.send(JSON.stringify(["CLOSE","thread_main"]));ws.send(JSON.stringify(["CLOSE","thread_children"]))}});const cached=[...events,...notifEvents,...myEvents,...userEvents,...searchEvents,...bookmarkEvents].find(e=>e.id===id);if(cached){threadEvents.push(cached);renderThreadView();const pId=getImmediateParentId(cached);if(pId)fetchNote(pId)}Object.values(sockets).forEach(ws=>{if(ws.readyState===1){ws.send(JSON.stringify(["REQ","thread_main",{kinds:[1],ids:[id],limit:1}]));ws.send(JSON.stringify(["REQ","thread_children",{kinds:[1],'#e':[id],limit:300}]))}})}
-function fetchNote(id){if(threadEvents.some(e=>e.id===id))return;Object.values(sockets).forEach(ws=>{if(ws.readyState===1)ws.send(JSON.stringify(["REQ","thread_ancestor_"+id.substring(0,8),{kinds:[1],ids:[id]}]))})}
-function handleThreadEvent(ev){if(threadEvents.some(e=>e.id===ev.id))return;threadEvents.push(ev);fetchProfileIfNeeded(ev.pubkey);if(ev.id===currentThreadId){const pId=getImmediateParentId(ev);if(pId&&!threadEvents.some(e=>e.id===pId))fetchNote(pId)}renderThreadView()}
-function renderThreadView(){const main=threadEvents.find(e=>e.id===currentThreadId);let pHtml='';if(main){const pId=getImmediateParentId(main);if(pId){const pNote=threadEvents.find(e=>e.id===pId);pHtml=pNote?`<div class="thread-ancestor"><div style="font-size:0.8em;opacity:0.7;">In reply to:</div>${generatePostHTML(pNote)}</div>`:`<div class="thread-ancestor" style="opacity:0.6;"><button class="small secondary" onclick="fetchNote('${pId}')">[ Load Parent ]</button></div>`}}document.getElementById('thread-parent-container').innerHTML=main?pHtml+`<div class="thread-parent">${generatePostHTML(main)}</div>`:'Loading main note...';const replies=threadEvents.filter(e=>{if(e.id===currentThreadId)return false;const pid=getImmediateParentId(e);return pid===currentThreadId||(e.tags.some(t=>t[0]==='e'&&t[1]===currentThreadId))});replies.sort((a,b)=>a.created_at-b.created_at);document.getElementById('thread-replies-container').innerHTML=replies.length?replies.map(generatePostHTML).join(''):'<div style="opacity:0.5;padding:10px;">No replies found yet.</div>'}
-function openSearch(){togglePanel('panel-search');if(!isSearching){document.getElementById('search-status').innerText='UNIVERSAL FEED (LIVE):';renderDiscoveryFeed()}}
-function clearSearch(){document.getElementById('search-input').value="";isSearching=false;document.getElementById('search-status').innerText='UNIVERSAL FEED (LIVE):';renderDiscoveryFeed()}
-function renderDiscoveryFeed(){document.getElementById('search-results').innerHTML=events.map(generatePostHTML).join('')}
-function handleSearch(){const t=document.getElementById('search-input').value.trim();if(!t)return;isSearching=true;document.getElementById('search-status').innerText='SEARCH RESULTS:';document.getElementById('search-results').innerHTML='Searching...';searchEvents=[];if(t.startsWith('npub1')){try{const d=window.NostrTools.nip19.decode(t);const pk=d.data;Object.values(sockets).forEach(s=>{s.send(JSON.stringify(["REQ","search_sub",{kinds:[0],authors:[pk],limit:1}]));s.send(JSON.stringify(["REQ","search_sub",{kinds:[1],authors:[pk],limit:20}]))});return}catch(e){}}const f=[];if(t.startsWith('#'))f.push({kinds:[1],'#t':[t.substring(1)],limit:50});else{let q=t;if(q.startsWith('@'))q=q.substring(1);f.push({kinds:[1],search:q,limit:20});f.push({kinds:[0],search:q,limit:10})}Object.values(sockets).forEach(s=>{f.forEach(fi=>s.send(JSON.stringify(["REQ","search_sub",fi])))})}
-function handleSearchEvent(ev){if(searchEvents.some(e=>e.id===ev.id))return;searchEvents.push(ev);searchEvents.sort((a,b)=>(a.kind===0&&b.kind!==0)?-1:(b.kind===0&&a.kind!==0)?1:b.created_at-a.created_at);document.getElementById('search-results').innerHTML=searchEvents.map(e=>e.kind===0?generateProfileCardHTML(e):generatePostHTML(e)).join('');if(ev.kind!==0)fetchProfileIfNeeded(ev.pubkey)}
-function generateProfileCardHTML(ev){let m={};try{m=JSON.parse(ev.content)}catch(e){}if(!profiles[ev.pubkey])initProfileData(ev.pubkey);profiles[ev.pubkey].meta=m;return`<div class="profile-card" onclick="viewProfile('${ev.pubkey}')">${m.picture?`<img src="${m.picture}">`:'<div style="width:50px;height:50px;background:#222;border-radius:50%;"></div>'}<div class="info"><div class="name">${m.display_name||m.name||ev.pubkey.substring(0,8)}</div><div class="about">${m.about||''}</div></div><button class="small act-btn">VIEW</button></div>`}
-function openNotifications(){togglePanel('panel-notifications');refreshNotifications()}
-function refreshNotifications(){if(!myPubKey)return document.getElementById('notifications-feed').innerHTML="Please login.";document.getElementById('notifications-feed').innerHTML="Loading...";notifEvents=[];const f={'#p':[myPubKey],kinds:[1,9735,6,7],limit:50};Object.values(sockets).forEach(s=>s.send(JSON.stringify(["REQ","notif_sub",f])))}
-function handleNotifEvent(ev){if(notifEvents.some(e=>e.id===ev.id))return;if(ev.kind===9735){const d=ev.tags.find(t=>t[0]==='description');if(d)try{const r=JSON.parse(d[1]);fetchProfileIfNeeded(r.pubkey)}catch(e){}}notifEvents.push(ev);notifEvents.sort((a,b)=>b.created_at-a.created_at);renderNotifications();fetchProfileIfNeeded(ev.pubkey)}
-function findTargetContent(id){const n=[...events,...myEvents,...userEvents,...threadEvents].find(e=>e.id===id);if(!n)return null;let t=n.content;if(t.length>80)t=t.substring(0,80)+'...';return t.replace(/</g,"&lt;").replace(/>/g,"&gt;")}
-function renderNotifications(){let l=notifEvents;if(currentNotifTab==='zaps')l=notifEvents.filter(e=>e.kind===9735);else if(currentNotifTab==='mentions')l=notifEvents.filter(e=>e.kind===1);if(l.length===0){document.getElementById('notifications-feed').innerHTML='No notifications.';return}document.getElementById('notifications-feed').innerHTML=l.map(ev=>{if(ev.kind===9735){let sp=ev.pubkey;let amt=0;let tid=null;const et=ev.tags.find(t=>t[0]==='e');if(et)tid=et[1];const dt=ev.tags.find(t=>t[0]==='description');if(dt)try{const r=JSON.parse(dt[1]);sp=r.pubkey;const at=r.tags.find(t=>t[0]==='amount');if(at)amt=Math.floor(parseInt(at[1])/1000)}catch(e){}const p=(profiles[sp]&&profiles[sp].meta)?profiles[sp].meta:{name:sp.substring(0,6)};const sn=tid?findTargetContent(tid):null;return`<div class="notif-item" onclick="${tid?`viewThread('${tid}')`:''}" style="cursor:pointer;">${p.picture?`<img src="${p.picture}" class="avatar" style="margin-right:15px;">`:'<span class="notif-icon" style="color:#F7931A;">⚡</span>'}<div><div style="font-weight:bold;color:#F7931A;">+${amt} sats</div><div style="font-size:0.9em;">from <b>${p.name}</b></div>${sn?`<div style="font-size:0.8em;opacity:0.7;">"${sn}"</div>`:''}</div></div>`}if(ev.kind===7){const p=(profiles[ev.pubkey]&&profiles[ev.pubkey].meta)?profiles[ev.pubkey].meta:{name:ev.pubkey.substring(0,6)};const tid=ev.tags.find(t=>t[0]==='e')?.[1];return`<div class="notif-item" onclick="viewThread('${tid}')" style="cursor:pointer;"><div style="font-size:1.5em;margin-right:15px;color:#e0245e;">❤</div><div><div style="font-size:0.9em;"><b>${p.name}</b> liked your note.</div></div></div>`}if(ev.kind===6){const p=(profiles[ev.pubkey]&&profiles[ev.pubkey].meta)?profiles[ev.pubkey].meta:{name:ev.pubkey.substring(0,6)};const tid=ev.tags.find(t=>t[0]==='e')?.[1];return`<div class="notif-item" onclick="viewThread('${tid}')" style="cursor:pointer;"><div style="font-size:1.5em;margin-right:15px;color:#17bf63;">↻</div><div><div style="font-size:0.9em;"><b>${p.name}</b> reposted.</div></div></div>`}return`<div style="border-bottom:1px solid #333;margin-bottom:10px;"><div style="font-size:0.8em;opacity:0.7;">Reply:</div>${generatePostHTML(ev)}</div>`}).join('')}
-function switchNotifTab(t){currentNotifTab=t;['ntab-all','ntab-zaps','ntab-mentions'].forEach(i=>document.getElementById(i).classList.remove('active'));document.getElementById('ntab-'+t).classList.add('active');renderNotifications()}
-function initReply(id,pk){if(!myPubKey)return alert("Login");replyContext={id,pubkey:pk};document.getElementById('reply-context-bar').classList.remove('hidden');document.getElementById('reply-text').innerText=`Replying...`;openComposer()}
-function cancelReply(){replyContext=null;document.getElementById('reply-context-bar').classList.add('hidden')}
-function initQuote(id){const n=events.find(e=>e.id===id);if(n){const enc=window.NostrTools.nip19.noteEncode(id);document.getElementById('msg-input').value+=`\nnostr:${enc}\n`;openComposer()}}
-function initProfileData(pk){if(!profiles[pk])profiles[pk]={meta:{},following:new Set(),followers:new Set(),relays:[]}}
-function loadMyHistory(){if(!myPubKey)return alert("Login");document.getElementById('my-feed').innerHTML='Loading...';initProfileData(myPubKey);Object.values(sockets).forEach(s=>{s.send(JSON.stringify(["REQ","my_meta",{kinds:[0,3,10002],authors:[myPubKey],limit:10}]));s.send(JSON.stringify(["REQ","my_followers",{kinds:[3],'#p':[myPubKey],limit:100}]))});updateMyProfileHeader();switchMyTab('notes');myEvents=[];Object.values(sockets).forEach(s=>s.send(JSON.stringify(["REQ","sub_me",{kinds:[1,6],authors:[myPubKey],limit:100}])));setTimeout(()=>{if(myEvents.length===0&&currentMyTab==='notes')document.getElementById('my-feed').innerHTML='No notes.'},3000)}
-function updateMyProfileHeader(){initProfileData(myPubKey);const p=profiles[myPubKey].meta||{};const n=window.NostrTools.nip19.npubEncode(myPubKey);document.getElementById('my-profile-header').innerHTML=`${p.picture?`<img src="${p.picture}" class="p-img-large">`:'<div style="font-size:3rem">?</div>'}<h2>${p.display_name||p.name||myPubKey.substring(0,8)}</h2>${p.nip05?`<div style="color:#3498db">${p.nip05}</div>`:''}<div class="npub-wrapper" onclick="copyToClipboard('${n}')"><div class="npub-text">${n}</div></div><div class="profile-detail-box"><p>${p.about||''}</p></div><div class="profile-actions-row"><button class="secondary" onclick="toggleProfileEditor()">#EDIT</button></div><div class="profile-stats-row"><div class="stat-box">Following ${profiles[myPubKey].following.size}</div><div class="stat-box">Followers ${profiles[myPubKey].followers.size}</div></div><div class="profile-subnav"><button class="subnav-btn active" onclick="switchMyTab('notes')">NOTES</button></div>`;document.getElementById('p-display-name').value=p.display_name||'';document.getElementById('p-about').value=p.about||'';document.getElementById('p-picture').value=p.picture||''}
-function renderProfileList(id,type,pk){document.getElementById(id).innerHTML='List view not fully impl.'}
-function renderUserFeed(){let l=userEvents;if(currentUserTab==='notes')l=userEvents.filter(e=>e.kind===6||!e.tags.some(t=>t[0]==='e'));document.getElementById('user-feed').innerHTML=l.map(generatePostHTML).join('')}
-function renderMyFeed(){let l=myEvents;if(currentMyTab==='notes')l=myEvents.filter(e=>e.kind===6||!e.tags.some(t=>t[0]==='e'));document.getElementById('my-feed').innerHTML=l.length?l.map(generatePostHTML).join(''):'No notes.'}
-function handleMyEvent(ev){if(myEvents.some(e=>e.id===ev.id))return;myEvents.unshift(ev);myEvents.sort((a,b)=>b.created_at-a.created_at);renderMyFeed()}
-function handleUserEvent(ev){if(userEvents.some(e=>e.id===ev.id))return;userEvents.unshift(ev);userEvents.sort((a,b)=>b.created_at-a.created_at);renderUserFeed()}
-function connectToRelay(url){try{const ws=new WebSocket(url);sockets[url]=ws;ws.onopen=()=>{ws.send(JSON.stringify(["REQ","g",{kinds:[1,6],limit:40}]));if(myPubKey){fetchProfile(myPubKey);ws.send(JSON.stringify(["REQ","my_contacts",{kinds:[3],authors:[myPubKey],limit:1}]))}renderRelays()};ws.onmessage=(msg)=>{const d=JSON.parse(msg.data);if(d[0]==='EVENT'){const id=d[1];const ev=d[2];processEventStats(ev);if(id==='g')handleGlobalEvent(ev);if(id==='sub_me')handleMyEvent(ev);if(id==='sub_user')handleUserEvent(ev);if(id==='search_sub')handleSearchEvent(ev);if(id==='notif_sub')handleNotifEvent(ev);if(id==='thread_main'||id==='thread_children'||id.startsWith('thread_ancestor'))handleThreadEvent(ev);if(id.startsWith('m_')){try{profiles[ev.pubkey].meta=JSON.parse(ev.content)}catch(e){initProfileData(ev.pubkey);profiles[ev.pubkey].meta=JSON.parse(ev.content)}}}}}catch(e){}}
-function handleGlobalEvent(ev){if(processedIds.has(ev.id))return;processedIds.add(ev.id);fetchProfileIfNeeded(ev.pubkey);incomingBuffer.push(ev)}
-setInterval(()=>{if(incomingBuffer.length===0)return;incomingBuffer.sort((a,b)=>b.created_at-a.created_at);if(events.length>=25){pendingEvents=[...incomingBuffer,...pendingEvents];updateNewButton()}else{events=[...incomingBuffer,...events];events.sort((a,b)=>b.created_at-a.created_at);renderGlobalFeed();if(!document.getElementById('panel-search').classList.contains('hidden')&&!isSearching)renderDiscoveryFeed()}incomingBuffer=[]},1500);
-function fetchProfileIfNeeded(pk){if(!profiles[pk]&&!requestedProfiles.has(pk)){requestedProfiles.add(pk);Object.values(sockets).forEach(s=>s.send(JSON.stringify(["REQ","m_"+pk.substring(0,8),{kinds:[0],authors:[pk],limit:1}])))}}
-function updateNewButton(){const b=document.getElementById('new-btn');b.classList.toggle('hidden',pendingEvents.length===0);b.innerText=`>> LOAD ${pendingEvents.length} NEW SIGNALS <<`}
-function mergeQueue(){events=[...pendingEvents,...events].slice(0,100);pendingEvents=[];renderGlobalFeed();if(!document.getElementById('panel-search').classList.contains('hidden')&&!isSearching)renderDiscoveryFeed();updateNewButton();window.scrollTo(0,0)}
-function generatePostHTML(ev){if(isBlocked(ev))return'';const p=(profiles[ev.pubkey]&&profiles[ev.pubkey].meta)?profiles[ev.pubkey].meta:{name:ev.pubkey.substring(0,6)};let c=ev.content;if(ev.kind===6)try{c=JSON.parse(ev.content).content||"[Repost]"}catch(e){c="[Repost]"}const s=eventStats[ev.id]||{reply:0,repost:0,like:0,zap:0};return`<div class="post" id="post-${ev.id}"><div class="meta" onclick="viewProfile('${ev.pubkey}')">${p.picture?`<img src="${p.picture}" class="avatar">`:''}<span class="username-link">${p.display_name||p.name}</span><span style="margin-left:5px;opacity:0.5;">• ${new Date(ev.created_at*1000).toLocaleTimeString()}</span></div><div class="content" onclick="viewThread('${ev.id}')">${parseContent(c)}</div><div class="actions"><button class="act-btn" onclick="initReply('${ev.id}','${ev.pubkey}')">#REPLY ${s.reply}</button><button class="act-btn" onclick="doLike('${ev.id}','${ev.pubkey}')">#LIKE ${s.like}</button><button class="act-btn zap-btn" onclick="handleZap('${p.lud16}','${ev.pubkey}')">#ZAP ⚡ ${s.zap}</button></div></div>`}
-function parseContent(t){if(!t)return"";let c=t.replace(/</g,"&lt;").replace(/>/g,"&gt;");c=c.replace(/(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp))/gi,'<img src="$1" class="media-img">');c=c.replace(/(https?:\/\/[^\s]+\.(?:mp4|webm))/gi,'<video controls class="media-video"><source src="$1"></video>');return c}
-function processEventStats(ev){if(!ev||!ev.tags)return;const e=ev.tags.filter(t=>t[0]==='e');e.forEach(t=>{const id=t[1];if(!eventStats[id])eventStats[id]={reply:0,repost:0,like:0,zap:0};if(ev.kind===1)eventStats[id].reply++;if(ev.kind===7)eventStats[id].like++;if(ev.kind===9735)eventStats[id].zap++;})}
-async function doLike(id,pk){if(!myPubKey)return alert("Login");const ev={kind:7,created_at:Math.floor(Date.now()/1000),tags:[['e',id],['p',pk]],content:"+",pubkey:myPubKey};await signAndBroadcast(ev)}
-async function signAndBroadcast(ev){if(authMode==='extension')ev=await window.nostr.signEvent(ev);else{ev.id=window.NostrTools.getEventHash(ev);ev.sig=window.NostrTools.signEvent(ev,myPrivKey)}Object.values(sockets).forEach(s=>s.send(JSON.stringify(["EVENT",ev])))}
-async function handleZap(l,pk){if(!l)return alert("No Lightning Address");const p=l.split('@');try{const r=await fetch(`https://${p[1]}/.well-known/lnurlp/${p[0]}`);const d=await r.json();const a=prompt("Sats:");if(a)window.location.href=`lightning:${(await(await fetch(`${d.callback}?amount=${parseInt(a)*1000}`)).json()).pr}`}catch(e){alert("Zap failed")}}
-function renderRelays(){document.getElementById('relay-list').innerHTML=savedRelays.map(u=>`<div class="relay-item">${u}</div>`).join('')}
-function isBlocked(ev){return false} 
-if(myPubKey){document.getElementById('login-form').classList.add('hidden');document.getElementById('user-info').classList.remove('hidden')}
-savedRelays.forEach(connectToRelay);goHome();
+// --- STATE & CONFIG ---
+const RELAYS = JSON.parse(localStorage.getItem('mbit_relays')) || ['wss://relay.damus.io','wss://relay.primal.net','wss://nos.lol','wss://relay.nostr.band'];
+const POOL = {}; 
+let EVENTS = [], THREAD = [], NOTIFS = [];
+let ME = { pub: localStorage.getItem('npub'), priv: localStorage.getItem('nsec') };
+let PROFILES = {};
+let REPLY_TO = null;
+
+// --- INIT ---
+function init() {
+    if(ME.pub) {
+        document.getElementById('user-display').innerText = "Logged in: " + ME.pub.substring(0,10)+"...";
+        document.getElementById('user-display').classList.remove('hidden');
+    }
+    renderRelays();
+    RELAYS.forEach(connect);
+    
+    // Auto-update feed
+    setInterval(() => {
+        if(!document.getElementById('feed-panel').classList.contains('hidden')) renderFeed();
+    }, 5000);
+}
+
+// --- NETWORK ---
+function connect(url) {
+    if(POOL[url]) return;
+    try {
+        const ws = new WebSocket(url);
+        POOL[url] = ws;
+        ws.onopen = () => {
+            // Sub Feed
+            ws.send(JSON.stringify(["REQ", "feed", { kinds: [1], limit: 20 }]));
+            // Sub Notifs if logged in
+            if(ME.pub) ws.send(JSON.stringify(["REQ", "notifs", { '#p': [ME.pub], limit: 50 }]));
+        };
+        ws.onmessage = (e) => {
+            const d = JSON.parse(e.data);
+            if(d[0] === 'EVENT') handleEvent(d[2], d[1]);
+        };
+    } catch(e){console.error(e)}
+}
+
+function handleEvent(ev, subId) {
+    if(subId === 'feed') {
+        if(!EVENTS.find(e=>e.id===ev.id)) { EVENTS.push(ev); document.getElementById('new-btn').classList.remove('hidden'); }
+    }
+    if(subId === 'notifs') {
+        if(!NOTIFS.find(e=>e.id===ev.id)) NOTIFS.push(ev);
+    }
+    if(subId.startsWith('thread')) {
+        if(!THREAD.find(e=>e.id===ev.id)) {
+            THREAD.push(ev);
+            renderThread(window.currentThreadId); // Live update thread
+        }
+    }
+    if(subId.startsWith('meta')) {
+        try { PROFILES[ev.pubkey] = JSON.parse(ev.content); updateUI(); } catch(e){}
+    }
+    // Fetch profile if missing
+    if(!PROFILES[ev.pubkey]) {
+        PROFILES[ev.pubkey] = {}; // placeholder
+        Object.values(POOL).forEach(w => w.send(JSON.stringify(["REQ", "meta_"+ev.pubkey.substring(0,5), { kinds:[0], authors:[ev.pubkey], limit:1 }])));
+    }
+}
+
+// --- UI NAVIGATION ---
+function go(panel) {
+    document.querySelectorAll('.panel, #feed-panel').forEach(e => e.classList.add('hidden'));
+    document.getElementById(panel === 'feed' ? 'feed-panel' : panel + '-panel').classList.remove('hidden');
+    if(panel === 'feed') renderFeed();
+}
+function toggle(panel) { go(panel); if(panel === 'notif') loadNotifs('all'); }
+
+// --- FEED ---
+function renderFeed() {
+    EVENTS.sort((a,b) => b.created_at - a.created_at);
+    document.getElementById('feed-list').innerHTML = EVENTS.slice(0,50).map(drawNote).join('');
+    document.getElementById('new-btn').classList.add('hidden');
+}
+
+// --- THREAD ENGINE (FIXED) ---
+window.currentThreadId = null;
+
+function openThread(id) {
+    console.log("Opening thread:", id);
+    window.currentThreadId = id;
+    go('thread');
+    document.getElementById('thread-content').innerHTML = '<div style="opacity:0.5">Loading thread context...</div>';
+    
+    THREAD = []; // Clear previous
+    
+    // Check Cache
+    const cached = [...EVENTS, ...NOTIFS].find(e => e.id === id);
+    if(cached) THREAD.push(cached);
+
+    // Fetch Target + Replies + Parent
+    Object.values(POOL).forEach(ws => {
+        if(ws.readyState === 1) {
+            // Get the note
+            ws.send(JSON.stringify(["REQ", "thread_root", { kinds:[1], ids:[id] }]));
+            // Get replies
+            ws.send(JSON.stringify(["REQ", "thread_replies", { kinds:[1], '#e':[id], limit:100 }]));
+            
+            // If we have cached note, check for parent immediately
+            if(cached) fetchParent(cached);
+        }
+    });
+
+    // Render what we have
+    renderThread(id);
+}
+
+function fetchParent(note) {
+    // Find parent ID using NIP-10 logic fallback
+    let parentId = null;
+    const eTags = note.tags.filter(t => t[0] === 'e');
+    const replyTag = eTags.find(t => t[3] === 'reply');
+    if (replyTag) parentId = replyTag[1];
+    else if (eTags.length > 0) parentId = eTags[eTags.length - 1][1]; // Last tag
+
+    if(parentId) {
+        Object.values(POOL).forEach(ws => {
+            ws.send(JSON.stringify(["REQ", "thread_parent", { kinds:[1], ids:[parentId] }]));
+        });
+    }
+}
+
+function renderThread(rootId) {
+    const root = THREAD.find(e => e.id === rootId);
+    let html = '';
+
+    // 1. Ancestor (Context)
+    if(root) {
+        const eTags = root.tags.filter(t => t[0] === 'e');
+        const parentId = eTags.length > 0 ? eTags[eTags.length-1][1] : null;
+        if(parentId) {
+            const parent = THREAD.find(e => e.id === parentId);
+            if(parent) {
+                html += `<div class="thread-a">In Reply to:<br>${drawNote(parent, true)}</div>`;
+            } else {
+                html += `<div class="thread-a" style="opacity:0.5">[ Loading Parent Note... ]</div>`;
+            }
+        }
+        // 2. Main Note
+        html += `<div class="thread-p">${drawNote(root, false)}</div>`;
+    } else {
+        html += `<div style="padding:20px;text-align:center">Loading selected note...</div>`;
+    }
+
+    // 3. Replies
+    const replies = THREAD.filter(e => {
+        // Simple check: does this note tag the root?
+        return e.id !== rootId && e.tags.some(t => t[0] === 'e' && t[1] === rootId);
+    });
+    replies.sort((a,b) => a.created_at - b.created_at);
+
+    html += `<h4>Replies (${replies.length})</h4>`;
+    html += replies.map(e => drawNote(e, true)).join('');
+
+    document.getElementById('thread-content').innerHTML = html;
+}
+
+// --- NOTIFICATIONS (FIXED) ---
+function loadNotifs(filter) {
+    if(!ME.pub) return document.getElementById('notif-list').innerHTML = "Please Login.";
+    
+    NOTIFS.sort((a,b) => b.created_at - a.created_at);
+    
+    let list = NOTIFS;
+    if(filter === 'zaps') list = NOTIFS.filter(e => e.kind === 9735);
+    if(filter === 'mentions') list = NOTIFS.filter(e => e.kind === 1);
+
+    document.getElementById('notif-list').innerHTML = list.map(e => {
+        const p = PROFILES[e.pubkey] || {};
+        const name = p.name || e.pubkey.substring(0,6);
+        
+        // ZAP
+        if(e.kind === 9735) {
+            let amount = 0;
+            try { 
+                const desc = JSON.parse(e.tags.find(t=>t[0]==='description')[1]); 
+                amount = Math.floor(desc.tags.find(t=>t[0]==='amount')[1]/1000);
+            } catch(err){}
+            const target = e.tags.find(t=>t[0]==='e')?.[1];
+            return `<div class="notif" onclick="openThread('${target}')"><span style="color:gold">⚡</span> ${amount} sats from <b>${name}</b> <br><small>>> view note</small></div>`;
+        }
+        // LIKE
+        if(e.kind === 7) {
+            const target = e.tags.find(t=>t[0]==='e')?.[1];
+            return `<div class="notif" onclick="openThread('${target}')"><span style="color:red">❤</span> <b>${name}</b> liked your post <br><small>>> view note</small></div>`;
+        }
+        // REPLY
+        if(e.kind === 1) {
+            return `<div class="notif" style="display:block"><div>💬 Reply from <b>${name}</b>:</div>${drawNote(e, true)}</div>`;
+        }
+        return '';
+    }).join('');
+}
+
+// --- DRAWING ---
+function drawNote(e, compact) {
+    const p = PROFILES[e.pubkey] || {};
+    const name = p.display_name || p.name || e.pubkey.substring(0,8);
+    const pic = p.picture;
+    let content = e.content
+        .replace(/</g, "&lt;")
+        .replace(/(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif))/g, '<img src="$1" class="media">');
+
+    return `
+    <div class="post" style="border-color:${compact?'#333':'var(--acc)'}; margin-bottom:${compact?'10px':'25px'}">
+        <div class="meta" onclick="openThread('${e.id}')">
+            ${pic ? `<img src="${pic}" class="avatar">` : '<div class="avatar"></div>'}
+            <span style="color:var(--txt);font-weight:bold">${name}</span>
+            <span style="margin-left:auto">${new Date(e.created_at*1000).toLocaleTimeString()}</span>
+        </div>
+        <div class="content" onclick="openThread('${e.id}')">${content}</div>
+        <div class="actions">
+            <button class="act-btn" onclick="prepReply('${e.id}')">REPLY</button>
+            <button class="act-btn" onclick="react('${e.id}', 7)">LIKE</button>
+            <button class="act-btn" onclick="zap('${p.lud16}', '${e.pubkey}')">ZAP</button>
+        </div>
+    </div>`;
+}
+
+// --- SEARCH ---
+function doSearch() {
+    const q = document.getElementById('search-q').value;
+    if(q.startsWith('npub')) {
+        try {
+            const d = window.NostrTools.nip19.decode(q);
+            // Just sub to this user
+            Object.values(POOL).forEach(ws => ws.send(JSON.stringify(["REQ", "search", { kinds:[1], authors:[d.data], limit:10 }])));
+        } catch(e){ alert('Invalid NPUB'); }
+    } else {
+        Object.values(POOL).forEach(ws => ws.send(JSON.stringify(["REQ", "search", { kinds:[1], search:q, limit:10 }])));
+    }
+    document.getElementById('search-res').innerHTML = "Searching relays...";
+    // Search results come in via handleEvent -> feed logic. 
+    // For simplicity in this v1, search fills the main events array or specific search array
+    // Here we will just override the feed rendering momentarily
+    setTimeout(() => {
+         const res = EVENTS.filter(e => e.content.includes(q)); // Client side filter fallback
+         document.getElementById('search-res').innerHTML = res.map(drawNote).join('');
+    }, 1500);
+}
+
+// --- COMPOSER ---
+function openComposer() { document.getElementById('composer').classList.remove('hidden'); }
+function closeComposer() { document.getElementById('composer').classList.add('hidden'); REPLY_TO=null; document.getElementById('reply-ctx').classList.add('hidden'); }
+function prepReply(id) { 
+    REPLY_TO = id; 
+    openComposer(); 
+    document.getElementById('reply-ctx').classList.remove('hidden');
+    document.getElementById('reply-ctx').innerText = "Replying to " + id.substring(0,8);
+}
+async function publishNote() {
+    if(!ME.priv && !window.nostr) return alert("Login first");
+    const txt = document.getElementById('compose-txt').value;
+    const ev = {
+        kind: 1,
+        created_at: Math.floor(Date.now()/1000),
+        tags: REPLY_TO ? [['e', REPLY_TO, '', 'reply']] : [],
+        content: txt,
+        pubkey: ME.pub
+    };
+    
+    if(ME.priv) {
+        ev.id = window.NostrTools.getEventHash(ev);
+        ev.sig = window.NostrTools.signEvent(ev, ME.priv);
+    } else {
+        const signed = await window.nostr.signEvent(ev);
+        ev.id = signed.id; ev.sig = signed.sig;
+    }
+    
+    Object.values(POOL).forEach(ws => ws.send(JSON.stringify(["EVENT", ev])));
+    closeComposer();
+    document.getElementById('compose-txt').value = "";
+}
+
+// --- UTILS ---
+function loginKey() {
+    const key = document.getElementById('pk-in').value;
+    if(key.startsWith('nsec')) {
+        const d = window.NostrTools.nip19.decode(key);
+        ME.priv = d.data;
+        ME.pub = window.NostrTools.getPublicKey(ME.priv);
+    } else { ME.priv = key; ME.pub = window.NostrTools.getPublicKey(key); }
+    localStorage.setItem('nsec', ME.priv);
+    localStorage.setItem('npub', ME.pub);
+    location.reload();
+}
+async function loginExt() {
+    if(!window.nostr) return alert("No Extension");
+    ME.pub = await window.nostr.getPublicKey();
+    localStorage.setItem('npub', ME.pub);
+    location.reload();
+}
+function logout() { localStorage.clear(); location.reload(); }
+function updateUI(){ if(document.getElementById('thread-panel').classList.contains('hidden') === false) renderThread(window.currentThreadId); }
+function renderRelays() { document.getElementById('relay-list').innerText = RELAYS.join(', '); }
+
+init();
 </script>
 </body>
 </html>
