@@ -25,6 +25,8 @@
             --fab-bg: #ffffff;
             --fab-text: #000000;
             --quote-bg: #111;
+            
+            /* Font Size Variable */
             --base-font-size: 16px; 
         }
 
@@ -80,52 +82,409 @@
         
         h1 { font-size: 2.5em; margin: 0; text-shadow: var(--glow); text-transform: lowercase; }
 
-        .nav-bar { margin-top: 10px; font-size: 0.85em; user-select: none; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+        .nav-bar { margin-top: 10px; font-size: 0.9em; user-select: none; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
+        /* FIXED BOX SIZE FOR DESKTOP - 600PX */
         #main-container { max-width: 600px; margin: 0 auto; }
 
         .dropdown-panel { border: 1px dashed var(--border-color); padding: 15px; background: var(--panel-bg); margin-bottom: 20px; animation: fadeIn 0.3s; }
 
+        /* Inputs & Buttons - Force Inheritance */
         input, textarea, select, button {
             background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color);
-            font-family: inherit; font-size: inherit; padding: 10px; width: 100%; margin-bottom: 10px; display: block;
+            font-family: inherit; 
+            font-size: inherit; 
+            padding: 10px; width: 100%; margin-bottom: 10px; display: block;
         }
 
-        input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; border: none; padding: 0; margin: 0; cursor: pointer; width: 100%; }
-        input[type="range"]::-webkit-slider-runnable-track { background: var(--post-border); height: 4px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; background: var(--btn-bg); height: 20px; width: 20px; margin-top: -8px; border-radius: 50%; }
+        /* Slider Specific Style */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: var(--post-border);
+            height: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            background: var(--btn-bg);
+            height: 20px;
+            width: 20px;
+            margin-top: -8px;
+            border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-track {
+            background: var(--post-border);
+            height: 4px;
+        }
+        input[type="range"]::-moz-range-thumb {
+            appearance: none;
+            background: var(--btn-bg);
+            height: 20px;
+            width: 20px;
+            border: none;
+            border-radius: 50%;
+        }
 
-        button { background: var(--btn-bg); color: var(--btn-text); border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        button {
+            background: var(--btn-bg); color: var(--btn-text); border: none; padding: 10px 20px;
+            font-weight: bold; cursor: pointer; text-transform: uppercase;
+        }
         button:hover { opacity: 0.8; box-shadow: var(--glow); }
         button.small { padding: 5px 10px; font-size: 0.8em; margin-left: 5px; }
         button.danger { background: #ff4141; color: white; }
         button.secondary { background: var(--post-border); color: var(--text-color); border: 1px solid var(--border-color); }
         
-        .relay-item { display: flex; align-items: center; justify-content: space-between; background: var(--input-bg); border: 1px solid var(--post-border); padding: 8px; margin-bottom: 5px; gap: 10px; }
-        .relay-content { display: flex; align-items: center; overflow: hidden; white-space: nowrap; flex-grow: 1; }
-        .relay-url { font-size: 0.8em; margin-left: 10px; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
+        /* RELAY ITEM STYLING - RIGHT SIDE BUTTON */
+        .relay-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* Push items to ends */
+            background: var(--input-bg);
+            border: 1px solid var(--post-border);
+            padding: 8px;
+            margin-bottom: 5px;
+            gap: 10px;
+        }
+        .relay-content {
+            display: flex;
+            align-items: center;
+            overflow: hidden; 
+            white-space: nowrap;
+            flex-grow: 1;
+        }
+        .relay-url {
+            font-size: 0.8em; 
+            margin-left: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.9;
+        }
 
-        .list-item { padding: 10px; border-bottom: 1px solid var(--post-border); display: flex; align-items: center; gap: 10px; }
-        
+        /* LIST ITEM FOR FOLLOWERS/RELAYS */
+        .list-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--post-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .list-item-content {
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
-        .thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
-        .thread-ancestor { border-left: 2px dotted var(--meta-color); opacity: 0.85; padding: 10px; margin-bottom: 15px; background: rgba(255,255,255,0.02); }
-        .thread-ancestor .actions { display: none; }
         
+        /* Thread specific styles */
+        .thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
+        .thread-ancestor { border-left: 2px dotted var(--meta-color); opacity: 0.8; padding-left: 15px; margin-bottom: 10px; font-size: 0.9em; }
+
         .meta { font-size: 0.75em; opacity: 0.9; margin-bottom: 5px; color: var(--meta-color); display: flex; align-items: center; cursor: pointer; }
         .avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); margin-right: 10px; object-fit: cover; background: #111; }
         .username-link { font-weight: bold; color: var(--text-color); text-decoration: underline; }
         .content { font-size: 1em; line-height: 1.4; word-wrap: break-word; cursor: pointer; }
         .content:hover { opacity: 0.9; }
+
         .media-img, .media-video { max-width: 100%; height: auto; display: block; margin: 10px 0; border: 1px solid var(--post-border); }
         .hashtag { color: var(--text-color); text-decoration: underline; cursor: pointer; }
 
-        .quote-card { border: 1px solid var(--post-border); background: var(--quote-bg); padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 0.9em; }
+        .quote-card {
+            border: 1px solid var(--post-border);
+            background: var(--quote-bg);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
         .quote-card .meta { margin-bottom: 5px; border-bottom: 1px dotted var(--post-border); padding-bottom: 5px; }
 
-        .profile-card { border: 1px solid var(--text-color); background: var(--input-bg); padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; }
+        /* ACTION BUTTONS */
+        .actions { 
+            margin-top: 15px; 
+            font-size: 0.8em; 
+            display: flex; 
+            flex-direction: row; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            border-top: 1px dotted var(--post-border); 
+            padding-top: 12px; 
+        }
+
+        .act-btn { 
+            width: auto !important; 
+            margin-bottom: 0 !important;
+            flex-grow: 1;
+            
+            background: transparent; 
+            color: var(--text-color); 
+            border: 1.5px solid var(--text-color); 
+            padding: 6px 12px; 
+            cursor: pointer; 
+            font-family: inherit; 
+            font-size: 0.9em; 
+            font-weight: bold;
+            text-transform: uppercase;
+            border-radius: 0;
+            transition: 0.2s;
+            white-space: nowrap;
+            text-align: center;
+        }
+        
+        .act-btn:hover { background: var(--text-color); color: var(--bg-color); }
+        .act-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; }
+        
+        /* ZAP BUTTON MODS - BITCOIN ORANGE */
+        .zap-btn { 
+            color: #F7931A; 
+            border-color: var(--text-color) !important; 
+        }
+        .zap-btn:hover { 
+            background: #F7931A; 
+            color: #fff; 
+            border-color: #F7931A !important;
+        }
+        
+        /* BOOKMARK BUTTON MODS - THEME COLOR */
+        .bookmark-btn { 
+            color: var(--text-color); 
+            border-color: var(--text-color) !important;
+        }
+        .bookmark-btn:hover { 
+            background: var(--text-color); 
+            color: var(--bg-color); 
+        }
+        .bookmark-btn.active { 
+            background: var(--text-color) !important; 
+            color: var(--bg-color) !important; 
+        }
+
+        /* Support Button override */
+        button.zap-active { background: #F7931A; color: #fff; border: 1px solid #F7931A; }
+
+        #new-btn {
+            width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text);
+            font-weight: bold; text-align: center; cursor: pointer;
+            margin-bottom: 20px; border: 2px solid var(--border-color); animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        .p-img-large { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border-color); margin-bottom: 15px; object-fit: cover; }
+        .hidden { display: none !important; }
+
+        .profile-detail-box {
+            margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center;
+        }
+
+        /* PROFILE LAYOUT */
+        .profile-actions-row {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            width: 100%;
+        }
+        .profile-actions-row button {
+            flex: 1;
+            padding: 10px;
+        }
+
+        .profile-stats-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .stat-box {
+            flex: 1;
+            border: 1px solid var(--text-color);
+            background: var(--input-bg);
+            color: var(--text-color);
+            padding: 8px 5px;
+            text-align: center;
+            font-size: 0.75em;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .stat-box:hover, .stat-box.active {
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        /* NPUB COPY BOX STYLE - FIXED TRUNCATION */
+        .npub-wrapper {
+            background: var(--input-bg);
+            border: 1px solid var(--post-border);
+            border-radius: 20px;
+            padding: 8px 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 5px auto 15px auto;
+            width: 100%;
+            max-width: 380px;
+            cursor: pointer;
+            user-select: all;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .npub-text {
+            font-family: monospace;
+            font-size: 0.75em;
+            color: var(--text-color);
+            overflow: hidden;
+            text-overflow: ellipsis; /* Truncate instead of wrap */
+            white-space: nowrap;     /* Force single line */
+            margin-right: 10px;
+            flex-grow: 1;
+            text-align: center;
+        }
+        .copy-icon-svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-color);
+            flex-shrink: 0;
+        }
+
+        /* BOTTOM FEED TABS */
+        .profile-subnav {
+            display: flex;
+            border-bottom: 2px solid var(--post-border);
+            margin-bottom: 20px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .profile-subnav::-webkit-scrollbar { display: none; }
+
+        .subnav-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 12px;
+            cursor: pointer;
+            color: var(--meta-color);
+            border-bottom: 3px solid transparent;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .subnav-btn:hover { color: var(--text-color); }
+        .subnav-btn.active {
+            color: var(--text-color);
+            border-bottom: 3px solid var(--text-color);
+        }
+
+        /* NOTIFICATION TABS */
+        .notif-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--post-border);
+            margin-bottom: 15px;
+        }
+
+        .sticky-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--footer-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 15px 0;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+            font-family: inherit;
+        }
+        .footer-item {
+            font-size: 0.9em;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.3s;
+            color: var(--text-color);
+            text-decoration: none;
+            opacity: 0.7;
+        }
+        .footer-item:hover { opacity: 1; text-decoration: underline; text-shadow: var(--glow); }
+
+        .notif-item { 
+            padding: 12px; 
+            border-bottom: 1px solid var(--post-border); 
+            font-size: 0.9em; 
+            display: flex;
+            align-items: flex-start;
+        }
+        .notif-icon { margin-right: 10px; font-size: 1.2em; min-width: 25px; }
+
+        .profile-actions { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+
+        .filter-tag {
+            display: inline-flex; align-items: center; 
+            background: var(--tag-bg); padding: 2px 8px; 
+            margin: 2px; font-size: 0.8em; border-radius: 4px;
+        }
+        .remove-tag {
+            margin-left: 5px; cursor: pointer; color: #ff4141; font-weight: bold;
+        }
+
+        .fab-btn {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            width: 60px; height: 60px;
+            background: var(--fab-bg);
+            color: var(--fab-text);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: bold;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+            z-index: 1500;
+            transition: 0.2s;
+        }
+        .fab-btn:hover { transform: scale(1.1); box-shadow: var(--glow); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; 
+            padding-top: 100px; 
+            backdrop-filter: blur(3px); 
+        }
+        
+        .modal-content {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            width: 90%; 
+            max-width: 600px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            animation: zoomIn 0.2s;
+        }
+
+        /* PROFILE CARD FOR SEARCH RESULTS */
+        .profile-card {
+            border: 1px solid var(--text-color);
+            background: var(--input-bg);
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
         .profile-card:hover { transform: scale(1.02); box-shadow: var(--glow); }
         .profile-card img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
         .profile-card .info { flex-grow: 1; overflow: hidden; }
@@ -133,62 +492,15 @@
         .profile-card .nip05 { font-size: 0.8em; color: #3498db; }
         .profile-card .about { font-size: 0.8em; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .actions { margin-top: 15px; font-size: 0.8em; display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; border-top: 1px dotted var(--post-border); padding-top: 12px; }
-        .act-btn { width: auto !important; margin-bottom: 0 !important; flex-grow: 1; background: transparent; color: var(--text-color); border: 1.5px solid var(--text-color); padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 0.9em; font-weight: bold; text-transform: uppercase; border-radius: 0; transition: 0.2s; white-space: nowrap; text-align: center; }
-        .act-btn:hover { background: var(--text-color); color: var(--bg-color); }
-        .act-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; }
-        
-        .zap-btn { color: #F7931A; border-color: var(--text-color) !important; }
-        .zap-btn:hover { background: #F7931A; color: #fff; border-color: #F7931A !important; }
-        .bookmark-btn { color: var(--text-color); border-color: var(--text-color) !important; }
-        .bookmark-btn:hover { background: var(--text-color); color: var(--bg-color); }
-        .bookmark-btn.active { background: var(--text-color) !important; color: var(--bg-color) !important; }
-        button.zap-active { background: #F7931A; color: #fff; border: 1px solid #F7931A; }
-
-        #new-btn { width: 100%; padding: 15px; background: var(--btn-bg); color: var(--btn-text); font-weight: bold; text-align: center; cursor: pointer; margin-bottom: 20px; border: 2px solid var(--border-color); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-
-        .p-img-large { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border-color); margin-bottom: 15px; object-fit: cover; }
-        .hidden { display: none !important; }
-
-        .profile-detail-box { margin: 10px 0; padding: 10px; border: 1px dotted var(--post-border); text-align: center; }
-        .profile-actions-row { display: flex; gap: 10px; margin: 15px 0; width: 100%; }
-        .profile-actions-row button { flex: 1; padding: 10px; }
-        .profile-stats-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
-        .stat-box { flex: 1; border: 1px solid var(--text-color); background: var(--input-bg); color: var(--text-color); padding: 8px 5px; text-align: center; font-size: 0.75em; cursor: pointer; font-weight: bold; }
-        .stat-box:hover, .stat-box.active { background: var(--text-color); color: var(--bg-color); }
-
-        .npub-wrapper { background: var(--input-bg); border: 1px solid var(--post-border); border-radius: 20px; padding: 8px 12px; display: inline-flex; align-items: center; justify-content: space-between; margin: 5px auto 15px auto; width: 100%; max-width: 380px; cursor: pointer; user-select: all; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .npub-text { font-family: monospace; font-size: 0.75em; color: var(--text-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; flex-grow: 1; text-align: center; }
-        .copy-icon-svg { width: 16px; height: 16px; fill: var(--text-color); flex-shrink: 0; }
-
-        .profile-subnav { display: flex; border-bottom: 2px solid var(--post-border); margin-bottom: 20px; overflow-x: auto; white-space: nowrap; }
-        .profile-subnav::-webkit-scrollbar { display: none; }
-        .subnav-btn { flex: 1; background: transparent; border: none; padding: 12px; cursor: pointer; color: var(--meta-color); border-bottom: 3px solid transparent; font-size: 0.9em; text-transform: uppercase; font-weight: bold; }
-        .subnav-btn:hover { color: var(--text-color); }
-        .subnav-btn.active { color: var(--text-color); border-bottom: 3px solid var(--text-color); }
-
-        .notif-tabs { display: flex; border-bottom: 1px solid var(--post-border); margin-bottom: 15px; }
-        
-        .notif-item { padding: 12px; border-bottom: 1px solid var(--post-border); font-size: 0.9em; display: flex; align-items: center; transition: background 0.2s; }
-        .notif-item:hover { background: rgba(255,255,255,0.05); }
-        .notif-icon { margin-right: 15px; font-size: 1.5em; width: 25px; text-align: center; }
-
-        .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--footer-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 6px; padding: 15px 0; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); font-family: inherit; }
-        .footer-item { font-size: 0.85em; cursor: pointer; text-align: center; transition: 0.3s; color: var(--text-color); text-decoration: none; opacity: 0.7; }
-        .footer-item:hover { opacity: 1; text-decoration: underline; text-shadow: var(--glow); }
-
-        .filter-tag { display: inline-flex; align-items: center; background: var(--tag-bg); padding: 2px 8px; margin: 2px; font-size: 0.8em; border-radius: 4px; }
-        .remove-tag { margin-left: 5px; cursor: pointer; color: #ff4141; font-weight: bold; }
-
-        .fab-btn { position: fixed; bottom: 70px; right: 20px; width: 60px; height: 60px; background: var(--fab-bg); color: var(--fab-text); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; box-shadow: 0 0 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 1500; transition: 0.2s; }
-        .fab-btn:hover { transform: scale(1.1); box-shadow: var(--glow); }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; justify-content: center; align-items: flex-start; padding-top: 100px; backdrop-filter: blur(3px); }
-        .modal-content { background: var(--panel-bg); border: 1px solid var(--border-color); padding: 20px; width: 90%; max-width: 600px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); animation: zoomIn 0.2s; }
         @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        #reply-context-bar { background-color: var(--reply-indicator); padding: 10px; margin-bottom: 10px; font-size: 0.8em; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--text-color); }
+        #reply-context-bar {
+            background-color: var(--reply-indicator);
+            padding: 10px; margin-bottom: 10px; font-size: 0.8em;
+            display: flex; justify-content: space-between; align-items: center;
+            border-left: 3px solid var(--text-color);
+        }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -224,6 +536,7 @@
             <div id="login-form">
                 <button onclick="loginExtension()" style="width:100%; background:#9b59b6; color:white; margin-bottom:5px;">⚡ LOGIN WITH EXTENSION</button>
                 <div style="font-size: 0.8em; color: var(--meta-color); margin-bottom: 15px; text-align: center; opacity: 0.8;">(Recommended for security)</div>
+                
                 <div style="text-align:center; margin: 10px 0; opacity:0.5;">--- OR ---</div>
                 <input type="text" id="privkey-input" placeholder="paste private key">
                 <button onclick="login()" style="width:100%;">Login</button>
@@ -248,7 +561,9 @@
             <button class="back-btn" onclick="goHome()">&lt; #BACK TO FEED</button>
             <div id="my-profile-header" style="text-align:center;"></div>
             
+            <!-- HIDDEN EDITOR (NOW ABOVE TABS) -->
             <div id="profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
+                <!-- Removing Username input as requested -->
                 <label>Name:</label><input type="text" id="p-display-name" placeholder="e.g. Satoshi Nakamoto">
                 <label>Bio:</label><textarea id="p-about" rows="3"></textarea>
                 <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
@@ -258,6 +573,9 @@
                 <button onclick="saveProfile()" style="width:100%">PUBLISH UPDATE</button>
                 <button class="small secondary" onclick="toggleProfileEditor()" style="width:100%; margin-top:5px; margin-left:0;">CANCEL</button>
             </div>
+
+            <!-- TABS GENERATED DYNAMICALLY BY JS -->
+            <!-- Removing static tabs here to prevent duplication -->
             <div id="my-feed"></div>
         </div>
 
@@ -271,13 +589,17 @@
         <!-- 5. SETTINGS PANEL -->
         <div id="panel-settings" class="dropdown-panel hidden">
             <h3>>> SETTINGS</h3>
+            
+            <!-- RELAY MANAGER BUTTON -->
             <button onclick="togglePanel('panel-relays')" style="width:100%; margin-bottom:15px; border: 1px solid var(--text-color);">>> MANAGE RELAYS</button>
+
             <label>SYSTEM THEME:</label>
             <select id="theme-selector" onchange="changeTheme(this.value)">
                 <option value="dark">White on Black</option>
                 <option value="matrix">Matrix Green</option>
                 <option value="light">Black on White</option>
             </select>
+            
             <br>
             <label>FONT SIZE:</label>
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px;">
@@ -285,7 +607,9 @@
                 <input type="range" id="font-size-slider" min="12" max="24" step="1" value="16" oninput="changeFontSize(this.value)" style="flex-grow: 1;">
                 <span style="font-size: 1.2em; opacity: 0.7;">BIG</span>
             </div>
+
             <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
+            
             <h3>>> CONTENT FILTERS</h3>
             <div style="margin-bottom: 15px;">
                 <label style="display:flex; align-items:center; cursor:pointer;">
@@ -293,18 +617,22 @@
                     HIDE NOTES WITH #NSFW
                 </label>
             </div>
+            
             <label>BLOCK SPECIFIC HASHTAGS:</label>
             <div style="display:flex; gap:10px;">
                 <input type="text" id="filter-input" placeholder="e.g. politics" style="margin-bottom:0;">
                 <button onclick="addFilterTag()" style="width:auto;">BLOCK</button>
             </div>
             <div id="filter-list" style="margin-top:10px; min-height:20px;"></div>
+
             <hr style="border:0; border-top:1px dashed var(--border-color); margin:20px 0;">
+            
             <h3>>> SUPPORT</h3>
             <button class="zap-active" onclick="handleZap('itsmircea@walletofsatoshi.com', null)" style="width:100%; border-color:#F7931A;">
                 ⚡ DONATE TO DEV
             </button>
             <div style="text-align:center; font-size:0.8em; margin-top:5px; opacity:0.7; word-break: break-all;">itsmircea@walletofsatoshi.com</div>
+
             <br><br><button class="small secondary" onclick="goHome()">CLOSE</button>
         </div>
 
@@ -324,11 +652,14 @@
         <!-- 7. NOTIFICATIONS PANEL -->
         <div id="panel-notifications" class="dropdown-panel hidden">
             <h3>>> NOTIFICATIONS</h3>
+            
+            <!-- NOTIFICATION TABS -->
             <div class="notif-tabs" style="justify-content: space-around;">
                 <button id="ntab-all" class="tab-btn active" onclick="switchNotifTab('all')">ALL</button>
                 <button id="ntab-zaps" class="tab-btn" onclick="switchNotifTab('zaps')">ZAPS</button>
                 <button id="ntab-mentions" class="tab-btn" onclick="switchNotifTab('mentions')">MENTIONS</button>
             </div>
+
             <button class="small secondary" onclick="refreshNotifications()" style="margin-bottom:10px;">REFRESH</button>
             <div id="notifications-feed">Loading...</div>
         </div>
@@ -337,7 +668,8 @@
         <div id="panel-thread" class="dropdown-panel hidden">
             <button class="back-btn" onclick="goHome()">&lt; #BACK TO FEED</button>
             <h3>>> THREAD</h3>
-            <div id="thread-parent-container"></div>
+            <div id="thread-parent-container" style="margin-top:20px;"></div>
+            <div id="thread-main-container"></div>
             <div style="border-bottom: 1px dashed var(--border-color); margin: 20px 0; opacity: 0.5;"></div>
             <h4>Replies:</h4>
             <div id="thread-replies-container">Loading replies...</div>
@@ -461,18 +793,12 @@
         /* --- REDESIGNED THREAD LOGIC WITH YOUR FIX --- */
         function getImmediateParentId(ev) {
             // NIP-10: tags = [['e', id, url, marker], ...]
-            // 1. Look for 'reply' marker
             const replyTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'reply');
             if (replyTag) return replyTag[1];
-
-            // 2. Look for 'root' marker (if no reply marker, root is the parent)
             const rootTag = ev.tags.find(t => t[0] === 'e' && t[3] === 'root');
             if (rootTag && !replyTag) return rootTag[1];
-
-            // 3. Fallback: last 'e' tag
             const eTags = ev.tags.filter(t => t[0] === 'e');
             if (eTags.length > 0) return eTags[eTags.length - 1][1];
-
             return null;
         }
 
@@ -480,40 +806,30 @@
             currentThreadId = id;
             togglePanel('panel-thread');
             
-            document.getElementById('thread-parent-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading thread...</div>';
-            document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading replies...</div>';
+            document.getElementById('thread-parent-container').innerHTML = '';
+            document.getElementById('thread-main-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading note...</div>';
+            document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading comments...</div>';
             
             threadEvents = [];
             
-            // Close any existing thread subscriptions
-            Object.values(sockets).forEach(ws => {
-                if (ws.readyState === 1) {
-                    ws.send(JSON.stringify(["CLOSE", "thread_main"]));
-                    ws.send(JSON.stringify(["CLOSE", "thread_children"]));
-                }
-            });
-            
-            // Check cache first
-            const cached = events.find(e => e.id === id) || 
-                          notifEvents.find(e => e.id === id) || 
-                          myEvents.find(e => e.id === id) || 
-                          userEvents.find(e => e.id === id) ||
-                          searchEvents.find(e => e.id === id);
+            // Check all caches for immediate render
+            const allEvents = [...events, ...notifEvents, ...myEvents, ...userEvents, ...searchEvents, ...bookmarkEvents];
+            const cached = allEvents.find(e => e.id === id);
             
             if (cached) {
                 threadEvents.push(cached);
                 renderThreadView(); 
                 const parentId = getImmediateParentId(cached);
-                if (parentId) {
-                    fetchNote(parentId);
-                }
+                if (parentId) fetchNote(parentId);
+            } else {
+                fetchNote(id); // Fetch if missing
             }
 
-            // Always fetch fresh data with unique subscription IDs
+            // Fetch Fresh Data from Relays (Aggressively get children)
             Object.values(sockets).forEach(ws => {
                 if (ws.readyState === 1) {
                     ws.send(JSON.stringify(["REQ", "thread_main", { kinds: [1], ids: [id], limit: 1 }]));
-                    ws.send(JSON.stringify(["REQ", "thread_children", { kinds: [1], '#e': [id], limit: 200 }]));
+                    ws.send(JSON.stringify(["REQ", "thread_children", { kinds: [1], '#e': [id], limit: 500 }]));
                 }
             });
         }
@@ -532,12 +848,10 @@
             threadEvents.push(ev);
             fetchProfileIfNeeded(ev.pubkey);
             
-            // If this is an ancestor, check if IT has a parent
-            const parentId = getImmediateParentId(ev);
-            if (parentId) {
-                if (!threadEvents.some(e => e.id === parentId)) {
-                    fetchNote(parentId);
-                }
+            // If we just loaded the main note, check if it has a parent we need to fetch
+            if (ev.id === currentThreadId) {
+                const parentId = getImmediateParentId(ev);
+                if (parentId && !threadEvents.some(e => e.id === parentId)) fetchNote(parentId);
             }
             renderThreadView();
         }
@@ -545,65 +859,39 @@
         function renderThreadView() {
             const mainNote = threadEvents.find(e => e.id === currentThreadId);
             
-            if (!mainNote && threadEvents.length === 0) return; 
-
-            // Trace ancestors up
-            let ancestors = [];
-            let current = mainNote;
-            if (current) {
-                let loopGuard = 0;
-                while(loopGuard < 10) {
-                    const pid = getImmediateParentId(current);
-                    if (!pid) break;
-                    const parent = threadEvents.find(e => e.id === pid);
-                    if (!parent) {
-                        ancestors.unshift({ missing: true, id: pid });
-                        break;
-                    }
-                    ancestors.unshift({ missing: false, note: parent });
-                    current = parent;
-                    loopGuard++;
-                }
-            }
-
-            let html = '';
-            ancestors.forEach(a => {
-                if (a.missing) {
-                    html += `<div class="thread-ancestor" style="opacity:0.6;">
-                        <button class="small secondary" onclick="fetchNote('${a.id}')">[ Load Parent ]</button>
-                    </div>`;
-                } else {
-                    html += `<div class="thread-ancestor">${generatePostHTML(a.note)}</div>`;
-                }
-            });
-
+            // Render Parent
+            let parentHtml = '';
             if (mainNote) {
-                html += `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
-            } else {
-                html += `<div style="padding:10px;">Loading main note...</div>`;
+                const parentId = getImmediateParentId(mainNote);
+                if (parentId) {
+                    const parentNote = threadEvents.find(e => e.id === parentId);
+                    if (parentNote) {
+                        parentHtml = `<div class="thread-ancestor">
+                            <div style="font-size:0.8em; margin-bottom:5px; opacity:0.7;">In reply to:</div>
+                            ${generatePostHTML(parentNote)}
+                        </div>`;
+                    } else {
+                        parentHtml = `<div class="thread-ancestor" style="opacity:0.6;">
+                            <button class="small secondary" onclick="fetchNote('${parentId}')">[ Load Parent Note ]</button>
+                        </div>`;
+                    }
+                }
+                document.getElementById('thread-ancestor-container').innerHTML = parentHtml;
+                document.getElementById('thread-main-container').innerHTML = `<div class="thread-parent">${generatePostHTML(mainNote)}</div>`;
             }
-            
-            document.getElementById('thread-parent-container').innerHTML = html;
 
-            // Replies
+            // Render Replies - YOUR LOGIC ADDED HERE
             const replies = threadEvents.filter(e => {
-                // Check if this event replies to current thread ID
-                const pid = getImmediateParentId(e);
-                // Also fallback check for direct root tagging if no specific reply tag
-                const rootTag = e.tags.find(t => t[0] === 'e' && t[3] === 'root');
-                const isRootReply = rootTag && rootTag[1] === currentThreadId;
-                
-                return pid === currentThreadId || isRootReply;
+                if (e.id === currentThreadId) return false;
+                const eTags = e.tags.filter(t => t[0] === 'e');
+                return eTags.some(t => t[1] === currentThreadId);
             });
-            
             replies.sort((a,b) => a.created_at - b.created_at);
             
             if (replies.length > 0) {
                 document.getElementById('thread-replies-container').innerHTML = replies.map(generatePostHTML).join('');
-            } else {
-                if (mainNote) {
-                    document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:10px;">No replies found yet.</div>';
-                }
+            } else if (mainNote) {
+                document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.5; padding:10px;">No replies found yet.</div>';
             }
         }
         /* --- END THREAD LOGIC --- */
