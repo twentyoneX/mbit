@@ -1,48 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>mBIT v4 (Stable)</title>
-<script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
-<style>
-    :root{--bg:#000;--txt:#fff;--acc:#00FF41;--brd:#333;--pnl:#111;}
-    body{background:var(--bg);color:var(--txt);font-family:monospace;margin:0;padding:10px;padding-bottom:80px;max-width:600px;margin:0 auto;}
-    header{text-align:center;border-bottom:1px solid var(--brd);padding:15px;margin-bottom:15px;}
-    h1{margin:0;text-shadow:0 0 5px var(--acc);}
-    .nav{margin-top:10px;display:flex;justify-content:center;gap:15px;cursor:pointer;user-select:none;}
-    .nav span:hover{color:var(--acc);text-decoration:underline;}
-    .panel{display:none;}
-    .panel.active{display:block;}
-    
-    .post{border:1px solid var(--brd);padding:15px;margin-bottom:15px;background:#050505;word-break:break-word;}
-    .post-meta{color:#888;font-size:0.8em;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
-    .avatar{width:30px;height:30px;background:#333;border-radius:50%;object-fit:cover;}
-    .post-content{font-size:1em;line-height:1.5;white-space:pre-wrap;}
-    .post-actions{margin-top:10px;border-top:1px solid #222;padding-top:10px;display:flex;gap:10px;}
-    
-    button{background:var(--txt);color:#000;border:none;padding:5px 10px;font-weight:bold;cursor:pointer;text-transform:uppercase;}
-    button:hover{opacity:0.8;}
-    button.sec{background:#333;color:#fff;border:1px solid #555;}
-    
-    .thread-parent{border-left:4px solid var(--acc);background:#081008;}
-    .thread-reply{margin-left:20px;border-left:2px solid #333;}
-    
-    .notif-item{padding:15px;border-bottom:1px solid var(--brd);cursor:pointer;}
-    .notif-item:hover{background:#111;}
-    
-    .media{max-width:100%;margin-top:10px;border:1px solid #333;}
-    
-    .fab{position:fixed;bottom:80px;right:20px;width:60px;height:60px;background:var(--acc);color:#000;border-radius:50%;font-size:30px;display:flex;justify-content:center;align-items:center;cursor:pointer;box-shadow:0 0 10px var(--acc);}
-    
-    .footer{position:fixed;bottom:0;left:0;width:100%;background:#000;border-top:1px solid var(--brd);display:flex;justify-content:space-around;padding:15px;}
-    .footer span{cursor:pointer;font-weight:bold;}
-    
-    .modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:#000000e0;display:none;align-items:center;justify-content:center;z-index:999;}
-    .modal-content{background:#111;border:1px solid var(--acc);padding:20px;width:90%;max-width:500px;}
-    textarea{width:100%;background:#000;color:#fff;border:1px solid #333;padding:10px;font-family:inherit;}
-    input{width:100%;background:#000;color:#fff;border:1px solid #333;padding:10px;margin-bottom:10px;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mBIT v5 (Final Fix)</title>
+    <script src="https://unpkg.com/nostr-tools@1.17.0/lib/nostr.bundle.js"></script>
+    <style>
+        :root { --bg: #000; --txt: #fff; --acc: #00FF41; --brd: #333; --pnl: #111; font-family: monospace; }
+        body { background: var(--bg); color: var(--txt); margin: 0; padding: 10px; padding-bottom: 80px; max-width: 600px; margin: 0 auto; }
+        
+        /* HEADER & NAV */
+        header { text-align: center; border-bottom: 1px solid var(--brd); padding: 10px; margin-bottom: 20px; }
+        .nav { display: flex; justify-content: center; gap: 15px; user-select: none; margin-top: 10px; }
+        .nav span { cursor: pointer; opacity: 0.7; }
+        .nav span:hover { opacity: 1; color: var(--acc); text-decoration: underline; }
+        
+        /* PANELS */
+        .panel { display: none; }
+        .panel.active { display: block; }
+        
+        /* POSTS */
+        .post { border: 1px solid var(--brd); padding: 15px; margin-bottom: 15px; background: #050505; word-wrap: break-word; }
+        .post-meta { color: #888; font-size: 0.8em; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .post-content { font-size: 1em; line-height: 1.4; white-space: pre-wrap; }
+        .post-actions { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #333; display: flex; gap: 10px; }
+        
+        /* THREAD SPECIALS */
+        .thread-ancestor { border-left: 2px dotted #555; padding-left: 15px; margin-bottom: 10px; opacity: 0.8; font-size: 0.9em; }
+        .thread-main { border: 2px solid var(--acc); background: #081008; }
+        .thread-reply { margin-left: 10px; border-left: 2px solid #333; }
+        
+        /* NOTIFICATIONS */
+        .notif { padding: 15px; border-bottom: 1px solid var(--brd); cursor: pointer; display: flex; gap: 10px; }
+        .notif:hover { background: #111; }
+
+        /* BUTTONS & INPUTS */
+        button { background: var(--txt); color: #000; border: none; padding: 8px 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        button:hover { opacity: 0.8; }
+        button.sec { background: #333; color: #fff; border: 1px solid #555; }
+        input, textarea { background: #000; color: #fff; border: 1px solid #333; padding: 10px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+
+        /* FOOTER & FAB */
+        .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #000; border-top: 1px solid var(--brd); display: flex; justify-content: center; gap: 20px; padding: 15px; z-index: 100; }
+        .fab { position: fixed; bottom: 80px; right: 20px; width: 50px; height: 50px; background: var(--acc); color: #000; border-radius: 50%; font-size: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 100; }
+        
+        /* MODAL */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 200; }
+        .modal-content { background: #111; border: 1px solid var(--acc); padding: 20px; width: 90%; max-width: 500px; }
+
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
 
@@ -50,96 +57,113 @@
     <h1>mBIT</h1>
     <div class="nav">
         <span onclick="route('feed')">#FEED</span>
-        <span onclick="route('login')">#LOGIN</span>
+        <span onclick="route('notifs')">#NOTIFS</span>
         <span onclick="route('profile')">#PROFILE</span>
         <span onclick="route('settings')">#SETTINGS</span>
     </div>
 </header>
 
-<!-- PANELS -->
+<!-- FEED PANEL -->
 <div id="feed-panel" class="panel active">
-    <div id="feed-stream">Loading feed...</div>
+    <div id="feed-list">Loading global feed...</div>
 </div>
 
+<!-- THREAD PANEL -->
 <div id="thread-panel" class="panel">
-    <button class="sec" onclick="route('feed')">&lt; BACK</button>
-    <h3 style="border-bottom:1px dashed #333;padding-bottom:10px;">>> THREAD VIEW</h3>
-    <div id="thread-parent"></div> <!-- The note above (if any) -->
-    <div id="thread-main"></div>   <!-- The note you clicked -->
-    <div style="margin:20px 0;opacity:0.5;font-size:0.8em;">REPLIES:</div>
-    <div id="thread-replies"></div> <!-- The comments -->
+    <button class="sec" onclick="route('feed')">&lt; BACK TO FEED</button>
+    <h3 style="border-bottom: 1px dashed #333; padding: 10px 0;">>> THREAD CONTEXT</h3>
+    
+    <!-- Area for Parent Note -->
+    <div id="thread-ancestor-container"></div>
+    
+    <!-- Area for Main Note -->
+    <div id="thread-main-container"></div>
+    
+    <div style="margin: 20px 0; border-bottom: 1px dashed #333;">Replies:</div>
+    
+    <!-- Area for Replies -->
+    <div id="thread-replies-container">Loading comments...</div>
 </div>
 
-<div id="notifications-panel" class="panel">
+<!-- NOTIFICATIONS PANEL -->
+<div id="notifs-panel" class="panel">
     <h3>>> NOTIFICATIONS</h3>
-    <div id="notif-list">Loading...</div>
+    <div id="notif-list">Please login to see notifications.</div>
 </div>
 
-<div id="search-panel" class="panel">
-    <h3>>> SEARCH</h3>
-    <div style="display:flex;gap:10px">
-        <input id="search-in" placeholder="Search content or npub...">
-        <button onclick="runSearch()">GO</button>
-    </div>
-    <div id="search-out" style="margin-top:20px;"></div>
-</div>
-
-<div id="login-panel" class="panel">
-    <h3>>> LOGIN</h3>
-    <button onclick="loginExt()" style="width:100%;background:#9b59b6;color:fff;margin-bottom:15px;">EXTENSION (ALBY)</button>
-    <input id="nsec-in" placeholder="nsec...">
+<!-- SETTINGS / LOGIN -->
+<div id="settings-panel" class="panel">
+    <h3>>> LOGIN & SETTINGS</h3>
+    <input id="pk-input" placeholder="Enter nsec key...">
     <button onclick="loginKey()">LOGIN WITH KEY</button>
+    <button class="sec" onclick="loginExt()" style="margin-top:5px;">USE EXTENSION</button>
+    <br><br>
+    <button class="sec" onclick="logout()">LOGOUT</button>
+    <div id="user-status" style="margin-top:10px; opacity:0.7;"></div>
 </div>
 
+<!-- PROFILE -->
 <div id="profile-panel" class="panel">
-    <button class="sec" onclick="route('feed')">&lt; BACK</button>
-    <div id="my-profile-data"></div>
+    <h3>>> MY PROFILE</h3>
+    <div id="profile-data"></div>
 </div>
 
-<!-- FOOTER -->
-<div class="footer">
-    <span onclick="route('feed')">#HOME</span>
-    <span onclick="route('search')">#SEARCH</span>
-    <span onclick="route('notifications')">#NOTIFS</span>
-</div>
+<div class="fab" onclick="openComposer()">+</div>
 
-<!-- COMPOSER -->
-<div class="fab" onclick="showComposer()">+</div>
-<div id="composer" class="modal-bg">
+<!-- COMPOSER MODAL -->
+<div id="composer" class="modal">
     <div class="modal-content">
-        <div id="reply-label" style="color:#888;margin-bottom:5px;font-size:0.8em;"></div>
-        <textarea id="note-body" rows="5" placeholder="Broadcast message..."></textarea>
-        <div style="margin-top:10px;display:flex;gap:10px;">
-            <button class="sec" style="flex:1" onclick="hideComposer()">CANCEL</button>
-            <button style="flex:1" onclick="publish()">SEND</button>
+        <div id="reply-context-text" style="margin-bottom:10px; font-size:0.8em; opacity:0.7;"></div>
+        <textarea id="compose-text" rows="5" placeholder="Type something..."></textarea>
+        <div style="display:flex; gap:10px;">
+            <button class="sec" style="flex:1" onclick="closeComposer()">CANCEL</button>
+            <button style="flex:1" onclick="publishNote()">SEND</button>
         </div>
     </div>
 </div>
 
-<script>
-// --- CORE VARIABLES ---
-const RELAYS = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nos.lol'];
-const pool = {};
-const events = new Map(); // Global event cache (id -> event)
-const profiles = {};      // Pubkey -> Metadata
+<div class="footer">
+    <span onclick="route('feed')">#HOME</span>
+    <span onclick="route('notifs')">#NOTIFS</span>
+    <span onclick="route('settings')">#SETTINGS</span>
+</div>
 
+<script>
+// --- CONFIGURATION ---
+const RELAYS = [
+    'wss://relay.damus.io',
+    'wss://relay.primal.net',
+    'wss://nos.lol',
+    'wss://relay.nostr.band' 
+];
+
+// --- GLOBAL STATE ---
+const pool = {};
+const eventsMap = new Map(); // Stores all events by ID
+const profilesMap = {};      // Stores profiles by pubkey
 let myPub = localStorage.getItem('mbit_pub');
 let myPriv = localStorage.getItem('mbit_priv');
-
-let viewingThreadId = null;
-let replyToId = null;
+let currentThreadId = null;
+let replyToEvent = null;
 
 // --- INITIALIZATION ---
 function init() {
+    if(myPub) document.getElementById('user-status').innerText = "Logged in as: " + myPub.substring(0,8) + "...";
+    
+    // Connect to Relays
     RELAYS.forEach(url => {
         try {
             const ws = new WebSocket(url);
             pool[url] = ws;
             ws.onopen = () => {
+                console.log("Connected to", url);
                 // Subscribe to Global Feed
-                sub(ws, "feed", { kinds: [1], limit: 20 });
-                // Subscribe to Notifications if logged in
-                if(myPub) sub(ws, "notifs", { '#p': [myPub], kinds: [1,6,7,9735], limit: 50 });
+                sub(ws, "feed", { kinds: [1], limit: 25 });
+                
+                // Subscribe to Notifications (if logged in)
+                if(myPub) {
+                    sub(ws, "notifs", { '#p': [myPub], kinds: [1, 6, 7, 9735], limit: 50 });
+                }
             };
             ws.onmessage = (msg) => handleMessage(msg);
         } catch(e) { console.error(e); }
@@ -150,301 +174,288 @@ function sub(ws, id, filter) {
     ws.send(JSON.stringify(["REQ", id, filter]));
 }
 
+// --- EVENT HANDLER ---
 function handleMessage(msg) {
     const data = JSON.parse(msg.data);
-    if(data[0] === 'EVENT') {
-        const subId = data[1];
-        const ev = data[2];
-        
-        // Cache every event
-        if(!events.has(ev.id)) {
-            events.set(ev.id, ev);
-            
-            // Profile Metadata
-            if(ev.kind === 0) {
-                try { profiles[ev.pubkey] = JSON.parse(ev.content); } catch(e){}
-            }
+    if (data[0] !== 'EVENT') return;
 
-            // UI Updates based on subId
-            if(subId === 'feed') renderFeed();
-            if(subId === 'notifs') renderNotifications();
-            if(subId.startsWith('thread')) renderThreadUI(); // Live update thread
-            if(subId === 'search') renderSearch(ev);
+    const subId = data[1];
+    const ev = data[2];
+
+    // 1. Store Event
+    if (!eventsMap.has(ev.id)) {
+        eventsMap.set(ev.id, ev);
+        
+        // 2. Fetch Profile if unknown
+        if (!profilesMap[ev.pubkey]) {
+            profilesMap[ev.pubkey] = {}; // Placeholder to stop spamming reqs
+            fetchProfile(ev.pubkey);
+        }
+
+        // 3. Update UI based on what we are looking at
+        if (subId === 'feed') updateFeedUI();
+        if (subId === 'notifs') updateNotifsUI();
+        
+        // THREAD HANDLING
+        if (subId.startsWith('thread_')) {
+            // If we are viewing a thread, re-render to show new data
+            if (!document.getElementById('thread-panel').classList.contains('hidden')) {
+                renderThread(currentThreadId);
+            }
+            
+            // If this event has a parent we don't have, go get it!
+            const parentId = getParentId(ev);
+            if (parentId && !eventsMap.has(parentId)) {
+                fetchSingleNote(parentId);
+            }
+        }
+
+        // PROFILE METADATA
+        if (ev.kind === 0) {
+            try { profilesMap[ev.pubkey] = JSON.parse(ev.content); updateFeedUI(); } catch(e){}
         }
     }
 }
 
-// --- ROUTING ---
+// --- NAVIGATION ---
 function route(page) {
-    document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById(page + '-panel').classList.add('active');
     
-    if(page === 'feed') renderFeed();
-    if(page === 'notifications') renderNotifications();
-    if(page === 'profile') renderMyProfile();
+    if (page === 'feed') updateFeedUI();
+    if (page === 'notifs') updateNotifsUI();
 }
 
-// --- FEED LOGIC ---
-function renderFeed() {
-    const feedEvents = Array.from(events.values())
-        .filter(e => e.kind === 1) // Text notes only for main feed
-        .sort((a,b) => b.created_at - a.created_at)
-        .slice(0, 50);
-        
-    document.getElementById('feed-stream').innerHTML = feedEvents.map(e => makeCard(e)).join('');
-}
-
-// --- THREAD LOGIC (THE FIX) ---
+// --- THREAD ENGINE (THE CRITICAL PART) ---
 function openThread(id) {
-    // 1. If it's a Like (7) or Repost (6), find the original note ID
-    const ev = events.get(id);
-    if(ev && (ev.kind === 7 || ev.kind === 6)) {
-        const target = ev.tags.find(t => t[0] === 'e');
-        if(target) {
-            id = target[1]; // Switch ID to the actual note
-        }
-    }
-
-    viewingThreadId = id;
+    console.log("OPENING THREAD FOR ID:", id);
+    currentThreadId = id;
     route('thread');
     
-    document.getElementById('thread-main').innerHTML = '<div style="padding:20px;text-align:center">Loading...</div>';
-    document.getElementById('thread-replies').innerHTML = '';
-    document.getElementById('thread-parent').innerHTML = '';
+    // Clear previous view
+    document.getElementById('thread-ancestor-container').innerHTML = '';
+    document.getElementById('thread-main-container').innerHTML = 'Loading note...';
+    document.getElementById('thread-replies-container').innerHTML = 'Loading comments...';
 
-    // Ask relays for data
+    // 1. Ask ALL relays for this specific note
+    fetchSingleNote(id);
+
+    // 2. Ask ALL relays for replies to this note
     Object.values(pool).forEach(ws => {
         if(ws.readyState === 1) {
-            // Get Main Note
-            sub(ws, "thread_main", { ids: [id] });
-            // Get Replies
-            sub(ws, "thread_replies", { '#e': [id], kinds: [1], limit: 100 });
+            // Get replies aggressively
+            sub(ws, "thread_replies_" + id, { kinds: [1], '#e': [id], limit: 100 });
         }
     });
 
-    renderThreadUI();
+    // 3. Attempt to render immediately if in cache
+    renderThread(id);
 }
 
-function renderThreadUI() {
-    if(!viewingThreadId) return;
+function getParentId(ev) {
+    // Finds the ID of the note this event is replying to
+    const eTags = ev.tags.filter(t => t[0] === 'e');
+    if (eTags.length === 0) return null;
+    
+    // Check for "reply" marker
+    const replyTag = eTags.find(t => t[3] === 'reply');
+    if (replyTag) return replyTag[1];
 
-    // 1. Render Main Note
-    const main = events.get(viewingThreadId);
-    if(main) {
-        document.getElementById('thread-main').innerHTML = makeCard(main, true);
-        
-        // Check for Parent (Context)
-        const parentTag = main.tags.find(t => t[0] === 'e' && t[3] === 'reply') || main.tags.find(t => t[0] === 'e'); 
-        // Logic: Try to find explicit 'reply' marker, otherwise just grab first 'e' tag
-        
-        if(parentTag) {
-            const pId = parentTag[1];
-            const parent = events.get(pId);
-            if(parent) {
-                document.getElementById('thread-parent').innerHTML = `
-                    <div style="font-size:0.8em;opacity:0.7;margin-bottom:5px;">Replying to:</div>
-                    ${makeCard(parent)}
-                    <div style="text-align:center;font-size:1.5em;line-height:0.5;">|</div>
-                `;
-            } else {
-                // Fetch parent if missing
-                 Object.values(pool).forEach(ws => sub(ws, "thread_parent", { ids: [pId] }));
-            }
+    // Check for "root" marker
+    const rootTag = eTags.find(t => t[3] === 'root');
+    if (rootTag) return rootTag[1]; // Fallback to root if no reply marker
+
+    // Fallback: Last 'e' tag is usually the immediate parent (NIP-10)
+    return eTags[eTags.length - 1][1];
+}
+
+function fetchSingleNote(id) {
+    Object.values(pool).forEach(ws => {
+        if(ws.readyState === 1) {
+            sub(ws, "thread_target_" + id, { kinds: [1], ids: [id] });
         }
-    }
-
-    // 2. Render Replies
-    const replies = Array.from(events.values()).filter(e => 
-        e.kind === 1 && 
-        e.tags.some(t => t[0] === 'e' && t[1] === viewingThreadId)
-    ).sort((a,b) => a.created_at - b.created_at);
-
-    document.getElementById('thread-replies').innerHTML = replies.map(e => makeCard(e)).join('');
+    });
 }
 
-// --- NOTIFICATIONS LOGIC (FIXED) ---
-function renderNotifications() {
-    const notifs = Array.from(events.values())
-        .filter(e => e.kind !== 0 && e.tags.some(t => t[0] === 'p' && t[1] === myPub))
-        .sort((a,b) => b.created_at - a.created_at)
-        .slice(0, 50);
+function renderThread(id) {
+    if (id !== currentThreadId) return; // Prevent race conditions
 
-    if(notifs.length === 0) {
-        document.getElementById('notif-list').innerHTML = "No notifications yet.";
+    const mainNote = eventsMap.get(id);
+    
+    if (!mainNote) {
+        document.getElementById('thread-main-container').innerHTML = "Fetching from relays...";
         return;
     }
 
-    document.getElementById('notif-list').innerHTML = notifs.map(e => {
-        const p = profiles[e.pubkey] || {};
-        const name = p.name || e.pubkey.substring(0,8);
-        
-        // Zap (9735)
-        if(e.kind === 9735) {
-            let amount = "some";
-            try { 
-                const bolt11 = e.tags.find(t => t[0] === 'bolt11'); // simplified
-                const desc = JSON.parse(e.tags.find(t=>t[0]==='description')[1]);
-                const millisats = desc.tags.find(t=>t[0]==='amount')[1];
-                amount = Math.floor(millisats/1000);
-            } catch(err){}
-            const target = e.tags.find(t=>t[0]==='e')?.[1];
-            return `<div class="notif-item" onclick="openThread('${target}')"><span style="color:#f1c40f">⚡</span> <b>${amount} sats</b> from ${name}</div>`;
-        }
-        
-        // Like (7)
-        if(e.kind === 7) {
-            const target = e.tags.find(t=>t[0]==='e')?.[1];
-            return `<div class="notif-item" onclick="openThread('${target}')"><span style="color:#e74c3c">❤</span> <b>${name}</b> liked your note</div>`;
-        }
+    // 1. Render Main Note
+    document.getElementById('thread-main-container').innerHTML = renderCard(mainNote, "thread-main");
 
-        // Repost (6)
-        if(e.kind === 6) {
-            const target = e.tags.find(t=>t[0]==='e')?.[1];
-            return `<div class="notif-item" onclick="openThread('${target}')"><span style="color:#2ecc71">↻</span> <b>${name}</b> reposted your note</div>`;
+    // 2. Check for Parent (Ancestor)
+    const parentId = getParentId(mainNote);
+    if (parentId) {
+        const parentNote = eventsMap.get(parentId);
+        if (parentNote) {
+            document.getElementById('thread-ancestor-container').innerHTML = `
+                <div style="opacity:0.6; font-size:0.8em; margin-bottom:5px;">Replying to:</div>
+                ${renderCard(parentNote, "thread-ancestor")}
+            `;
+        } else {
+            // Parent ID exists but we don't have the content yet
+            document.getElementById('thread-ancestor-container').innerHTML = `<button class="sec" onclick="fetchSingleNote('${parentId}')">Load Parent Note</button>`;
+            fetchSingleNote(parentId); // Auto fetch
         }
+    } else {
+        document.getElementById('thread-ancestor-container').innerHTML = '';
+    }
 
-        // Reply (1)
-        if(e.kind === 1) {
-            return `<div class="notif-item" onclick="openThread('${e.id}')">💬 Reply from <b>${name}</b>:<br><span style="opacity:0.8">${e.content}</span></div>`;
-        }
-        
-        return '';
-    }).join('');
+    // 3. Render Replies
+    // Filter all known events for ones that tag this ID
+    const replies = Array.from(eventsMap.values()).filter(ev => {
+        if (ev.kind !== 1) return false;
+        const pId = getParentId(ev);
+        // It's a reply if its parent is the current thread ID
+        return pId === id; 
+    }).sort((a,b) => a.created_at - b.created_at);
+
+    if (replies.length > 0) {
+        document.getElementById('thread-replies-container').innerHTML = replies.map(ev => renderCard(ev, "thread-reply")).join('');
+    } else {
+        document.getElementById('thread-replies-container').innerHTML = "No replies found (yet).";
+    }
 }
 
-// --- UTILS ---
-function makeCard(ev, isMain) {
-    if(!ev) return '';
-    const p = profiles[ev.pubkey] || {};
-    const name = p.display_name || p.name || ev.pubkey.substring(0,8);
+// --- UI RENDERING ---
+function renderCard(ev, extraClass = "") {
+    const p = profilesMap[ev.pubkey] || {};
+    const name = p.name || p.display_name || ev.pubkey.substring(0,8);
     const pic = p.picture || '';
     
-    // Parse content for images
-    let content = ev.content
-        .replace(/</g, "&lt;")
-        .replace(/(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp))/gi, '<img src="$1" class="media">')
-        .replace(/(https?:\/\/[^\s]+\.(mp4|mov))/gi, '<video controls src="$1" class="media"></video>');
-
-    const style = isMain ? 'border:2px solid var(--acc); background:#0a0a0a;' : '';
-
     return `
-    <div class="post" style="${style}">
-        <div class="post-meta" onclick="viewingThreadId='${ev.id}';route('thread');">
-            ${pic ? `<img src="${pic}" class="avatar">` : `<div class="avatar"></div>`}
-            <b style="color:#fff">${name}</b>
-            <span style="margin-left:auto">${new Date(ev.created_at*1000).toLocaleTimeString()}</span>
+    <div class="post ${extraClass}">
+        <div class="post-meta" onclick="openThread('${ev.id}')">
+            <div style="display:flex;align-items:center;gap:10px;">
+                ${pic ? `<img src="${pic}" class="avatar">` : `<div class="avatar"></div>`}
+                <b style="color:#fff">${name}</b>
+            </div>
+            <span>${new Date(ev.created_at * 1000).toLocaleTimeString()}</span>
         </div>
-        <div class="post-content" onclick="openThread('${ev.id}')">${content}</div>
+        <div class="post-content" onclick="openThread('${ev.id}')">${ev.content}</div>
         <div class="post-actions">
             <button class="sec" onclick="prepReply('${ev.id}')">REPLY</button>
-            <button class="sec" onclick="publishLike('${ev.id}')">LIKE</button>
-            <button class="sec" onclick="zap('${p.lud16}')">ZAP</button>
+            <button class="sec" onclick="sendLike('${ev.id}', '${ev.pubkey}')">LIKE</button>
         </div>
     </div>`;
 }
 
-// --- SEARCH ---
-function runSearch() {
-    const q = document.getElementById('search-in').value;
-    document.getElementById('search-out').innerHTML = "Searching...";
-    
-    // NIP-19 check
-    if(q.startsWith('npub')) {
-        try {
-            const { data } = window.NostrTools.nip19.decode(q);
-            // Search profile notes
-            Object.values(pool).forEach(ws => sub(ws, "search", { kinds:[1], authors:[data], limit:20 }));
-            return;
-        } catch(e) {}
-    }
-
-    // Text search
-    Object.values(pool).forEach(ws => sub(ws, "search", { kinds:[1], search: q, limit:20 }));
+function updateFeedUI() {
+    const list = Array.from(eventsMap.values())
+        .filter(e => e.kind === 1) // Only text notes
+        .sort((a,b) => b.created_at - a.created_at) // Newest first
+        .slice(0, 50); // Limit to 50
+        
+    document.getElementById('feed-list').innerHTML = list.map(ev => renderCard(ev)).join('');
 }
 
-function renderSearch(ev) {
-    const box = document.getElementById('search-out');
-    if(box.innerHTML === "Searching...") box.innerHTML = "";
-    box.innerHTML += makeCard(ev);
+function updateNotifsUI() {
+    if(!myPub) return;
+    const list = Array.from(eventsMap.values())
+        .filter(e => e.tags.some(t => t[0] === 'p' && t[1] === myPub)) // Tags me
+        .filter(e => e.kind === 1 || e.kind === 6 || e.kind === 7 || e.kind === 9735) // Replies, Reposts, Likes, Zaps
+        .sort((a,b) => b.created_at - a.created_at)
+        .slice(0, 50);
+        
+    document.getElementById('notif-list').innerHTML = list.map(ev => {
+        const p = profilesMap[ev.pubkey] || {};
+        const name = p.name || ev.pubkey.substring(0,6);
+        
+        // TARGET LOGIC: Find what they are replying to/liking
+        let targetId = null;
+        const eTag = ev.tags.find(t => t[0] === 'e');
+        if (eTag) targetId = eTag[1];
+
+        // Ensure clicking goes to the TARGET note, not the like event itself
+        const clickAction = targetId ? `onclick="openThread('${targetId}')"` : '';
+
+        if(ev.kind === 7) return `<div class="notif" ${clickAction}><span style="color:red">❤</span> <b>${name}</b> liked your note.</div>`;
+        if(ev.kind === 6) return `<div class="notif" ${clickAction}><span style="color:green">↻</span> <b>${name}</b> reposted your note.</div>`;
+        if(ev.kind === 9735) return `<div class="notif" ${clickAction}><span style="color:gold">⚡</span> <b>${name}</b> zapped you!</div>`;
+        if(ev.kind === 1) return `<div class="notif" onclick="openThread('${ev.id}')"><span>💬</span> <div><b>${name}</b> replied: <br> ${ev.content}</div></div>`;
+    }).join('');
 }
 
-// --- ACTIONS ---
-function showComposer() { 
-    if(!myPub) return alert("Please Login First");
-    document.getElementById('composer').style.display = 'flex'; 
+function fetchProfile(pubkey) {
+    Object.values(pool).forEach(ws => {
+        if(ws.readyState === 1) {
+            sub(ws, "meta_" + pubkey.substring(0,8), { kinds:[0], authors:[pubkey], limit:1 });
+        }
+    });
 }
-function hideComposer() { document.getElementById('composer').style.display = 'none'; replyToId = null; document.getElementById('reply-label').innerText=''; }
+
+// --- COMPOSER ---
+function openComposer() { document.getElementById('composer').style.display = 'flex'; }
+function closeComposer() { document.getElementById('composer').style.display = 'none'; replyToEvent = null; document.getElementById('reply-context-text').innerText = ''; }
 
 function prepReply(id) {
-    replyToId = id;
-    document.getElementById('reply-label').innerText = "Replying to " + id.substring(0,8);
-    showComposer();
+    replyToEvent = id;
+    document.getElementById('reply-context-text').innerText = "Replying to: " + id.substring(0,10) + "...";
+    openComposer();
 }
 
-async function publish() {
-    const text = document.getElementById('note-body').value;
+async function publishNote() {
+    const text = document.getElementById('compose-text').value;
     if(!text) return;
-
+    
     const ev = {
         kind: 1,
-        created_at: Math.floor(Date.now()/1000),
+        created_at: Math.floor(Date.now() / 1000),
         tags: [],
         content: text,
         pubkey: myPub
     };
 
-    if(replyToId) {
-        ev.tags.push(['e', replyToId, '', 'reply']);
+    if (replyToEvent) {
+        ev.tags.push(['e', replyToEvent, '', 'reply']);
     }
 
+    // Signing
     try {
-        if(window.nostr) {
+        if (window.nostr) {
             const signed = await window.nostr.signEvent(ev);
-            broadcast(signed);
-        } else if(myPriv) {
+            ev.id = signed.id; 
+            ev.sig = signed.sig;
+        } else if (myPriv) {
             ev.id = window.NostrTools.getEventHash(ev);
             ev.sig = window.NostrTools.signEvent(ev, myPriv);
-            broadcast(ev);
+        } else {
+            alert("No Login Found"); return;
         }
-        hideComposer();
-        document.getElementById('note-body').value = '';
-    } catch(e) { alert("Error signing: " + e); }
+        
+        Object.values(pool).forEach(ws => {
+            ws.send(JSON.stringify(["EVENT", ev]));
+        });
+        closeComposer();
+        document.getElementById('compose-text').value = '';
+    } catch(err) { alert("Error: " + err); }
 }
 
-async function publishLike(id) {
+async function sendLike(id, pubkey) {
     if(!myPub) return alert("Login first");
-    const ev = { kind:7, content:'+', tags:[['e',id]], created_at:Math.floor(Date.now()/1000), pubkey:myPub };
-    if(window.nostr) {
-        const signed = await window.nostr.signEvent(ev);
-        broadcast(signed);
-        alert("Liked!");
-    }
+    const ev = { kind: 7, content: "+", tags: [['e', id], ['p', pubkey]], created_at: Math.floor(Date.now()/1000), pubkey: myPub };
+    // Simplified signing for brevity
+    if(window.nostr) { const s = await window.nostr.signEvent(ev); Object.values(pool).forEach(w => w.send(JSON.stringify(["EVENT", s]))); alert("Liked!"); }
 }
 
-function broadcast(ev) {
-    Object.values(pool).forEach(ws => {
-        if(ws.readyState === 1) ws.send(JSON.stringify(["EVENT", ev]));
-    });
-}
-
-async function zap(lud16) {
-    if(!lud16) return alert("No Lightning Address found for this user");
-    window.open("lightning:"+lud16);
-}
-
-// --- IDENTITY ---
+// --- LOGIN ---
 async function loginExt() {
-    if(!window.nostr) return alert("Install Alby or Nos2x");
+    if(!window.nostr) return alert("No Extension");
     myPub = await window.nostr.getPublicKey();
     localStorage.setItem('mbit_pub', myPub);
-    localStorage.setItem('mbit_mode', 'ext');
     location.reload();
 }
-
 function loginKey() {
-    const key = document.getElementById('nsec-in').value;
+    const k = document.getElementById('pk-input').value;
     try {
-        const { data } = window.NostrTools.nip19.decode(key);
+        const { data } = window.NostrTools.nip19.decode(k);
         myPriv = data;
         myPub = window.NostrTools.getPublicKey(myPriv);
         localStorage.setItem('mbit_priv', myPriv);
@@ -452,9 +463,11 @@ function loginKey() {
         location.reload();
     } catch(e) { alert("Invalid Key"); }
 }
+function logout() { localStorage.clear(); location.reload(); }
 
 // --- START ---
 init();
+
 </script>
 </body>
 </html>
