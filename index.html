@@ -82,7 +82,7 @@
         
         h1 { font-size: 2.5em; margin: 0; text-shadow: var(--glow); text-transform: lowercase; }
 
-        .nav-bar { margin-top: 10px; font-size: 0.85em; user-select: none; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+        .nav-bar { margin-top: 10px; font-size: 0.9em; user-select: none; display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
         .nav-item { cursor: pointer; opacity: 0.7; transition: 0.3s; color: var(--text-color); }
         .nav-item:hover { opacity: 1; text-shadow: var(--glow); text-decoration: underline; }
 
@@ -186,6 +186,7 @@
         /* POSTS */
         .post { border-left: 2px solid var(--post-border); padding-left: 15px; margin-bottom: 30px; animation: fadeIn 0.5s; }
         
+        /* Thread specific styles */
         .thread-parent { border-left: 4px solid var(--text-color); background: rgba(255,255,255,0.05); padding: 15px; margin-bottom: 20px; }
         .thread-ancestor { border-left: 2px dotted var(--meta-color); opacity: 0.8; padding-left: 15px; margin-bottom: 10px; font-size: 0.9em; }
 
@@ -397,14 +398,14 @@
             border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: center;
-            gap: 6px;
+            gap: 15px;
             padding: 15px 0;
             z-index: 1000;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
             font-family: inherit;
         }
         .footer-item {
-            font-size: 0.85em;
+            font-size: 0.9em;
             cursor: pointer;
             text-align: center;
             transition: 0.3s;
@@ -471,25 +472,6 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.5);
             animation: zoomIn 0.2s;
         }
-
-        /* PROFILE CARD FOR SEARCH RESULTS */
-        .profile-card {
-            border: 1px solid var(--text-color);
-            background: var(--input-bg);
-            padding: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .profile-card:hover { transform: scale(1.02); box-shadow: var(--glow); }
-        .profile-card img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
-        .profile-card .info { flex-grow: 1; overflow: hidden; }
-        .profile-card .name { font-weight: bold; font-size: 1.1em; color: var(--text-color); }
-        .profile-card .nip05 { font-size: 0.8em; color: #3498db; }
-        .profile-card .about { font-size: 0.8em; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -562,7 +544,6 @@
             
             <!-- HIDDEN EDITOR (NOW ABOVE TABS) -->
             <div id="profile-editor" class="hidden" style="text-align:left; margin:15px 0; border:1px dotted var(--border-color); padding:10px;">
-                <!-- Removing Username input as requested -->
                 <label>Name:</label><input type="text" id="p-display-name" placeholder="e.g. Satoshi Nakamoto">
                 <label>Bio:</label><textarea id="p-about" rows="3"></textarea>
                 <label>Website:</label><input type="text" id="p-website" placeholder="https://...">
@@ -574,7 +555,6 @@
             </div>
 
             <!-- TABS GENERATED DYNAMICALLY BY JS -->
-            <!-- Removing static tabs here to prevent duplication -->
             <div id="my-feed"></div>
         </div>
 
@@ -589,7 +569,6 @@
         <div id="panel-settings" class="dropdown-panel hidden">
             <h3>>> SETTINGS</h3>
             
-            <!-- RELAY MANAGER BUTTON -->
             <button onclick="togglePanel('panel-relays')" style="width:100%; margin-bottom:15px; border: 1px solid var(--text-color);">>> MANAGE RELAYS</button>
 
             <label>SYSTEM THEME:</label>
@@ -652,7 +631,6 @@
         <div id="panel-notifications" class="dropdown-panel hidden">
             <h3>>> NOTIFICATIONS</h3>
             
-            <!-- NOTIFICATION TABS -->
             <div class="notif-tabs" style="justify-content: space-around;">
                 <button id="ntab-all" class="tab-btn active" onclick="switchNotifTab('all')">ALL</button>
                 <button id="ntab-zaps" class="tab-btn" onclick="switchNotifTab('zaps')">ZAPS</button>
@@ -805,29 +783,31 @@
             currentThreadId = id;
             togglePanel('panel-thread');
             
-            document.getElementById('thread-parent-container').innerHTML = '';
-            document.getElementById('thread-main-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading note...</div>';
-            document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading comments...</div>';
-            
-            threadEvents = [];
-            
             // Check all caches for immediate render
             const allEvents = [...events, ...notifEvents, ...myEvents, ...userEvents, ...searchEvents, ...bookmarkEvents];
             const cached = allEvents.find(e => e.id === id);
             
             if (cached) {
-                threadEvents.push(cached);
+                // If cached, render immediately without waiting
+                threadEvents = [cached]; // Start with what we have
                 renderThreadView(); 
+                // Then fetch parent in background
                 const parentId = getImmediateParentId(cached);
                 if (parentId) fetchNote(parentId);
             } else {
-                fetchNote(id); // Fetch main if missing
+                // If not cached, show loading state
+                document.getElementById('thread-main-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading note...</div>';
+                threadEvents = [];
+                fetchNote(id);
             }
+            
+            document.getElementById('thread-parent-container').innerHTML = '';
+            document.getElementById('thread-replies-container').innerHTML = '<div style="opacity:0.6; padding:10px;">Loading comments...</div>';
 
             // Fetch Fresh Data from Relays (Aggressively get children)
             Object.values(sockets).forEach(ws => {
                 if (ws.readyState === 1) {
-                    // Get replies (up to 500)
+                    ws.send(JSON.stringify(["REQ", "thread_main", { kinds: [1], ids: [id], limit: 1 }]));
                     ws.send(JSON.stringify(["REQ", "thread_children", { kinds: [1], '#e': [id], limit: 500 }]));
                 }
             });
